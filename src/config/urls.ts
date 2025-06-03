@@ -1,0 +1,255 @@
+const API_URL = "http://localhost:8888/api";
+
+/* const { navigateTo } = use(); */
+
+export const AUTH_URLS = {
+    login: `${API_URL}/auth/login`,
+    logout: `${API_URL}/auth/logout`,
+    setting_password: `${API_URL}/auth/set-password`,
+}
+
+export const COMPANIES_URLS = {
+    complete_register: `${API_URL}/companies/company/complete`
+}
+
+export const USERS_URLS = {
+    add: `${API_URL}/users/add`,
+    delete: `${API_URL}/users/delete`,
+    edit: `/User/editUser`,
+    view: `/User/user`,
+    mutate: `${API_URL}/users/get/all`,
+    updateStatus: `${API_URL}/users/update-status`,
+    import: `${API_URL}/users/import`,
+    fetchProfile: `${API_URL}/auth/profile`,
+    fetchCampaignEvaluationParticipants: `${API_URL}/users/campaign-evaluation/get/participants`,
+};
+
+export const SUPPLIERS_URLS = {
+    add: `${API_URL}/users/add`,
+    delete: `${API_URL}/users/delete`,
+    edit: `/User/editUser`,
+    view: `/User/user`,
+    mutate: `${API_URL}/ocf/get/all`,
+    updateStatus: `${API_URL}/users/update-status`,
+    import: `${API_URL}/users/import`,
+    fetchProfile: `${API_URL}/auth/profile`,
+};
+
+export const GROUPS_URLS = {
+    add: `${API_URL}/groupes/add`,
+    delete: `${API_URL}/groupes/delete`,
+    update: `${API_URL}/groupes/update`,
+    edit: `/Groups/editGroup`,
+    mutate: `${API_URL}/groupes/get/all`,
+    updateRights: `/groupes/permissions`,
+};
+
+export const NOTIFICATIONS_URLS = {
+    fetchAll: (userId: number) => `${API_URL}/notifications/get/all/${userId}`,
+    markAsRead: (id: number) => `${API_URL}/notifications/markAsRead/${id}`,
+    markAllAsRead: `${API_URL}/notifications/markAllAsRead`,
+    notifs: `${API_URL}/notifications/notifs`,
+};
+
+export const STRATEGIC_AXES_URLS = {
+    fetchAll: `${API_URL}/strategicAxes/get/all`,
+    fetchAllByYear: `${API_URL}/strategicAxes/get/allByYear`,
+    add: `${API_URL}/strategicAxes/add`,
+    delete: `${API_URL}/strategicAxes/delete`,
+    edit: `${API_URL}/strategicAxes/edit`,
+}
+
+export const SITE_URLS = {
+    mutate: `${API_URL}/site/get/all`,
+    add: `${API_URL}/site/add`,
+    view: `/User/user`,
+    delete: `${API_URL}/site/delete`,
+    edit: `${API_URL}/site/edit`,
+}
+
+export const DEPARTMENT_URLS = {
+    mutate: `${API_URL}/department/get/all`,
+    add: `${API_URL}/department/add`,
+    view: `/User/user`,
+    delete: `${API_URL}/department/delete`,
+    edit: `${API_URL}/department/edit`,
+}
+
+export const DOMAIN_URLS = {
+    mutate: `${API_URL}/domain/get/all`,
+    add: `${API_URL}/domain/add`,
+    view: `/User/user`,
+    delete: `${API_URL}/domain/delete`,
+    edit: `${API_URL}/domain/edit`,
+}
+
+export const QUALIFICATION_URLS = {
+    mutate: `${API_URL}/qualification/get/all`,
+    add: `${API_URL}/qualification/add`,
+    view: `/User/user`,
+    delete: `${API_URL}/qualification/delete`,
+    edit: `${API_URL}/qualification/edit`,
+}
+
+export const NEEDS_STRATEGIC_AXES_URLS = {
+    add: `${API_URL}/needs/add/strategicAxesNeed`,
+    mutate: `${API_URL}/needs/get/all/strategicAxesNeed`,
+    view: `/Needs/needDetails`,
+    delete: `${API_URL}/needs/delete/strategicAxesNeed`,
+    editPage: `/Needs/strategic-axes/editStrategicAxe`,
+    getNeed: `${API_URL}/needs/get/strategicAxesNeed`,
+    update: `${API_URL}/needs/edit/strategicAxesNeed`,
+    getDetails: `${API_URL}/needs/get/details/strategicAxesNeed`,
+}
+
+export const NEEDS_URLS = {
+    add: `${API_URL}/needs/add`,
+    mutate: `${API_URL}/needs/get/all`,
+    view: `/User/user`,
+    delete: `${API_URL}/needs/delete`,
+    edit: `${API_URL}/needs/edit`,
+    updateStatus: `${API_URL}/needs/update-status`,
+    duplicateGroup: `${API_URL}/needs/groups/duplicate/group`,
+    getNeedForAddGroup: `${API_URL}/needs/get/needForAddGroup`,
+}
+
+export const NEEDS_GROUP_URLS = {
+    addPage: `/Needs/group/add-group`,
+    addGroupPlanning: `${API_URL}/needs/groups/add/groupPlanning`,
+    addGroupInternalProvider: `${API_URL}/needs/groups/add/groupInternalProvider`,
+    editGroupInternalProvider: `${API_URL}/needs/groups/edit/groupInternalProvider`,
+    editGroupExternalProvider: `${API_URL}/needs/groups/edit/groupExternalProvider`,
+    addGroupExternalProvider: `${API_URL}/needs/groups/add/groupExternalProvider`,
+    editGroupPlanning: `${API_URL}/needs/groups/edit/groupPlanning`,
+    editGroupParticipants: `${API_URL}/needs/groups/edit/groupParticipants`,
+    addGroupParticipants: `${API_URL}/needs/groups/add/groupParticipants`,
+    mutate: `${API_URL}/needs/groups/get/all/group`,
+    view: `/User/user`,
+    delete: `${API_URL}/needs/groups/delete/group`,
+    editPage: `/Needs/groups/group/editGroup`,
+    getNeed: `${API_URL}/needs/groups/get/group`,
+    update: `${API_URL}/needs/groups/edit/group`,
+    getDetails: `${API_URL}/needs/groups/get/details/group`,
+    getGroupToAddOrEdit: `${API_URL}/needs/groups/get/groupToAddOrEdit`,
+}
+
+export const TRAINERS_URLS = {
+    mutate: `${API_URL}/users/trainers/get/all`,
+}
+
+export const OCF_URLS = {
+    mutate: `${API_URL}/ocf/get/ocfAddOrEditGroup`,
+}
+
+export const MY_REQUESTS_URLS = {
+    mutate: `${API_URL}/trainings/training-requests/get/my-requests`,
+    add: `${API_URL}/trainings/training-requests/add/new-request`,
+    view: "",
+    edit: "",
+    delete: "",
+}
+
+export const TEAM_REQUESTS_URLS = {
+    mutate: `${API_URL}/trainings/training-requests/get/team-requests`,
+    updateStatus: `${API_URL}/trainings/training-requests/update-status`,
+}
+
+export const NEED_INDIVIDUAL_REQUESTS_URLS = {
+    mutate: `${API_URL}/needs/get/all/individualRequestNeed`,
+    updateStatus: `${API_URL}/trainings/training-requests/update-status`,
+}
+
+export const NEED_EVALUATION_URLS = {
+    mutate: `${API_URL}/needs/get/all/evaluationNeed`,
+    updateStatus: `${API_URL}/nedd/evaluation/update-status`,
+}
+
+export const TEAM_EVALUATIONS_URLS = {
+    mutate: `${API_URL}/evaluations/team-evaluations/get/all`,
+    view: '/manager/team-evaluations/detail-evaluation',
+    getDetails: `${API_URL}/evaluations/team-evaluations/get/details`,
+    sendEvaluationToAdmin: `${API_URL}/evaluations/team-evaluations/send-evaluation-to-admin`,
+}
+
+export const MY_EVALUATIONS_URLS = {
+    mutate: `${API_URL}/evaluations/my-evaluations/get/all`,
+    view: '/manager/team-evaluations/detail-evaluation',
+    sendEvaluation: `${API_URL}/evaluations/my-evaluations/send-evaluation`,
+}
+
+export const CAMPAIGN_URLS = {
+    add: `${API_URL}/evaluations/campaign-evaluation/add`,
+    mutate: `${API_URL}/evaluations/campaign-evaluation/get/all`,
+    deleteUserResponses: `${API_URL}/evaluations/campaign-evaluation/delete/user-response`,
+    getDetails: `${API_URL}/evaluations/campaign-evaluation/get/details`,
+    campaignEvaluationDetail: `${API_URL}/evaluations/campaign-evaluation/details`,
+    update: `${API_URL}/evaluations/campaign-evaluation/update`,
+    editPage: `/Needs/evaluation/add`,
+    view: `/Needs/evaluation/details`,
+    delete: `${API_URL}/evaluations/campaign-evaluation/delete`,
+    publish: `${API_URL}/evaluations/campaign-evaluation/publish`,
+}
+
+export const QUESTIONNAIRE_URLS = {
+    fetchAllByType: `${API_URL}/evaluations/questionnaire-evaluation/get/all/by-type`,
+    getQuestionnaire: `${API_URL}/evaluations/questionnaire-evaluation/get/questionnaire`,
+    update: `${API_URL}/evaluations/questionnaire-evaluation/update/questionnaire`,
+    delete: `${API_URL}/evaluations/questionnaire-evaluation/delete/questionnaire`,
+    updateStatus: `${API_URL}/evaluations/questionnaire-evaluation/update/questionnaire/status`,
+    add: `${API_URL}/evaluations/questionnaire-evaluation/add`,
+    mutate: `${API_URL}/evaluations/questionnaire-evaluation/get/all`,
+    sendResponse: `${API_URL}/evaluations/questionnaire-evaluation/send-response`,
+}
+
+export const USER_RESPONSES_URLS = {
+    sendUserResponse: `${API_URL}/evaluations/user-response/send-user-response`,
+    fetchUserResponses: `${API_URL}/evaluations/user-response/get/all`,
+    fetchUserQuestionsResponses: `${API_URL}/evaluations/user-response/get`,
+}
+
+export const PLANS_URLS = {
+    mutate: `${API_URL}/plan/get/all`,
+    add: `${API_URL}/plan/add`,
+    updateStatus: `${API_URL}/plan/update-status`,
+    delete: `${API_URL}/plan/delete`,
+    view: `/Plan/annual/`,
+    edit: `${API_URL}/plan/edit-plan`,
+
+    updateOFPPTValidation: `${API_URL}/plan/ofppt-validation`,
+    validationReport: `${API_URL}/plan/validation-report`,
+    canBeValidated:`${API_URL}/plan/can-be-validated`,
+}
+
+export const TRAINING_URLS = {
+    mutate: `${API_URL}/plan/trainings/get/all`,
+    getDetails: `${API_URL}/plan/trainings/get/details`,
+    getTrainingForAddGroup: `${API_URL}/plan/trainings/get/trainingForAddGroup`,
+    getTrainingToEdit: `${API_URL}/plan/trainings/get/trainingToEdit`,
+    editTraining: `${API_URL}/plan/trainings/edit/training`,
+    //
+    addPage: `/Plan/annual/add-group`,
+    editPage: `/Plan/annual/edit`,
+    add: `${API_URL}/trainings/plan/training/add`,
+    updateStatus: `${API_URL}/trainings/plan/training/update-status`,
+    delete: `${API_URL}/trainings/plan/training/delete`,
+    view: `/Plan/annual/`,
+    edit: `${API_URL}/trainings/plan/training/edit-training`,
+}
+
+export const TRAINING_GROUPE_URLS = {
+    getTrainingGroupeToAddOrEdit: `${API_URL}/plan/trainings/training-groups/getTrainingGroupToAddOrEdit`,
+    addGroupPlanning: `${API_URL}/plan/trainings/training-groups/add/groupPlanning`,
+    editGroupPlanning: `${API_URL}/plan/trainings/training-groups/edit/groupPlanning`,
+    addGroupParticipants: `${API_URL}/plan/trainings/training-groups/add/groupParticipants`,
+    editGroupParticipants: `${API_URL}/plan/trainings/training-groups/edit/groupParticipants`,
+    addGroupInternalProvider: `${API_URL}/plan/trainings/training-groups/add/groupInternalProvider`,
+    editGroupInternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupInternalProvider`,
+    addGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/add/groupExternalProvider`,
+    editGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupExternalProvider`,
+}
+
+export const NEED_TO_ADD_TO_PLAN_URLS = {
+    mutate: `${API_URL}/needs/get/allValidatedNeedToAddToPlan`,
+    addTheme: `${API_URL}/plan/addThemeToPlan`,
+    removeTheme: `${API_URL}/plan/removeThemeFromPlan`
+}
