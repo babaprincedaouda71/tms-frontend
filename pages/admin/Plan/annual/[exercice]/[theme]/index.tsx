@@ -303,7 +303,7 @@ const TrainingDetailsPage = () => {
 
                 {/* Tableau */}
                 <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
-                    <div className="flex items-start gap-2 md:gap-8">
+                    <div className="flex items-start gap-2 md:gap-8 mb-4">
                         <SearchFilterAddBar
                             isLeftButtonVisible={false}
                             isFiltersVisible={false}
@@ -322,32 +322,36 @@ const TrainingDetailsPage = () => {
                         />
                     </div>
 
-                    {/* Tableau */}
-                    <Table
-                        data={paginatedData}
-                        keys={TABLE_KEYS}
-                        headers={TABLE_HEADERS}
-                        sortableCols={sortableColumns}
-                        onSort={(column, order) => handleSortData(column, order, handleSort)}
-                        isPagination={false}
-                        pagination={{
-                            currentPage,
-                            totalPages,
-                            onPageChange: setCurrentPage,
-                        }}
-                        totalRecords={totalRecords}
-                        loading={false}
-                        onAdd={() => console.log("Nouveau")}
-                        visibleColumns={visibleColumns}
-                        renderers={renderers}
-                    />
-                    <div className="pl-8 text-xs md:text-sm lg:text-base">
+                    {/* Conteneur du tableau avec overflow visible pour les dropdowns */}
+                    <div className="overflow-visible relative">
+                        <Table
+                            data={paginatedData}
+                            keys={TABLE_KEYS}
+                            headers={TABLE_HEADERS}
+                            sortableCols={sortableColumns}
+                            onSort={(column, order) => handleSortData(column, order, handleSort)}
+                            isPagination={false}
+                            pagination={{
+                                currentPage,
+                                totalPages,
+                                onPageChange: setCurrentPage,
+                            }}
+                            totalRecords={totalRecords}
+                            loading={false}
+                            onAdd={() => console.log("Nouveau")}
+                            visibleColumns={visibleColumns}
+                            renderers={renderers}
+                        />
+                    </div>
+
+                    {/* Bouton avec un meilleur espacement */}
+                    <div className="mt-6 pl-8 text-xs md:text-sm lg:text-base">
                         <button
-                            className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3"
+                            className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3 hover:shadow-lg transition-shadow duration-200"
                             onClick={handleAddGroup}
                         >
                             <PlusIcon/>
-                            <span className="hidden sm:block">Nouveau Groupe</span>
+                            <span className="hidden sm:block ml-2">Nouveau Groupe</span>
                         </button>
                     </div>
                 </div>

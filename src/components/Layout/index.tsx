@@ -1,10 +1,16 @@
+
 import * as React from "react";
 import Header from "../Header";
 import Sidebar from "../Sidebar";
 import {FaChevronLeft, FaChevronRight} from "react-icons/fa";
 import {useAuth} from "@/contexts/AuthContext";
 
-const Layout = ({children}) => {
+interface LayoutProps {
+    children: React.ReactNode;
+    secondaryNav?: React.ReactNode; // 👈 Ajout de la prop optionnelle
+}
+
+const Layout = ({children, secondaryNav}: LayoutProps) => {
     const [sidebarOpen, setSidebarOpen] = React.useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
     const {user, loading} = useAuth();
@@ -27,6 +33,9 @@ const Layout = ({children}) => {
     if (!user) {
         return <main className="w-full">{children}</main>;
     }
+
+    // 👈 Variable pour vérifier la présence de secondaryNav
+    const hasSecondaryNav = Boolean(secondaryNav);
 
     // Si l'utilisateur est connecté, afficher le layout complet
     return (
@@ -77,9 +86,29 @@ const Layout = ({children}) => {
                 `}
             >
                 <Header onMenuClick={() => setSidebarOpen(true)}/>
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-backColor w-full lg:px-5">
-                    {children}
-                </main>
+
+                {/* 👈 MODIFICATION ICI : Structure conditionnelle pour main */}
+                {hasSecondaryNav ? (
+                    // Layout avec SecondaryNav : structure flex pour éviter le scroll
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* SecondaryNav fixe */}
+                        <div className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
+                            {secondaryNav}
+                        </div>
+
+                        {/* Contenu défilable */}
+                        <main className="flex-1 overflow-y-auto bg-backColor w-full">
+                            <div className="lg:px-5">
+                                {children}
+                            </div>
+                        </main>
+                    </div>
+                ) : (
+                    // Layout normal sans SecondaryNav (comportement actuel)
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-backColor w-full lg:px-5">
+                        {children}
+                    </main>
+                )}
             </div>
         </div>
     );

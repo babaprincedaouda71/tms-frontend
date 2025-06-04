@@ -135,9 +135,7 @@ const AddThemePage = () => {
     // Renderers UNIQUEMENT pour les cellules du tableau (pas l'en-tête)
     const renderers = {
         source: (source: string) => (
-            <div
-                className="text-xs md:text-sm lg:text-base"
-            >
+            <div className="text-xs md:text-sm lg:text-base">
                 {
                     source === "Strategic_Axes" ?
                         "Axes Stratégiques" : source === "Evaluation" ?
@@ -200,94 +198,117 @@ const AddThemePage = () => {
 
     return (
         <ProtectedRoute requiredRole={UserRole.Admin}>
-            <div className="flex flex-col h-screen bg-backColor">
-                <div className="flex items-start gap-2 md:gap-8 pt-4">
-                    <SearchFilterAddBar
-                        isLeftButtonVisible={false}
-                        isFiltersVisible={false}
-                        isRightButtonVisible={false}
-                        leftTextButton="Filtrer les colonnes"
-                        rightTextButton="Ajouter des thèmes"
-                        filters={[]}
-                        placeholderText={"Recherche de besoins"}
-                    />
+            {/* Container principal avec background uniforme */}
+            <div className="min-h-screen bg-backColor px-4 py-6">
+                {/* Header avec barre de recherche */}
+                <div className="mb-8">
+                    <div className="bg-white rounded-lg shadow-sm p-4">
+                        <SearchFilterAddBar
+                            isLeftButtonVisible={false}
+                            isFiltersVisible={false}
+                            isRightButtonVisible={false}
+                            leftTextButton="Filtrer les colonnes"
+                            rightTextButton="Ajouter des thèmes"
+                            filters={[]}
+                            placeholderText={"Recherche de besoins"}
+                        />
+                    </div>
                 </div>
 
-                {/* Tableau personnalisé avec en-tête custom */}
-                <div className="mt-10">
-                    <div className="relative bg-white">
-                        <div className="flex justify-center mx-auto rounded-b-[16px] px-3 bg-white overflow-x-auto">
-                            <div className="gap-y-2 md:gap-y-10 relative w-full overflow-initial">
-                                <table className="w-full min-w-full text-sm text-center text-gray-500">
-                                    {/* En-tête personnalisé */}
-                                    <CustomTableHead/>
+                {/* Section tableau avec background uniforme */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    {/* Tableau avec espacement interne */}
+                    <div className="p-4">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-full text-sm text-center text-gray-500">
+                                {/* En-tête personnalisé */}
+                                <CustomTableHead/>
 
-                                    {/* Corps du tableau */}
-                                    {!ValidNeedsLoading ? (
-                                        <tbody className="text-xs md:text-sm lg:text-base">
-                                        {!paginatedNeedsData.length ? (
-                                            <tr>
-                                                <td colSpan={ADD_THEME_TO_PLAN_TABLE_KEYS.filter((key, index) => visibleColumnsNeeds.includes(ADD_THEME_TO_PLAN_TABLE_HEADERS[index])).length}>
-                                                    <div className="w-full h-[250px] flex justify-center items-center">
-                                                        <p className="text-gray">Aucun résultat trouvé</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            paginatedNeedsData.map((item, idx) => {
-                                                const isEven = idx % 2 === 0;
-                                                const baseBackgroundColor = isEven ? "bg-[#F7F7FF]" : "bg-white";
-                                                const visibleKeys = ADD_THEME_TO_PLAN_TABLE_KEYS.filter((key, index) =>
-                                                    visibleColumnsNeeds.includes(ADD_THEME_TO_PLAN_TABLE_HEADERS[index])
-                                                );
-
-                                                return (
-                                                    <tr key={idx}
-                                                        className={`${baseBackgroundColor} font-title font-medium`}>
-                                                        {visibleKeys.map((key) => (
-                                                            <td
-                                                                key={key}
-                                                                scope="row"
-                                                                className="py-[28px] px-6 justify-center items-center text-center"
-                                                            >
-                                                                {renderers && renderers[key]
-                                                                    ? renderers[key](item[key], item)
-                                                                    : item[key]}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                        </tbody>
-                                    ) : (
-                                        <tbody>
+                                {/* Corps du tableau */}
+                                {!ValidNeedsLoading ? (
+                                    <tbody className="text-xs md:text-sm lg:text-base">
+                                    {!paginatedNeedsData.length ? (
                                         <tr>
                                             <td colSpan={ADD_THEME_TO_PLAN_TABLE_KEYS.filter((key, index) => visibleColumnsNeeds.includes(ADD_THEME_TO_PLAN_TABLE_HEADERS[index])).length}>
-                                                <div className="animate-pulse space-y-4 p-4">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <div key={i} className="h-16 bg-gray-200 rounded"></div>
-                                                    ))}
+                                                <div className="w-full h-[250px] flex justify-center items-center">
+                                                    <div className="text-center">
+                                                        <div className="text-gray-400 text-4xl mb-4">📋</div>
+                                                        <p className="text-gray-500 text-lg font-medium">Aucun résultat
+                                                            trouvé</p>
+                                                        <p className="text-gray-400 text-sm mt-2">Aucun besoin validé
+                                                            disponible pour le moment</p>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                        </tbody>
+                                    ) : (
+                                        paginatedNeedsData.map((item, idx) => {
+                                            const isEven = idx % 2 === 0;
+                                            const baseBackgroundColor = isEven ? "bg-[#F7F7FF]" : "bg-white";
+                                            const visibleKeys = ADD_THEME_TO_PLAN_TABLE_KEYS.filter((key, index) =>
+                                                visibleColumnsNeeds.includes(ADD_THEME_TO_PLAN_TABLE_HEADERS[index])
+                                            );
+
+                                            return (
+                                                <tr key={idx}
+                                                    className={`${baseBackgroundColor} font-title font-medium hover:bg-gray-50 transition-colors duration-200`}>
+                                                    {visibleKeys.map((key) => (
+                                                        <td
+                                                            key={key}
+                                                            scope="row"
+                                                            className="py-[28px] px-6 justify-center items-center text-center"
+                                                        >
+                                                            {renderers && renderers[key]
+                                                                ? renderers[key](item[key], item)
+                                                                : item[key]}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            );
+                                        })
                                     )}
-                                </table>
-                            </div>
+                                    </tbody>
+                                ) : (
+                                    <tbody>
+                                    <tr>
+                                        <td colSpan={ADD_THEME_TO_PLAN_TABLE_KEYS.filter((key, index) => visibleColumnsNeeds.includes(ADD_THEME_TO_PLAN_TABLE_HEADERS[index])).length}>
+                                            <div className="animate-pulse space-y-4 p-8">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <div key={i} className="h-16 bg-gray-200 rounded-lg"></div>
+                                                ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                )}
+                            </table>
                         </div>
                     </div>
 
-                    {/* Section : Bouton d'action */}
-                    <div className="text-right text-xs md:text-sm lg:text-base mt-2">
-                        <button
-                            type="button"
-                            className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                            onClick={handleSubmission}
-                            disabled={selectedNeedIds.size === 0}
-                        >
-                            Ajouter à la liste ({selectedNeedIds.size})
-                        </button>
+                    {/* Section bouton d'action avec background uniforme */}
+                    <div className="border-t border-gray-100 px-6 py-4 bg-gray-50">
+                        <div className="flex justify-between items-center">
+                            <div className="text-sm text-gray-600">
+                                {selectedNeedIds.size > 0 ? (
+                                    `${selectedNeedIds.size} élément(s) sélectionné(s)`
+                                ) : (
+                                    "Aucun élément sélectionné"
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                className="bg-gradient-to-r from-[#5051C3] to-[#9178F1] hover:from-[#4045B8] hover:to-[#8469E6] text-white font-semibold px-6 py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-2"
+                                onClick={handleSubmission}
+                                disabled={selectedNeedIds.size === 0}
+                            >
+                                <span>Ajouter à la liste</span>
+                                {selectedNeedIds.size > 0 && (
+                                    <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+                                            {selectedNeedIds.size}
+                                        </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

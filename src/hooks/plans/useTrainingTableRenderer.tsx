@@ -35,7 +35,7 @@ export const useTrainingTableRenderer = ({
                 value={value}
                 groupeConfig={statusConfig}
                 row={row}
-                statusOptions={["Actif", "Inactif", "Suspendu", "Bloqué"]}
+                statusOptions={["Non_Planifié", "Planifié", "Terminé"]}
                 apiUrl={TRAINING_URLS.updateStatus}
                 mutateUrl={TRAINING_URLS.mutate}
             />
