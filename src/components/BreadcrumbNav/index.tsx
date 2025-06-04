@@ -1,8 +1,10 @@
 import React from 'react';
 import {useRouter} from 'next/router';
 import {ChevronRight, Home} from 'lucide-react';
+import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 
 const BreadcrumbNav = () => {
+    const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
     const {theme, group} = router.query;
 
@@ -17,7 +19,7 @@ const BreadcrumbNav = () => {
     return (
         <nav className="flex items-center space-x-2 px-4 py-2 bg-white rounded-xl">
             <button
-                onClick={() => router.push('/Plan/annual/exercice')}
+                onClick={() => navigateTo('/Plan/annual/exercice')}
                 className={`text-gray-600 hover:text-gray-800 ${router.pathname === '/Plan/annual/exercice' ? 'text-primary font-medium' : ''
                 }`}
             >
@@ -28,10 +30,10 @@ const BreadcrumbNav = () => {
                 <>
                     <ChevronRight className="text-gray-400" size={26}/>
                     <button
-                        onClick={() => router.push({
-                            pathname: '/Plan/annual/exercice/theme',
-                            query: {theme}
-                        })}
+                        onClick={() =>
+                            navigateTo('/Plan/annual/exercice/theme', {
+                                query: {theme}
+                            })}
                         className={`text-gray-600 hover:text-gray-800 ${router.pathname === '/Plan/annual/exercice/theme' ? 'text-primary font-medium' : ''
                         }`}
                     >
@@ -44,10 +46,10 @@ const BreadcrumbNav = () => {
                 <>
                     <ChevronRight className="text-gray-400" size={26}/>
                     <button
-                        onClick={() => router.push({
-                            pathname: '/Plan/annual/exercice/theme/group',
-                            query: {theme, group}
-                        })}
+                        onClick={() =>
+                            navigateTo('/Plan/annual/exercice/theme/group', {
+                                query: {theme, group}
+                            })}
                         className={`text-gray-600 hover:text-gray-800 ${router.pathname === '/Plan/annual/exercice/theme/group' ? 'text-primary font-medium' : ''
                         }`}
                     >

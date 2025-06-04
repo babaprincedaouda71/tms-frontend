@@ -20,7 +20,7 @@ export const TRAINING_TABLE_KEYS = [
     "actions",
 ];
 
-export const TRAINING_ACTIONS_TO_SHOW = ["view", "edit", "delete"];
+export const TRAINING_ACTIONS_TO_SHOW = ["view", "edit", "delete", "cancel"];
 export const TRAINING_RECORDS_PER_PAGE = 5;
 
 export const TRAINING_DEFAULT_VISIBLE_COLUMNS = [

@@ -10,6 +10,7 @@ import {OCF_URLS, TRAINERS_URLS, TRAINING_GROUPE_URLS, TRAINING_URLS} from '@/co
 import {GroupData} from '../add-group';
 import Alert from '@/components/Alert';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import InvitationPopup from "@/components/ui/InvitationPopup";
 
 interface ProvidersProps {
     trainingId: string | string[] | undefined;
@@ -21,6 +22,7 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
     const {navigateTo} = useRoleBasedNavigation();
     // État pour savoir si on est en mode édition
     const isEditMode = groupData !== null && groupData !== undefined;
+
     console.log('isEditMode', isEditMode);
     // etat du formulaire
     const [formData, setFormData] = useState({
@@ -39,6 +41,19 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success'); // Type de l'alerte
+
+    const [showPopup, setShowPopup] = useState(false);
+    const [selectedTrainerForPopup, setSelectedTrainerForPopup] = useState<{
+        id: number;
+        name: string;
+        email?: string
+    } | null>(null);
+
+    const handleSendInvitation = (data: any) => {
+        console.log('Données d\'invitation:', data);
+        // Ici vous pouvez traiter l'envoi de l'invitation
+    };
+
 
     const handleCloseAlert = () => {
         setShowAlert(false);
@@ -91,6 +106,12 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
                     externalTrainerCv: null,
                     cost: "",
                 });
+                if (groupData.internalTrainerId && trainersData) {
+                    const trainerDetails = trainersData.find(t => t.id === groupData.internalTrainerId);
+                    if (trainerDetails) {
+                        setSelectedTrainerForPopup(trainerDetails);
+                    }
+                }
             } else {
                 setFormData({
                     trainingType: groupData.trainingType,
@@ -117,6 +138,13 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
         switch (name) {
             case "trainer":
                 selectedId = trainersData?.find(trainer => trainer.name === value)?.id || null
+                // Mettre à jour le formateur sélectionné pour le pop-up
+                if (selectedId) {
+                    const trainerDetails = trainersData?.find(t => t.id === selectedId);
+                    if (trainerDetails) setSelectedTrainerForPopup(trainerDetails);
+                } else {
+                    setSelectedTrainerForPopup(null);
+                }
                 break;
             case "ocf":
                 selectedId = ocfData?.find(ocf => ocf.corporateName === value)?.id || null;
@@ -153,9 +181,9 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
                         <div className='flex gap-5 items-center'>
                             <label>Envoyer une invitation au formateur</label>
                             <button
-                                type="button"
-                                className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold py-2 px-6 md:p-3 lg:p-4 rounded-xl"
-                                onClick={() => alert("MyEvaluationsComponent ajoutée avec succès")}
+                                type={"button"}
+                                onClick={() => setShowPopup(true)}
+                                className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-6 rounded-xl"
                             >
                                 Envoyer
                             </button>
@@ -301,33 +329,44 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            {showAlert && (
-                <Alert
-                    message={alertMessage}
-                    type={alertType}
-                    onClose={handleCloseAlert}
+        <>
+            <form onSubmit={handleSubmit}>
+                {showAlert && (
+                    <Alert
+                        message={alertMessage}
+                        type={alertType}
+                        onClose={handleCloseAlert}
+                    />
+                )}
+                <RadioGroup
+                    groupLabel="Veuillez choisir le type de formation"
+                    options={options}
+                    name="type"
+                    selectedValue={selected}
+                    onChange={(e) => setSelected(e.target.value)}/>
+                {/* Zone de contenu conditionnel */}
+                <div className="mt-6 lg:px-80">
+                    {renderContent()}
+                </div>
+                <div className="mt-6 text-right lg:px-80">
+                    <button
+                        type="submit"
+                        className="bg-gradient-to-b from-gradientGreenStart to-gradientGreenEnd hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl"
+                    >
+                        Valider
+                    </button>
+                </div>
+            </form>
+            {/* AJOUT DU POP-UP ICI */}
+            {selectedTrainerForPopup && (
+                <InvitationPopup
+                    isOpen={showPopup}
+                    onClose={() => setShowPopup(false)}
+                    onSend={handleSendInvitation}
+                    trainerName="Jean Dupont"
                 />
             )}
-            <RadioGroup
-                groupLabel="Veuillez choisir le type de formation"
-                options={options}
-                name="type"
-                selectedValue={selected}
-                onChange={(e) => setSelected(e.target.value)}/>
-            {/* Zone de contenu conditionnel */}
-            <div className="mt-6 lg:px-80">
-                {renderContent()}
-            </div>
-            <div className="mt-6 text-right lg:px-80">
-                <button
-                    type="submit"
-                    className="bg-gradient-to-b from-gradientGreenStart to-gradientGreenEnd hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl"
-                >
-                    Valider
-                </button>
-            </div>
-        </form>
+        </>
     )
 }
 

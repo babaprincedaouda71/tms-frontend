@@ -5,7 +5,7 @@ import SecondaryNavbar from '@/components/SecondaryNavbar';
 import {useNavigationState} from '@/hooks/useNavigationState';
 import ErrorMessage from '@/components/ErrorBoundary/ErrorMessage';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Package} from 'lucide-react';
+import {CalculatorIcon, Library, Package, StarsIcon} from 'lucide-react';
 import Planning from '../planning';
 import Participants from '../participants'
 import Providers from '../providers';
@@ -119,6 +119,29 @@ const AddGroup = () => {
             name: "Fournisseurs",
             icon: <Package/>,
         },
+        // {
+        //     id: "evaluation",
+        //     name: "Evaluation",
+        //     // icon: <img src='/images/ranking.svg' />,
+        //     icon: <StarsIcon />,
+        // },
+        // {
+        //     id: "accounting",
+        //     name: "Comptabilité",
+        //     // icon: <img src='/images/calculator.svg' />,
+        //     icon: <CalculatorIcon />,
+        // },
+        // {
+        //     id: "library",
+        //     name: "Bibliothèque",
+        //     // icon: <img src='/images/archive.svg' />,
+        //     icon: <Library />,
+        //     subItems: [
+        //         { id: "document", name: "Document" },
+        //         { id: "certificate", name: "Certificat" },
+        //         { id: "media", name: "Media" },
+        //     ]
+        // },
     ], []);
 
     const {state, setActiveTab, setActiveSubItem} = useNavigationState();

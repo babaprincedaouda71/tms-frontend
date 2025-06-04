@@ -39,7 +39,6 @@ interface GroupData {
 }
 
 const TABLE_HEADERS = [
-    "ID",
     "Groupe",
     "Date",
     "Éffectif",
@@ -50,7 +49,6 @@ const TABLE_HEADERS = [
     "Actions",
 ];
 const TABLE_KEYS = [
-    "id",
     "name",
     "dates",
     "participantCount",
