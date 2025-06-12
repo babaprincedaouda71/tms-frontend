@@ -4,18 +4,29 @@ import { NavigationState } from '@/types/dataTypes';
 
 const STORAGE_KEY = 'navigationState';
 
-export const useNavigationState = () => {
+export const useNavigationState = (initialTab?: string) => {
     // Initialiser l'état avec les valeurs du localStorage ou les valeurs par défaut
     const [state, setState] = useState<NavigationState>(() => {
         if (typeof window !== 'undefined') {
             const savedState = localStorage.getItem(STORAGE_KEY);
-            return savedState ? JSON.parse(savedState) : {
+            const parsedState = savedState ? JSON.parse(savedState) : null;
+
+            // Si on a un onglet initial depuis l'URL, l'utiliser en priorité
+            if (initialTab) {
+                return {
+                    activeTab: initialTab,
+                    activeSubItem: null
+                };
+            }
+
+            // Sinon utiliser l'état sauvegardé ou la valeur par défaut
+            return parsedState || {
                 activeTab: NAVIGATION_CONSTANTS.DEFAULT_TAB,
                 activeSubItem: null
             };
         }
         return {
-            activeTab: NAVIGATION_CONSTANTS.DEFAULT_TAB,
+            activeTab: initialTab || NAVIGATION_CONSTANTS.DEFAULT_TAB,
             activeSubItem: null
         };
     });

@@ -17,13 +17,13 @@ import {useTrainingTableRenderer} from "@/hooks/plans/useTrainingTableRenderer";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import {UserRole} from "@/contexts/AuthContext";
 import useSWR from "swr";
-import {TRAINING_URLS} from "@/config/urls";
+import {NEED_TO_ADD_TO_PLAN_URLS, TRAINING_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 
 const TrainingPage = () => {
     const router = useRouter();
 
-    const {exercice, planId} = router.query;
+    const {exercice, planId, isOFPPTValidation} = router.query;
     const {
         data: trainingData,
         mutate,
@@ -47,14 +47,51 @@ const TrainingPage = () => {
     } = useTable(memorizedTrainingData, TRAINING_TABLE_HEADERS, TRAINING_TABLE_KEYS, TRAINING_RECORDS_PER_PAGE)
 
     const [isCancelModalOpen, setCancelModalOpen] = useState(false);
-    const openCancelModal = () => setCancelModalOpen(true);
-    const closeCancelModal = () => setCancelModalOpen(false);
-    const excludeIcon = <img src="/images/exclude.svg" className="h-7 w-7" onClick={openCancelModal}/>
-    const handleCancel = () => {
-        closeCancelModal();
-        navigateTo("/Plan/annual/exercice/cancel")
+    const [selectedTraining, setSelectedTraining] = useState<TrainingProps | null>(null);
+
+    const openCancelModal = (training?: TrainingProps) => {
+        setSelectedTraining(training || null);
+        setCancelModalOpen(true);
     };
 
+    const closeCancelModal = () => {
+        setCancelModalOpen(false);
+        setSelectedTraining(null);
+    };
+
+    const excludeIcon = <img src="/images/exclude.svg" className="h-7 w-7" onClick={() => openCancelModal()}/>
+
+    const handleCancel = async () => {
+        if (selectedTraining?.csf && isOFPPTValidation) {
+            // Si CSF est true et le plan validé, rediriger vers la page d'annulation
+            closeCancelModal();
+            navigateTo(`/Plan/annual/${exercice}/cancelTraining`, {
+                query: {
+                    exercice: exercice,
+                    trainingId: selectedTraining.id,
+                    planId: planId
+                }
+            });
+        } else {
+            // Si CSF est false ou undefined, exécuter la logique de suppression
+            try {
+                const response = await fetch(`${NEED_TO_ADD_TO_PLAN_URLS.removeTheme}/${selectedTraining?.id}`, {
+                    credentials: 'include',
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    // Rafraîchir les données après suppression
+                    await mutate();
+                    closeCancelModal();
+                } else {
+                    console.error('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+            }
+        }
+    };
 
     const handleThemeClick = useCallback(
         (row: PlanAnnualExerciceProps): void => {
@@ -65,9 +102,10 @@ const TrainingPage = () => {
                     }
                 })
             }
-        }, [navigateTo])
+        }, [navigateTo, exercice])
 
     const renderers = useTrainingTableRenderer({
+        openCancelModal,
         handleThemeClick,
         exercice,
         planId
@@ -118,7 +156,7 @@ const TrainingPage = () => {
                         onPageChange: setCurrentPage,
                     }}
                     totalRecords={totalRecords}
-                    loading={false}
+                    loading={isLoading}
                     onAdd={() => console.log("Nouveau")}
                     visibleColumns={visibleColumns}
                     renderers={renderers}
@@ -139,7 +177,12 @@ const TrainingPage = () => {
                     },
                 ]} icon={excludeIcon}>
                 <div className="flex flex-col justify-center space-y-2">
-                    <div className="font-bold text-center">Voulez-vous vraiment annuler l'action de formation?</div>
+                    <div className="font-bold text-center">
+                        {selectedTraining?.csf
+                            ? "Cette formation est liée au CSF. Voulez-vous procéder à l'annulation ?"
+                            : "Voulez-vous vraiment supprimer cette action de formation ?"
+                        }
+                    </div>
                 </div>
             </Modal>
         </ProtectedRoute>

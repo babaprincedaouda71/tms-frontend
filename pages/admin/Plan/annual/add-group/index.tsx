@@ -13,6 +13,7 @@ import useSWR from 'swr';
 import {DepartmentProps, SiteProps} from '@/types/dataTypes';
 import {DEPARTMENT_URLS, SITE_URLS, TRAINING_GROUPE_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
+import Accounting from "../accounting";
 
 export interface TrainerProps {
     id: number;
@@ -48,6 +49,8 @@ export interface GroupData {
     externalTrainerEmail: string;
     externalTrainerCv: string;
     cost: number;
+    isTrainingComplete: boolean;
+    isOFPPTValidationEnabled: boolean;
 }
 
 
@@ -92,6 +95,7 @@ const AddGroup = () => {
 
                 const data = await response.json();
                 setGroupData(data);
+                console.log('groupData', data);
             } catch (err) {
                 setError('Error loading group data');
                 console.error('Error:', err);
@@ -103,46 +107,60 @@ const AddGroup = () => {
         fetchGroupData();
     }, [groupId, isEditMode]);
 
-    const navigationItems = useMemo(() => [
-        {
-            id: "planning",
-            name: "Planification",
-            icon: <FiCalendar/>,
-        },
-        {
-            id: "participants",
-            name: "Participants",
-            icon: <FiUsers/>,
-        },
-        {
-            id: "suppliers",
-            name: "Fournisseurs",
-            icon: <Package/>,
-        },
-        // {
-        //     id: "evaluation",
-        //     name: "Evaluation",
-        //     // icon: <img src='/images/ranking.svg' />,
-        //     icon: <StarsIcon />,
-        // },
-        // {
-        //     id: "accounting",
-        //     name: "Comptabilité",
-        //     // icon: <img src='/images/calculator.svg' />,
-        //     icon: <CalculatorIcon />,
-        // },
-        // {
-        //     id: "library",
-        //     name: "Bibliothèque",
-        //     // icon: <img src='/images/archive.svg' />,
-        //     icon: <Library />,
-        //     subItems: [
-        //         { id: "document", name: "Document" },
-        //         { id: "certificate", name: "Certificat" },
-        //         { id: "media", name: "Media" },
-        //     ]
-        // },
-    ], []);
+    const navigationItems = useMemo(() => {
+        // Éléments de navigation de base (toujours visibles)
+        const baseItems = [
+            {
+                id: "planning",
+                name: "Planification",
+                icon: <FiCalendar/>,
+            },
+            {
+                id: "participants",
+                name: "Participants",
+                icon: <FiUsers/>,
+            },
+            {
+                id: "suppliers",
+                name: "Fournisseurs",
+                icon: <Package/>,
+            },
+        ];
+
+        // Éléments conditionnels (visibles seulement si formation complète et validation OFPPT activée)
+        const conditionalItems = [
+            {
+                id: "evaluation",
+                name: "Evaluation",
+                icon: <StarsIcon/>,
+            },
+            {
+                id: "accounting",
+                name: "Comptabilité",
+                icon: <CalculatorIcon/>,
+            },
+            {
+                id: "library",
+                name: "Bibliothèque",
+                icon: <Library/>,
+                subItems: [
+                    {id: "document", name: "Document"},
+                    {id: "certificate", name: "Certificat"},
+                    {id: "media", name: "Media"},
+                ]
+            },
+        ];
+
+        // Vérifier les conditions pour afficher les éléments conditionnels
+        const shouldShowConditionalItems = groupData?.isTrainingComplete === true &&
+            groupData?.isOFPPTValidationEnabled === true;
+
+        // Retourner les éléments de base + les éléments conditionnels si les conditions sont remplies
+        return shouldShowConditionalItems
+            ? [...baseItems, ...conditionalItems]
+            : baseItems;
+
+    }, [groupData?.isTrainingComplete, groupData?.isOFPPTValidationEnabled]);
 
     const {state, setActiveTab, setActiveSubItem} = useNavigationState();
 
@@ -178,6 +196,8 @@ const AddGroup = () => {
                         groupData={groupData}
                         onGroupDataUpdated={handleGroupDataUpdated}
                     />;
+                case 'accounting':
+                    return <Accounting/>;
                 default:
                     return null;
             }

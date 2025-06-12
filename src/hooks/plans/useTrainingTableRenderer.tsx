@@ -1,24 +1,26 @@
 import React, {useCallback} from 'react';
 import StatusRenderer from "@/components/Tables/StatusRenderer";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
-import {statusConfig} from "@/config/tableConfig"; // Ces configs peuvent venir de tableConfig.ts
+import {statusConfig} from "@/config/tableConfig";
 import {NEED_TO_ADD_TO_PLAN_URLS, TRAINING_URLS} from "@/config/urls";
-import {PlanAnnualExerciceProps} from "@/types/dataTypes";
-import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation"; // Si navigateTo est utilisé dans les renderers
+import {PlanAnnualExerciceProps, TrainingProps} from "@/types/dataTypes";
+import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {TRAINING_ACTIONS_TO_SHOW} from "@/config/plans/planExercicesTableConfig";
 
 interface usePlanTableRendererProps {
+    openCancelModal: (training?: TrainingProps) => void;
     handleThemeClick: (row: PlanAnnualExerciceProps) => void;
     exercice?: string | string[];
     planId?: string | string[];
 }
 
 export const useTrainingTableRenderer = ({
+                                             openCancelModal,
                                              handleThemeClick,
                                              exercice,
                                              planId,
                                          }: usePlanTableRendererProps) => {
-    const {buildRoleBasedPath, navigateTo} = useRoleBasedNavigation(); // Ou passez-le en prop si ce hook ne doit pas dépendre de useRoleBasedNavigation
+    const {buildRoleBasedPath, navigateTo} = useRoleBasedNavigation();
 
     return {
         theme: useCallback((value: string, row: PlanAnnualExerciceProps) => (
@@ -41,11 +43,12 @@ export const useTrainingTableRenderer = ({
             />
         ), []),
 
-        actions: useCallback((_: any, row: PlanAnnualExerciceProps) => (
+        actions: useCallback((_: any, row: TrainingProps) => (
             <DynamicActionsRenderer
                 actions={TRAINING_ACTIONS_TO_SHOW}
                 row={row}
                 deleteUrl={NEED_TO_ADD_TO_PLAN_URLS.removeTheme}
+                openCancelModal={() => openCancelModal(row)}
                 viewUrl={buildRoleBasedPath(`${TRAINING_URLS.view}`)}
                 customEditHandler={(row) => {
                     navigateTo(buildRoleBasedPath(`/Plan/annual/${exercice}/editTraining`), {
@@ -59,6 +62,6 @@ export const useTrainingTableRenderer = ({
                 mutateUrl={`${TRAINING_URLS.mutate}/${planId}`}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le plan ${row.theme} ?`}
             />
-        ), [buildRoleBasedPath]),
+        ), [buildRoleBasedPath, openCancelModal, navigateTo, exercice, planId]),
     };
 };

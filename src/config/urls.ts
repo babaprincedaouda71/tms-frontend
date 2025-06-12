@@ -217,7 +217,7 @@ export const PLANS_URLS = {
 
     updateOFPPTValidation: `${API_URL}/plan/ofppt-validation`,
     validationReport: `${API_URL}/plan/validation-report`,
-    canBeValidated:`${API_URL}/plan/can-be-validated`,
+    canBeValidated: `${API_URL}/plan/can-be-validated`,
 }
 
 export const TRAINING_URLS = {
@@ -226,6 +226,9 @@ export const TRAINING_URLS = {
     getTrainingForAddGroup: `${API_URL}/plan/trainings/get/trainingForAddGroup`,
     getTrainingToEdit: `${API_URL}/plan/trainings/get/trainingToEdit`,
     editTraining: `${API_URL}/plan/trainings/edit/training`,
+    getTrainingDetailForCancel: `${API_URL}/plan/trainings/get/trainingDetailForCancel`,
+    getParticipants: `${API_URL}/plan/trainings/get/getParticipants`,
+    cancelTraining: `${API_URL}/plan/trainings/cancel/training`,
     //
     addPage: `/Plan/annual/add-group`,
     editPage: `/Plan/annual/edit`,
@@ -252,4 +255,8 @@ export const NEED_TO_ADD_TO_PLAN_URLS = {
     mutate: `${API_URL}/needs/get/allValidatedNeedToAddToPlan`,
     addTheme: `${API_URL}/plan/addThemeToPlan`,
     removeTheme: `${API_URL}/plan/removeThemeFromPlan`
+}
+
+export const GROUPE_INVOICE_URLS = {
+    addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
 }

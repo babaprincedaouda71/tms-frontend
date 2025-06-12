@@ -54,6 +54,7 @@ const AnnualPlanPage = () => {
             if (row.title) {
                 navigateTo(`/Plan/annual/${row.title}`, {
                     query: {
+                        isOFPPTValidation: row.isOFPPTValidation,
                         planId: row.id,
                     }
                 })

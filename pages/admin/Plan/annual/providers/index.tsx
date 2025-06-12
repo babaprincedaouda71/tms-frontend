@@ -75,7 +75,7 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
     // Formater les options pour le select OCF
     const ocfOptionsFormatted = useMemo(() => {
         if (ocfData) {
-            return ocfData.map(ocf => ({name: ocf.corporateName, id: ocf.id}));
+            return ocfData.map(ocf => ({name: ocf.corporateName, id: ocf.id, emailMainContact: ocf.emailMainContact}));
         }
         return [];
     }, [ocfData]);
@@ -263,7 +263,11 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
             };
         } else if (selected === "external") {
             const OCFToSend = formData.ocf ? ocfData?.find(ocf => ocf.id === formData.ocf) : null;
-            const formattedOCF = OCFToSend ? {id: OCFToSend.id, corporateName: OCFToSend.corporateName} : null;
+            const formattedOCF = OCFToSend ? {
+                id: OCFToSend.id,
+                corporateName: OCFToSend.corporateName,
+                emailMainContact: OCFToSend.emailMainContact
+            } : null;
 
             dataToSend = {
                 ocf: formattedOCF,

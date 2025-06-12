@@ -7,7 +7,7 @@ import React, {useEffect, useMemo, useState} from 'react'
 import useSWR from "swr";
 import {fetcher} from "@/services/api";
 import {NEEDS_GROUP_URLS, OCF_URLS, TRAINERS_URLS} from '@/config/urls';
-import {GroupData} from '../add-group';
+import {GroupData, OCFProps} from '../add-group';
 import Alert from '@/components/Alert';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 
@@ -55,12 +55,11 @@ const Providers = ({needId, groupData, onGroupDataUpdated}: ProvidersProps) => {
         return [];
     }, [trainersData]);
 
-    const {data: ocfData} = useSWR(OCF_URLS.mutate, fetcher);
-
+    const {data: ocfData} = useSWR<OCFProps[]>(OCF_URLS.mutate, fetcher);
     // Formater les options pour le select OCF
     const ocfOptionsFormatted = useMemo(() => {
         if (ocfData) {
-            return ocfData.map(ocf => ({name: ocf.corporateName, id: ocf.id}));
+            return ocfData.map(ocf => ({name: ocf.corporateName, id: ocf.id, emailMainContact: ocf.emailMainContact}));
         }
         return [];
     }, [ocfData]);
@@ -235,7 +234,11 @@ const Providers = ({needId, groupData, onGroupDataUpdated}: ProvidersProps) => {
             };
         } else if (selected === "external") {
             const OCFToSend = formData.ocf ? ocfData?.find(ocf => ocf.id === formData.ocf) : null;
-            const formattedOCF = OCFToSend ? {id: OCFToSend.id, corporateName: OCFToSend.corporateName} : null;
+            const formattedOCF = OCFToSend ? {
+                id: OCFToSend.id,
+                corporateName: OCFToSend.corporateName,
+                emailMainContact: OCFToSend.emailMainContact
+            } : null;
 
             dataToSend = {
                 ocf: formattedOCF,

@@ -726,6 +726,7 @@ export interface TrainingProps {
     type: string;
     ocf: string;
     budget: string;
+    csf: boolean;
     status: string;
 }
 

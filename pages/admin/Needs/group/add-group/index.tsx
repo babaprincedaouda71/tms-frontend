@@ -22,6 +22,7 @@ export interface TrainerProps {
 export interface OCFProps {
     id: number;
     corporateName: string;
+    emailMainContact: string;
 }
 
 export interface GroupData {
