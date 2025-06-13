@@ -735,3 +735,10 @@ export interface ValidatedNeedToAddToPlanProps {
     theme: string;
     source: number;
 }
+
+export interface TrainingInvitationProps {
+    id: string;
+    userFullName: string;
+    invitationDate: string;
+    status: string;
+}

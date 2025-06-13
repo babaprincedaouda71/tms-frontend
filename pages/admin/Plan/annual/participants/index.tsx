@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react'; // Import useEffect
-import {UserProps} from '@/types/dataTypes';
+import {TrainingInvitationProps, UserProps} from '@/types/dataTypes';
 import useSWR from "swr";
 
 // Components
@@ -17,9 +17,9 @@ import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import Modal from "@/components/Modal";
 
 const TABLE_HEADERS_1 = ["Code", "Nom", "Prénoms", "Poste", "Niveau", "Manager", "Sélection"];
-const TABLE_HEADERS_2 = ["Nom", "Prénoms", "CIN", "CNSS", "Statut", "Actions"];
+const TABLE_HEADERS_2 = ["Nom", "Date d'invitation", "État", "Actions"];
 const TABLE_KEYS_1 = ["code", "firstName", "lastName", "position", "level", "manager", "selection"];
-const TABLE_KEYS_2 = ["firstName", "lastName", "cin", "cnss", "status", "actions"];
+const TABLE_KEYS_2 = ["userFullName", "invitationDate", "status", "actions"];
 
 const ACTIONS_TO_SHOW = ["cancel"];
 const RECORDS_PER_PAGE = 5;
@@ -98,13 +98,11 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
 
     // Nouveau state pour les participants confirmés (ceux dans le backend)
-    const [confirmedParticipants, setConfirmedParticipants] = useState<UserProps[]>([]);
+    const [confirmedParticipants, setConfirmedParticipants] = useState<TrainingInvitationProps[]>([]);
 
     useEffect(() => {
         if (initialUsersData) {
             if (groupData) {
-                console.log("Mode Édition: Chargement des données du groupe", groupData);
-
                 setFormData({
                     targetAudience: groupData.targetAudience || '',
                     managerCount: groupData.managerCount || 0,

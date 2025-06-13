@@ -8,7 +8,7 @@ import Switch from "@/components/FormComponents/Switch";
 import React, {ChangeEvent, useCallback, useEffect, useState} from "react";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
-import {TRAINING_GROUPE_URLS, TRAINING_URLS} from "@/config/urls";
+import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, TRAINING_URLS} from "@/config/urls";
 
 // Interface correspondant au DTO Java Participant
 interface ParticipantDto {
@@ -376,7 +376,7 @@ Cordialement,`,
             console.log('Données à envoyer:', requestData);
 
             // Appel API pour l'annulation
-            const response = await fetch(`${TRAINING_GROUPE_URLS.sendInvitations}/${groupId}`, {
+            const response = await fetch(`${TRAINING_INVITATION_URLS.sendInvitations}/${groupId}`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {

@@ -264,3 +264,7 @@ export const GROUPE_INVOICE_URLS = {
     mutate: `${API_URL}/plan/groupeInvoice/get/all`,
     addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
 }
+
+export const TRAINING_INVITATION_URLS = {
+    sendInvitations: `${API_URL}/plan/trainings/invitations/send-invitations`,
+}
