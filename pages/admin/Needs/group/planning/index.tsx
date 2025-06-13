@@ -121,7 +121,6 @@ const Planning: React.FC<PlanningProps> = ({
                     }
 
                 } catch (error) {
-                    console.error("Erreur lors de la récupération des données du besoin :", error);
                     // Gérer l'erreur ici, par exemple afficher un message à l'utilisateur
                 }
             };

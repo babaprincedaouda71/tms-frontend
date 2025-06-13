@@ -1,6 +1,5 @@
 import Table from '@/components/Tables/Table/index'
-import React, {useState} from 'react'
-import {accountingsData} from '@/data/accountingsData'
+import React, {useMemo, useState} from 'react'
 import {AccountingsProps} from '@/types/dataTypes'
 import StatusRenderer from '@/components/Tables/StatusRenderer'
 import SearchFilterAddBar from '@/components/SearchFilterAddBar'
@@ -10,6 +9,12 @@ import {handleSort} from '@/utils/sortUtils'
 import {statusConfig} from '@/config/tableConfig'
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer'
 import useTable from '@/hooks/useTable'
+import useSWR from "swr";
+import {fetcher} from "@/services/api";
+import {GROUPE_INVOICE_URLS} from "@/config/urls";
+import {useRouter} from "next/router";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 const TABLE_HEADERS = [
     "Type de frais",
@@ -33,8 +38,19 @@ const TABLE_KEYS = [
 const ACTIONS_TO_SHOW = ["edit", "delete"];
 const RECORDS_PER_PAGE = 4;
 
-
 const Accounting = () => {
+    const router = useRouter();
+    // Récupération du groupe id depuis le router
+    const {groupId} = router.query;
+    // Récupération des données via SWR
+    const {
+        data: accountingData,
+        error,
+        mutate
+    } = useSWR<AccountingsProps[]>(GROUPE_INVOICE_URLS.mutate + `/${groupId}`, fetcher);
+
+    // Mémorisation des données
+    const memoizeData = useMemo(() => accountingData || [], [accountingData]);
     const {
         currentPage,
         visibleColumns,
@@ -45,7 +61,12 @@ const Accounting = () => {
         totalPages,
         sortableColumns,
         paginatedData,
-    } = useTable<AccountingsProps>(accountingsData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE)
+    } = useTable(
+        memoizeData,
+        TABLE_HEADERS,
+        TABLE_KEYS,
+        RECORDS_PER_PAGE
+    )
 
     const [showForm, setShowForm] = useState(false);
 
@@ -60,11 +81,26 @@ const Accounting = () => {
     const handleAdd = () => {
         setShowForm(true);
     };
+
     const handleCancel = () => {
         setShowForm(false);
     };
+
+    // Fonction pour gérer le retour à la liste (fermer le formulaire)
+    const handleBackToList = () => {
+        setShowForm(false);
+    };
+
+    // Fonction pour gérer le succès de soumission
+    const handleSubmitSuccess = async () => {
+        // Actualiser les données via SWR
+        await mutate();
+        // Fermer le formulaire
+        setShowForm(false);
+    };
+
     return (
-        <>
+        <ProtectedRoute requiredRole={UserRole.Admin}>
             {!showForm ? (
                 <>
                     <div className="flex items-start gap-2 md:gap-8">
@@ -98,14 +134,19 @@ const Accounting = () => {
                             onPageChange: setCurrentPage,
                         }}
                         totalRecords={totalRecords}
-                        loading={false}
+                        loading={!accountingData && !error}
                         onAdd={() => null}
                         visibleColumns={visibleColumns}
                         renderers={renderers}
                     />
                 </>
-            ) : (<AddFee/>)}
-        </>
+            ) : (
+                <AddFee
+                    onCancel={handleBackToList}
+                    onSuccess={handleSubmitSuccess}
+                />
+            )}
+        </ProtectedRoute>
     )
 }
 

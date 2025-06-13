@@ -122,7 +122,9 @@ const AddGroup = () => {
         },
     ], []);
 
-    const {state, setActiveTab, setActiveSubItem} = useNavigationState();
+    const {state, setActiveTab, setActiveSubItem} = useNavigationState('planning', {
+        availableTabs: ['planning', 'participants', 'suppliers'],
+    });
 
     const renderContent = () => {
         if (isLoading) {

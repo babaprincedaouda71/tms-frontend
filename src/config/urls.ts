@@ -131,6 +131,7 @@ export const NEEDS_GROUP_URLS = {
     update: `${API_URL}/needs/groups/edit/group`,
     getDetails: `${API_URL}/needs/groups/get/details/group`,
     getGroupToAddOrEdit: `${API_URL}/needs/groups/get/groupToAddOrEdit`,
+    sendInvitations: `${API_URL}/needs/groups/send-invitation`,
 }
 
 export const TRAINERS_URLS = {
@@ -229,6 +230,7 @@ export const TRAINING_URLS = {
     getTrainingDetailForCancel: `${API_URL}/plan/trainings/get/trainingDetailForCancel`,
     getParticipants: `${API_URL}/plan/trainings/get/getParticipants`,
     cancelTraining: `${API_URL}/plan/trainings/cancel/training`,
+    sendInvitations: `${API_URL}/plan/trainings/sendInvitation/training`,
     //
     addPage: `/Plan/annual/add-group`,
     editPage: `/Plan/annual/edit`,
@@ -249,6 +251,7 @@ export const TRAINING_GROUPE_URLS = {
     editGroupInternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupInternalProvider`,
     addGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/add/groupExternalProvider`,
     editGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupExternalProvider`,
+    sendInvitations: `${API_URL}/plan/trainings/training-groups/send-invitations`,
 }
 
 export const NEED_TO_ADD_TO_PLAN_URLS = {
@@ -258,5 +261,6 @@ export const NEED_TO_ADD_TO_PLAN_URLS = {
 }
 
 export const GROUPE_INVOICE_URLS = {
+    mutate: `${API_URL}/plan/groupeInvoice/get/all`,
     addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
 }

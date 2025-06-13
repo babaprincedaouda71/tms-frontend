@@ -162,7 +162,9 @@ const AddGroup = () => {
 
     }, [groupData?.isTrainingComplete, groupData?.isOFPPTValidationEnabled]);
 
-    const {state, setActiveTab, setActiveSubItem} = useNavigationState();
+    const {state, setActiveTab, setActiveSubItem} = useNavigationState('planning', {
+        availableTabs: ['planning', 'participants', 'suppliers', 'accounting', 'library', 'evaluation'],
+    });
 
     const renderContent = () => {
         if (isLoading) {
@@ -187,6 +189,7 @@ const AddGroup = () => {
                 case 'participants':
                     return <Participants
                         trainingId={trainingId}
+                        groupId={groupId}
                         groupData={groupData}
                         onGroupDataUpdated={handleGroupDataUpdated}
                     />;

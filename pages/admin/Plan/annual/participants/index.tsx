@@ -9,12 +9,12 @@ import StatusRenderer from '@/components/Tables/StatusRenderer';
 import {handleSort} from '@/utils/sortUtils';
 import {statusConfig} from '@/config/tableConfig';
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer';
-import {NEEDS_GROUP_URLS, TRAINING_GROUPE_URLS, TRAINING_URLS, USERS_URLS} from '@/config/urls';
+import {TRAINING_GROUPE_URLS, USERS_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import useTable from '@/hooks/useTable';
 import Alert from '@/components/Alert';
-import {useRouter} from 'next/router';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import Modal from "@/components/Modal";
 
 const TABLE_HEADERS_1 = ["Code", "Nom", "Prénoms", "Poste", "Niveau", "Manager", "Sélection"];
 const TABLE_HEADERS_2 = ["Nom", "Prénoms", "CIN", "CNSS", "Statut", "Actions"];
@@ -26,28 +26,49 @@ const RECORDS_PER_PAGE = 5;
 
 // Définir une interface pour les données du groupe, incluant les IDs des utilisateurs sélectionnés
 interface GroupData {
-    id?: number; // ID du groupe si en mode édition
+    id?: number;
     targetAudience: string;
     managerCount: number;
     employeeCount: number;
     workerCount: number;
     temporaryWorkerCount: number;
-    userGroupIds: number[]; // Assumant que les IDs sont des nombres
-    // Ajoutez d'autres propriétés du groupe si nécessaire
+    userGroupIds: number[];
+    dates?: string[]; // Ajout des dates pour le tableau de présence
 }
 
 interface ParticipantsProps {
-    trainingId: string | string[] | undefined; // ID du besoin, requis pour l'ajou
-    groupData?: GroupData; // Rendre groupData optionnel
-    onGroupDataUpdated: (newGroupData: GroupData) => void; // Updated prop
+    trainingId: string | string[] | undefined;
+    groupId: string | string[] | undefined;
+    groupData?: GroupData;
+    onGroupDataUpdated: (newGroupData: GroupData) => void;
 }
 
-const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsProps) => {
+const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: ParticipantsProps) => {
     const {navigateTo} = useRoleBasedNavigation();
     // état pour gérer les alertes
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
-    const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success'); // Type de l'alerte
+    const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    //
+    const [isSendInvitationModalOpen, setIsSendInvitationModalOpen] = useState(false);
+    const openSendInvitationModal = () => {
+        setIsSendInvitationModalOpen(true);
+    }
+    const closeSendInvitationModal = () => {
+        setIsSendInvitationModalOpen(false);
+    };
+
+    const handleGoToSendInvitationPage = () => {
+        closeSendInvitationModal();
+        navigateTo(`/Plan/annual/sendInvitation`, {
+            query: {
+                trainingId: trainingId,
+                groupId: groupId,
+            }
+        });
+    }
 
     const handleCloseAlert = () => {
         setShowAlert(false);
@@ -76,50 +97,43 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
     const [selectedUsers, setSelectedUsers] = useState<UserProps[]>([]); // Utilisateurs déjà sélectionnés pour le groupe
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
 
-    // --- Nouvel useEffect pour charger les données en mode édition ou initialiser en mode ajout ---
+    // Nouveau state pour les participants confirmés (ceux dans le backend)
+    const [confirmedParticipants, setConfirmedParticipants] = useState<UserProps[]>([]);
+
     useEffect(() => {
-        // Assurez-vous que les données initiales des utilisateurs sont chargées
         if (initialUsersData) {
             if (groupData) {
-                // --- Mode Édition ---
                 console.log("Mode Édition: Chargement des données du groupe", groupData);
 
-                // Charger les données du groupe dans le formulaire
                 setFormData({
-                    targetAudience: groupData.targetAudience || '', // Utiliser || '' pour éviter undefined
+                    targetAudience: groupData.targetAudience || '',
                     managerCount: groupData.managerCount || 0,
                     employeeCount: groupData.employeeCount || 0,
                     workerCount: groupData.workerCount || 0,
                     temporaryWorkerCount: groupData.temporaryWorkerCount || 0,
                     staff: groupData.managerCount + groupData.employeeCount + groupData.workerCount + groupData.temporaryWorkerCount || 0,
-
                 });
 
-                // Identifier les IDs des utilisateurs sélectionnés dans le groupe
                 const selectedIds = new Set((groupData.userGroupIds || []).map(id => id));
-
-                // Partitionner initialUsersData en utilisateurs sélectionnés et non sélectionnés
                 const usersForEdit = initialUsersData.filter(user => !selectedIds.has(user.id));
-                const selectedUsersForEdit = initialUsersData.filter(user => selectedIds.has(user.id));
+                const confirmedUsersForEdit = initialUsersData.filter(user => selectedIds.has(user.id));
 
-                setUsers(usersForEdit); // Les autres utilisateurs disponibles
-                setSelectedUsers(selectedUsersForEdit); // Les utilisateurs déjà dans le groupe
+                setUsers(usersForEdit);
+                setConfirmedParticipants(confirmedUsersForEdit);
+                setSelectedUsers([]); // Réinitialiser les sélections temporaires
 
-                // Valider l'effectif chargé
                 const sumLoadedCounts = (groupData.managerCount || 0) + (groupData.employeeCount || 0) + (groupData.workerCount || 0) + (groupData.temporaryWorkerCount || 0);
                 if (formData.staff !== 0 && sumLoadedCounts !== formData.staff) {
                     setStaffError('La somme des effectifs chargés (' + sumLoadedCounts + ') ne correspond pas à l\'effectif total chargé (' + formData.staff + ').');
                 } else {
                     setStaffError('');
                 }
-
-
             } else {
-                // --- Mode Ajout ---
                 console.log("Mode Ajout: Initialisation avec tous les utilisateurs");
-                setUsers(initialUsersData); // Tous les utilisateurs sont disponibles pour l'ajout
-                setSelectedUsers([]); // Aucun utilisateur n'est sélectionné au départ
-                setFormData({ // Réinitialiser le formulaire en mode ajout si groupData devient null/undefined
+                setUsers(initialUsersData);
+                setSelectedUsers([]);
+                setConfirmedParticipants([]);
+                setFormData({
                     targetAudience: '',
                     staff: 0,
                     managerCount: 0,
@@ -127,18 +141,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
                     workerCount: 0,
                     temporaryWorkerCount: 0,
                 });
-                setStaffError(''); // Réinitialiser l'erreur en mode ajout
+                setStaffError('');
             }
         } else if (initialUsersError) {
             console.error("Erreur lors du chargement des utilisateurs initiaux:", initialUsersError);
-            // Gérer l'erreur de chargement (afficher un message, etc.)
         }
+    }, [groupData, initialUsersData, initialUsersError]);
 
-    }, [groupData, initialUsersData, initialUsersError]); // Dépend des données du groupe et des utilisateurs initiaux
-
-    // --- Le useMemo précédent pour initialiser users est supprimé car géré par useEffect ---
-
-    // Hooks useTable restent les mêmes
+    // Hooks useTable pour le premier tableau (utilisateurs disponibles)
     const {
         currentPage: currentPageUsers,
         visibleColumns: visibleColumnsUsers,
@@ -149,23 +159,24 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         paginatedData: paginatedUsersData,
         sortableColumns: sortableColumnsUsers,
     } = useTable(
-        users, // Utilise l'état 'users' géré par useEffect
+        users,
         TABLE_HEADERS_1,
         TABLE_KEYS_1,
         RECORDS_PER_PAGE,
     );
 
+    // Hooks useTable pour le deuxième tableau (participants confirmés)
     const {
-        currentPage: currentPageSelected,
-        visibleColumns: visibleColumnsSelected,
-        setCurrentPage: setCurrentPageSelected,
-        handleSortData: handleSortDataSelected,
-        totalPages: totalPagesSelected,
-        totalRecords: totalRecordsSelected,
-        paginatedData: paginatedSelectedUsersData,
-        sortableColumns: sortableColumnsSelected,
+        currentPage: currentPageConfirmed,
+        visibleColumns: visibleColumnsConfirmed,
+        setCurrentPage: setCurrentPageConfirmed,
+        handleSortData: handleSortDataConfirmed,
+        totalPages: totalPagesConfirmed,
+        totalRecords: totalRecordsConfirmed,
+        paginatedData: paginatedConfirmedData,
+        sortableColumns: sortableColumnsConfirmed,
     } = useTable(
-        selectedUsers, // Utilise l'état 'selectedUsers' géré par useEffect
+        confirmedParticipants,
         TABLE_HEADERS_2,
         TABLE_KEYS_2,
         RECORDS_PER_PAGE,
@@ -195,29 +206,9 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         ),
     };
 
-    const handleAddToSelected = () => {
-        const usersToAdd = users.filter(user => tempSelectedUsers.has(user.id.toString()));
-        if (usersToAdd.length > 0) {
-            // Ajouter les utilisateurs sélectionnés à la liste des sélectionnés
-            setSelectedUsers([...selectedUsers, ...usersToAdd]);
-            // Retirer les utilisateurs sélectionnés de la liste des utilisateurs disponibles
-            setUsers(users.filter(user => !tempSelectedUsers.has(user.id.toString())));
-            // Réinitialiser les sélections temporaires
-            setTempSelectedUsers(new Set());
-        }
-    };
-
     const handleCancelSelected = (userToRemove: UserProps) => {
-        // Retirer l'utilisateur de la liste des sélectionnés
-        setSelectedUsers(selectedUsers.filter(user => user.id !== userToRemove.id));
-        // Ajouter l'utilisateur à la liste des utilisateurs disponibles
+        setConfirmedParticipants(confirmedParticipants.filter(user => user.id !== userToRemove.id));
         setUsers([...users, userToRemove]);
-        // S'assurer qu'il n'est pas dans les sélections temporaires (si jamais il y était)
-        setTempSelectedUsers(prev => {
-            const next = new Set(prev);
-            next.delete(userToRemove.id.toString());
-            return next;
-        });
     };
 
     const renderers2 = {
@@ -233,20 +224,16 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         ),
     };
 
-    // La logique de validation de l'effectif reste la même, mais s'applique aux valeurs de formData
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
         let newValue;
         if (name === 'staff' || name.endsWith('Count')) {
-            // Permettre la saisie de chaînes vides pour pouvoir effacer le champ
             newValue = value === '' ? '' : parseInt(value, 10) || 0;
         } else {
             newValue = value;
         }
-        // Utiliser une fonction pour s'assurer d'avoir le dernier état pour la validation
         setFormData(prev => {
             const nextFormData = {...prev, [name]: newValue};
-            // Validation en temps réel
             if (name === 'staff' || name.endsWith('Count')) {
                 validateStaffCount(nextFormData);
             }
@@ -254,21 +241,16 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         });
     };
 
-    // Fonction de validation ajustée pour prendre le formulaire complet
     const validateStaffCount = (currentFormData: typeof formData) => {
         const {staff, managerCount, employeeCount, workerCount, temporaryWorkerCount} = currentFormData;
-
-        // Convertir les valeurs en nombres, en traitant les chaînes vides comme 0 pour la somme
         const numStaff = typeof staff === 'number' ? staff : parseInt(staff as any, 10) || 0;
         const numManager = typeof managerCount === 'number' ? managerCount : parseInt(managerCount as any, 10) || 0;
         const numEmployee = typeof employeeCount === 'number' ? employeeCount : parseInt(employeeCount as any, 10) || 0;
         const numWorker = typeof workerCount === 'number' ? workerCount : parseInt(workerCount as any, 10) || 0;
         const numTemporary = typeof temporaryWorkerCount === 'number' ? temporaryWorkerCount : parseInt(temporaryWorkerCount as any, 10) || 0;
 
-
         const sumOfCounts = numManager + numEmployee + numWorker + numTemporary;
 
-        // Appliquer la validation uniquement si l'effectif total n'est pas 0 ou si la somme n'est pas 0
         if ((numStaff !== 0 || sumOfCounts !== 0) && sumOfCounts !== numStaff) {
             setStaffError(`La somme des effectifs (${sumOfCounts}) doit être égale à l'effectif total (${numStaff}).`);
         } else {
@@ -276,34 +258,22 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         }
     };
 
-    const handleSubmit = async () => {
-        const {
-            targetAudience,
-            staff,
-            managerCount,
-            employeeCount,
-            workerCount,
-            temporaryWorkerCount
-        } = formData;
+    // Nouvelle fonction pour ajouter des participants (soumission au backend)
+    const handleAddToSelected = async () => {
+        if (tempSelectedUsers.size === 0) return;
 
-        // Convertir les valeurs du formulaire en nombres pour l'envoi
+        const usersToAdd = users.filter(user => tempSelectedUsers.has(user.id.toString()));
+        const {targetAudience, managerCount, employeeCount, workerCount, temporaryWorkerCount} = formData;
+
         const numManager = typeof managerCount === 'number' ? managerCount : parseInt(managerCount as any, 10) || 0;
         const numEmployee = typeof employeeCount === 'number' ? employeeCount : parseInt(employeeCount as any, 10) || 0;
         const numWorker = typeof workerCount === 'number' ? workerCount : parseInt(workerCount as any, 10) || 0;
         const numTemporary = typeof temporaryWorkerCount === 'number' ? temporaryWorkerCount : parseInt(temporaryWorkerCount as any, 10) || 0;
 
-
-        const selectedUserIds = selectedUsers.map(user => user.id);
-
-        // Validation finale avant l'envoi (assurez-vous qu'elle utilise les nombres)
-        const sumOfCounts = numManager + numEmployee + numWorker + numTemporary;
-        if (staff !== sumOfCounts) {
-            setStaffError(`La somme des effectifs (${sumOfCounts}) doit être égale à l'effectif total (${staff}).`);
-            return; // Empêcher la soumission si la validation échoue
-        }
+        const selectedUserIds = [...confirmedParticipants.map(user => user.id), ...usersToAdd.map(user => user.id)];
 
         const dataToSend = {
-            id: groupData?.id, // Inclure l'ID si en mode édition
+            id: groupData?.id,
             targetAudience,
             managerCount: numManager,
             employeeCount: numEmployee,
@@ -312,11 +282,13 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
             userGroupIds: selectedUserIds,
         };
 
-        console.log('Données à envoyer au backend:', dataToSend);
+        setIsSubmitting(true);
         try {
             const url = groupData ?
-                `${TRAINING_GROUPE_URLS.editGroupParticipants}/${groupData.id}` : `${TRAINING_GROUPE_URLS.addGroupParticipants}/${trainingId}`; // URL pour l'ajout ou la mise à jour
-            const method = groupData ? 'PUT' : 'POST'; //
+                `${TRAINING_GROUPE_URLS.editGroupParticipants}/${groupData.id}` :
+                `${TRAINING_GROUPE_URLS.addGroupParticipants}/${trainingId}`;
+            const method = groupData ? 'PUT' : 'POST';
+
             const response = await fetch(url, {
                 method,
                 credentials: 'include',
@@ -325,26 +297,33 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
                 },
                 body: JSON.stringify(dataToSend),
             });
+
             if (response.ok) {
-                console.log('Données envoyées avec succès');
-                const responseData: GroupData = await response.json(); // Type assertion
-                onGroupDataUpdated(responseData); // Calling the prop function with the response data
-                // Afficher l'alerte de succès
-                setAlertMessage('Mise à jour effectuée avec succès !');
+                const responseData: GroupData = await response.json();
+                onGroupDataUpdated(responseData);
+
+                // Mettre à jour les états locaux
+                setConfirmedParticipants([...confirmedParticipants, ...usersToAdd]);
+                setUsers(users.filter(user => !tempSelectedUsers.has(user.id.toString())));
+                setTempSelectedUsers(new Set());
+
+                setAlertMessage('Participants ajoutés avec succès !');
                 setAlertType('success');
                 setShowAlert(true);
-
-                navigateTo(TRAINING_URLS.addPage, {
-                    query: {trainingId: trainingId, groupId: responseData.id},
-                });
             } else {
                 const errorData = await response.json();
-                console.error('Erreur lors de l\'envoi des données:', errorData);
-                // Gérer l'erreur ici (afficher un message, etc.)
+                console.error('Erreur lors de l\'ajout des participants:', errorData);
+                setAlertMessage('Erreur lors de l\'ajout des participants');
+                setAlertType('error');
+                setShowAlert(true);
             }
         } catch (error) {
-            console.error('Erreur lors de l\'envoi des données:', error);
-
+            console.error('Erreur lors de l\'ajout des participants:', error);
+            setAlertMessage('Erreur lors de l\'ajout des participants');
+            setAlertType('error');
+            setShowAlert(true);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -357,12 +336,71 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
         return <div>Erreur lors du chargement des données.</div>;
     }
 
+    // Nouvelle fonction pour envoyer les invitations
+    const handleSendInvitations = async () => {
+        if (confirmedParticipants.length === 0) {
+            setAlertMessage('Aucun participant à inviter');
+            setAlertType('warning');
+            setShowAlert(true);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        closeSendInvitationModal();
+        navigateTo(`/Plan/annual/sendInvitation`, {
+            query: {
+                trainingId: trainingId,
+                groupId: groupData?.id,
+            }
+        });
+
+        setIsSubmitting(false);
+    };
+
+    // Créer les données pour le tableau de présence
+    const createAttendanceTableData = () => {
+        const dates = groupData?.dates || [];
+        const attendanceData = [
+            {
+                type: 'Liste de présence interne',
+                ...dates.reduce((acc, date, index) => {
+                    acc[`date_${index}`] = 'PDF'; // Placeholder pour le PDF
+                    return acc;
+                }, {} as Record<string, string>)
+            },
+            {
+                type: 'Liste de présence CSF',
+                ...dates.reduce((acc, date, index) => {
+                    acc[`date_${index}`] = 'PDF'; // Placeholder pour le PDF
+                    return acc;
+                }, {} as Record<string, string>)
+            }
+        ];
+        return attendanceData;
+    };
+
+    const createAttendanceHeaders = () => {
+        const dates = groupData?.dates || [];
+        return ['Type', ...dates];
+    };
+
+    const createAttendanceKeys = () => {
+        const dates = groupData?.dates || [];
+        return ['type', ...dates.map((_, index) => `date_${index}`)];
+    };
+
+    if (initialUsersLoading) {
+        return <div>Chargement des utilisateurs...</div>;
+    }
+
+    if (initialUsersError) {
+        return <div>Erreur lors du chargement des données.</div>;
+    }
+
 
     return (
-        <form className='' onSubmit={(e) => {
-            e.preventDefault();
-            handleSubmit();
-        }}> {/* Utiliser e.preventDefault() pour éviter le rechargement de page */}
+        <form className=''> {/* Utiliser e.preventDefault() pour éviter le rechargement de page */}
             {showAlert && (
                 <Alert
                     message={alertMessage}
@@ -424,6 +462,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
 
             {/* Tables and Buttons */}
             <div className="mt-10">
+                <h3 className="text-lg font-semibold mb-4">Sélectionner les participants</h3>
                 <Table
                     data={paginatedUsersData}
                     keys={TABLE_KEYS_1}
@@ -437,54 +476,125 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated}: ParticipantsP
                         onPageChange: setCurrentPageUsers,
                     }}
                     totalRecords={totalRecordsUsers}
-                    // onAdd={() => console.log("Nouveau")} // Pas clair si 'onAdd' a du sens ici
                     visibleColumns={visibleColumnsUsers}
                     renderers={renderers1}
-                    loading={initialUsersLoading} // Afficher l'état de chargement
+                    loading={initialUsersLoading}
                 />
-                {/* Section : Bouton d'action */}
-                <div className="text-right text-xs md:text-sm lg:text-base mt-2"> {/* Ajout de marge */}
+                <div className="text-right text-xs md:text-sm lg:text-base mt-2">
                     <button
-                        type="button" // Utiliser type="button" pour ne pas soumettre le formulaire ici
-                        className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed" // Styles pour désactiver le bouton
+                        type="button"
+                        className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleAddToSelected}
-                        disabled={tempSelectedUsers.size === 0} // Désactiver si rien n'est sélectionné temporairement
+                        disabled={tempSelectedUsers.size === 0 || isSubmitting}
                     >
-                        Ajouter à la liste ({tempSelectedUsers.size})
+                        {isSubmitting ? 'Ajout en cours...' : `Ajouter à la liste (${tempSelectedUsers.size})`}
                     </button>
                 </div>
             </div>
-            <div className="mt-5">
+            {/* Deuxième tableau - Participants confirmés */}
+            <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Participants confirmés</h3>
                 <Table
-                    data={paginatedSelectedUsersData}
+                    data={paginatedConfirmedData}
                     keys={TABLE_KEYS_2}
                     headers={TABLE_HEADERS_2}
-                    sortableCols={sortableColumnsSelected}
-                    onSort={(column, order) => handleSortDataSelected(column, order, handleSort)}
+                    sortableCols={sortableColumnsConfirmed}
+                    onSort={(column, order) => handleSortDataConfirmed(column, order, handleSort)}
                     isPagination={false}
                     pagination={{
-                        currentPage: currentPageSelected,
-                        totalPages: totalPagesSelected,
-                        onPageChange: setCurrentPageSelected,
+                        currentPage: currentPageConfirmed,
+                        totalPages: totalPagesConfirmed,
+                        onPageChange: setCurrentPageConfirmed,
                     }}
-                    totalRecords={totalRecordsSelected}
-                    loading={initialUsersLoading} // Afficher l'état de chargement
-                    // onAdd={() => console.log("Nouveau")} // Pas clair si 'onAdd' a du sens ici
-                    visibleColumns={visibleColumnsSelected}
+                    totalRecords={totalRecordsConfirmed}
+                    loading={initialUsersLoading}
+                    visibleColumns={visibleColumnsConfirmed}
                     renderers={renderers2}
                 />
-                {/* Section : Bouton d'action pour soumission */}
-                <div className="text-right text-xs md:text-sm lg:text-base mt-2"> {/* Ajout de marge */}
+                <div className="text-right text-xs md:text-sm lg:text-base mt-2">
                     <button
-                        onClick={handleSubmit}
-                        type="submit" // Utiliser type="submit" pour que ce bouton soumette le formulaire
+                        type="button"
                         className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={staffError !== ''} // Désactiver si erreur
+                        onClick={openSendInvitationModal}
+                        disabled={confirmedParticipants.length === 0 || isSubmitting}
                     >
-                        {groupData ? 'Mettre à jour' : 'Envoyer'} {/* Changer le texte du bouton selon le mode */}
+                        {isSubmitting ? 'Envoi en cours...' : 'Envoyer une invitation aux participants'}
                     </button>
                 </div>
             </div>
+
+            {/* Troisième tableau - Listes de présence */}
+            {groupData?.dates && groupData.dates.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-4">Listes de présence</h3>
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-4 py-3 text-left bg-primary text-white font-medium tracking-wider">
+                                    Type
+                                </th>
+                                {groupData.dates.map((date, index) => (
+                                    <th key={index}
+                                        className="px-4 py-3 text-center font-medium text-white bg-primary tracking-wider">
+                                        {date}
+                                    </th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tr className="hover:bg-gray-50">
+                                <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    Liste de présence interne
+                                </td>
+                                {groupData.dates.map((_, index) => (
+                                    <td key={index} className="px-4 py-4 whitespace-nowrap text-center">
+                                        <button
+                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">
+                                            PDF
+                                        </button>
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="hover:bg-gray-50">
+                                <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    Liste de présence CSF
+                                </td>
+                                {groupData.dates.map((_, index) => (
+                                    <td key={index} className="px-4 py-4 whitespace-nowrap text-center">
+                                        <button
+                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">
+                                            PDF
+                                        </button>
+                                    </td>
+                                ))}
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Cancel Modal */}
+            <Modal
+                isOpen={isSendInvitationModalOpen}
+                onClose={closeSendInvitationModal}
+                title={"Invitation"}
+                subtitle={"Veuillez confirmer"}
+                actions={[
+                    {label: "Non", onClick: closeSendInvitationModal, className: "border"},
+                    {
+                        label: "Oui",
+                        onClick: handleGoToSendInvitationPage,
+                        className: "bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd text-white",
+                    },
+                ]} icon={""}>
+                <div className="flex flex-col justify-center space-y-2">
+                    <div className="font-bold text-center">
+                        Vous êtes sur le point d'envoyer une invitation aux participants
+                    </div>
+                </div>
+            </Modal>
         </form>
     );
 };

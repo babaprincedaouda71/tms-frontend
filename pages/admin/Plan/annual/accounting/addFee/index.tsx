@@ -8,25 +8,31 @@ import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
 import {GROUPE_INVOICE_URLS} from "@/config/urls";
 
-const AddGroupeInvoice = () => {
+// État initial du formulaire
+const INITIAL_FORM_DATA = {
+    type: "",
+    description: "",
+    amount: "",
+    paymentDate: "",
+    paymentMethod: "",
+};
+
+const INITIAL_FILES = {
+    invoiceFile: null,
+    bankRemiseFile: null,
+    receiptFile: null,
+};
+
+const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
     const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
-    const {trainingId, groupId} = router.query; // Récupérer l'ID du groupe depuis l'URL
-    // État pour stocker les données du formulaire
-    const [formData, setFormData] = useState({
-        type: "",
-        description: "",
-        amount: "",
-        paymentDate: "",
-        paymentMethod: "",
-    });
+    const {trainingId, groupId} = router.query;
 
-    // État pour stocker les fichiers (un seul fichier par champ)
-    const [files, setFiles] = useState({
-        invoiceFile: null,
-        bankRemiseFile: null,
-        receiptFile: null,
-    });
+    // État pour stocker les données du formulaire
+    const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+
+    // État pour stocker les fichiers
+    const [files, setFiles] = useState(INITIAL_FILES);
 
     // État pour les erreurs de validation
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,6 +56,14 @@ const AddGroupeInvoice = () => {
         "Espèces",
         "Prélèvement automatique"
     ];
+
+    // Fonction pour réinitialiser le formulaire
+    const resetForm = () => {
+        setFormData(INITIAL_FORM_DATA);
+        setFiles(INITIAL_FILES);
+        setErrors({});
+        setIsSubmitting(false);
+    };
 
     // Fonction pour gérer les changements dans les champs du formulaire
     const handleChange = (e) => {
@@ -204,18 +218,25 @@ const AddGroupeInvoice = () => {
             });
 
             if (response.ok) {
-                // Succès - rediriger vers la liste
-                navigateTo(`/Plan/annual/add-group`, {
-                    query : {
-                        trainingId: trainingId,
-                        groupId: groupId,
-                        tab: 'accounting',
-                    }
-                });
+                // Succès - réinitialiser le formulaire et fermer
+                resetForm();
+
+                // Si une fonction onSuccess est fournie, l'appeler
+                if (onSuccess) {
+                    onSuccess();
+                } else {
+                    // Sinon, naviguer vers la liste (comportement de fallback)
+                    navigateTo(`/Plan/annual/add-group`, {
+                        query: {
+                            trainingId: trainingId,
+                            groupId: groupId,
+                            tab: 'accounting',
+                        }
+                    });
+                }
             } else {
                 const errorData = await response.json();
                 console.error('Erreur lors de la création:', errorData);
-                // Afficher un message d'erreur à l'utilisateur
                 setErrors({submit: "Erreur lors de la création de la facture"});
             }
         } catch (error) {
@@ -226,13 +247,22 @@ const AddGroupeInvoice = () => {
         }
     };
 
+    // Fonction pour gérer le retour à la liste
     const handleBackToList = () => {
-        navigateTo(`/Plan/annual/add-group`, {
-            query : {
-                trainingId: trainingId,
-                groupId: groupId,
-            }
-        });
+        resetForm();
+
+        // Si une fonction onCancel est fournie, l'appeler
+        if (onCancel) {
+            onCancel();
+        } else {
+            // Sinon, naviguer vers la liste (comportement de fallback)
+            navigateTo(`/Plan/annual/add-group`, {
+                query: {
+                    trainingId: trainingId,
+                    groupId: groupId,
+                }
+            });
+        }
     };
 
     return (
@@ -357,8 +387,15 @@ const AddGroupeInvoice = () => {
                 </div>
             )}
 
-            {/* Bouton Submit */}
-            <div className="mt-5 text-right text-xs md:text-sm lg:text-base">
+            {/* Boutons d'action */}
+            <div className="mt-5 flex justify-end gap-4 text-xs md:text-sm lg:text-base">
+                <button
+                    type="button"
+                    onClick={handleBackToList}
+                    className="bg-gray-500 hover:bg-gray-600 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors"
+                >
+                    Annuler
+                </button>
                 <button
                     type="submit"
                     disabled={isSubmitting}
