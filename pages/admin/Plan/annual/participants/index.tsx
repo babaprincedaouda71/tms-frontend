@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'; // Import useEffect
+import React, {useEffect, useState} from 'react';
 import {TrainingInvitationProps, UserProps} from '@/types/dataTypes';
 import useSWR from "swr";
 
@@ -9,7 +9,7 @@ import StatusRenderer from '@/components/Tables/StatusRenderer';
 import {handleSort} from '@/utils/sortUtils';
 import {statusConfig} from '@/config/tableConfig';
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer';
-import {TRAINING_GROUPE_URLS, USERS_URLS} from '@/config/urls';
+import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, USERS_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import useTable from '@/hooks/useTable';
 import Alert from '@/components/Alert';
@@ -45,13 +45,14 @@ interface ParticipantsProps {
 
 const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: ParticipantsProps) => {
     const {navigateTo} = useRoleBasedNavigation();
-    // état pour gérer les alertes
+
+    // État pour gérer les alertes
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    //
+    // Modal state
     const [isSendInvitationModalOpen, setIsSendInvitationModalOpen] = useState(false);
     const openSendInvitationModal = () => {
         setIsSendInvitationModalOpen(true);
@@ -74,7 +75,8 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         setShowAlert(false);
         setAlertMessage('');
     };
-    // form data
+
+    // Form data
     const [formData, setFormData] = useState({
         targetAudience: '',
         staff: 0,
@@ -92,14 +94,43 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         data: initialUsersData,
         error: initialUsersError,
         isLoading: initialUsersLoading
-    } = useSWR<UserProps[]>(USERS_URLS.mutate, fetcher); // Ajoutez error et isLoading pour une meilleure gestion
+    } = useSWR<UserProps[]>(USERS_URLS.mutate, fetcher);
+
     const [users, setUsers] = useState<UserProps[]>([]); // Utilisateurs disponibles à sélectionner
-    const [selectedUsers, setSelectedUsers] = useState<UserProps[]>([]); // Utilisateurs déjà sélectionnés pour le groupe
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
 
-    // Nouveau state pour les participants confirmés (ceux dans le backend)
-    const [confirmedParticipants, setConfirmedParticipants] = useState<TrainingInvitationProps[]>([]);
+    // État pour les invitations (second tableau)
+    const [invitations, setInvitations] = useState<TrainingInvitationProps[]>([]);
+    const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
+    const [invitationsError, setInvitationsError] = useState<string | null>(null);
 
+    // Fonction pour charger les invitations depuis le backend
+    const fetchInvitations = async () => {
+        if (!groupId) return;
+
+        setIsLoadingInvitations(true);
+        setInvitationsError(null);
+
+        try {
+            const response = await fetch(`${TRAINING_INVITATION_URLS.mutate}/${groupId}`, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch invitations');
+            }
+
+            const data: TrainingInvitationProps[] = await response.json();
+            setInvitations(data);
+        } catch (error) {
+            console.error('Error fetching invitations:', error);
+            setInvitationsError('Erreur lors du chargement des invitations');
+        } finally {
+            setIsLoadingInvitations(false);
+        }
+    };
+
+    // Charger les données initiales
     useEffect(() => {
         if (initialUsersData) {
             if (groupData) {
@@ -114,11 +145,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
 
                 const selectedIds = new Set((groupData.userGroupIds || []).map(id => id));
                 const usersForEdit = initialUsersData.filter(user => !selectedIds.has(user.id));
-                const confirmedUsersForEdit = initialUsersData.filter(user => selectedIds.has(user.id));
-
                 setUsers(usersForEdit);
-                setConfirmedParticipants(confirmedUsersForEdit);
-                setSelectedUsers([]); // Réinitialiser les sélections temporaires
 
                 const sumLoadedCounts = (groupData.managerCount || 0) + (groupData.employeeCount || 0) + (groupData.workerCount || 0) + (groupData.temporaryWorkerCount || 0);
                 if (formData.staff !== 0 && sumLoadedCounts !== formData.staff) {
@@ -129,8 +156,6 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
             } else {
                 console.log("Mode Ajout: Initialisation avec tous les utilisateurs");
                 setUsers(initialUsersData);
-                setSelectedUsers([]);
-                setConfirmedParticipants([]);
                 setFormData({
                     targetAudience: '',
                     staff: 0,
@@ -141,10 +166,13 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 });
                 setStaffError('');
             }
+
+            // Charger les invitations après avoir initialisé les utilisateurs
+            fetchInvitations();
         } else if (initialUsersError) {
             console.error("Erreur lors du chargement des utilisateurs initiaux:", initialUsersError);
         }
-    }, [groupData, initialUsersData, initialUsersError]);
+    }, [groupData, initialUsersData, initialUsersError, groupId]);
 
     // Hooks useTable pour le premier tableau (utilisateurs disponibles)
     const {
@@ -163,24 +191,24 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         RECORDS_PER_PAGE,
     );
 
-    // Hooks useTable pour le deuxième tableau (participants confirmés)
+    // Hooks useTable pour le deuxième tableau (invitations)
     const {
-        currentPage: currentPageConfirmed,
-        visibleColumns: visibleColumnsConfirmed,
-        setCurrentPage: setCurrentPageConfirmed,
-        handleSortData: handleSortDataConfirmed,
-        totalPages: totalPagesConfirmed,
-        totalRecords: totalRecordsConfirmed,
-        paginatedData: paginatedConfirmedData,
-        sortableColumns: sortableColumnsConfirmed,
+        currentPage: currentPageInvitations,
+        visibleColumns: visibleColumnsInvitations,
+        setCurrentPage: setCurrentPageInvitations,
+        handleSortData: handleSortDataInvitations,
+        totalPages: totalPagesInvitations,
+        totalRecords: totalRecordsInvitations,
+        paginatedData: paginatedInvitationsData,
+        sortableColumns: sortableColumnsInvitations,
     } = useTable(
-        confirmedParticipants,
+        invitations,
         TABLE_HEADERS_2,
         TABLE_KEYS_2,
         RECORDS_PER_PAGE,
     );
 
-    // Renderers restent les mêmes
+    // Renderers pour le premier tableau
     const renderers1 = {
         selection: (_: string, row: UserProps) => (
             <div className="flex justify-center items-center">
@@ -204,20 +232,45 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         ),
     };
 
-    const handleCancelSelected = (userToRemove: UserProps) => {
-        setConfirmedParticipants(confirmedParticipants.filter(user => user.id !== userToRemove.id));
-        setUsers([...users, userToRemove]);
+    // Fonction pour annuler une invitation
+    const handleCancelInvitation = async (invitation: TrainingInvitationProps) => {
+        try {
+            const response = await fetch(`${TRAINING_INVITATION_URLS.cancel}/${invitation.id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                setAlertMessage('Invitation annulée avec succès');
+                setAlertType('success');
+                setShowAlert(true);
+
+                // Recharger les invitations
+                await fetchInvitations();
+
+                // Optionnellement, ajouter l'utilisateur de retour dans la liste des utilisateurs disponibles
+                // (cela nécessiterait de connaître les détails de l'utilisateur depuis l'invitation)
+            } else {
+                throw new Error('Erreur lors de l\'annulation de l\'invitation');
+            }
+        } catch (error) {
+            console.error('Error canceling invitation:', error);
+            setAlertMessage('Erreur lors de l\'annulation de l\'invitation');
+            setAlertType('error');
+            setShowAlert(true);
+        }
     };
 
+    // Renderers pour le second tableau
     const renderers2 = {
         status: (value: string) => (
             <StatusRenderer value={value} groupeConfig={statusConfig}/>
         ),
-        actions: (_: any, row: UserProps) => (
+        actions: (_: any, row: TrainingInvitationProps) => (
             <DynamicActionsRenderer
                 actions={ACTIONS_TO_SHOW}
                 row={row}
-                openCancelModal={() => handleCancelSelected(row)}
+                openCancelModal={() => handleCancelInvitation(row)}
             />
         ),
     };
@@ -256,7 +309,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         }
     };
 
-    // Nouvelle fonction pour ajouter des participants (soumission au backend)
+    // Fonction pour ajouter des participants (soumission au backend)
     const handleAddToSelected = async () => {
         if (tempSelectedUsers.size === 0) return;
 
@@ -268,7 +321,11 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         const numWorker = typeof workerCount === 'number' ? workerCount : parseInt(workerCount as any, 10) || 0;
         const numTemporary = typeof temporaryWorkerCount === 'number' ? temporaryWorkerCount : parseInt(temporaryWorkerCount as any, 10) || 0;
 
-        const selectedUserIds = [...confirmedParticipants.map(user => user.id), ...usersToAdd.map(user => user.id)];
+        // Récupérer les IDs existants depuis les invitations + les nouveaux utilisateurs
+        const existingUserIds = invitations.map(inv => parseInt(inv.id)); // Assuming invitation.id corresponds to userId
+        const selectedUserIds = [...existingUserIds, ...usersToAdd.map(user => user.id)];
+
+        console.log('Selected user IDs:', selectedUserIds);
 
         const dataToSend = {
             id: groupData?.id,
@@ -301,9 +358,11 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 onGroupDataUpdated(responseData);
 
                 // Mettre à jour les états locaux
-                setConfirmedParticipants([...confirmedParticipants, ...usersToAdd]);
                 setUsers(users.filter(user => !tempSelectedUsers.has(user.id.toString())));
                 setTempSelectedUsers(new Set());
+
+                // Recharger les invitations depuis le backend
+                await fetchInvitations();
 
                 setAlertMessage('Participants ajoutés avec succès !');
                 setAlertType('success');
@@ -325,18 +384,9 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         }
     };
 
-    // Optionnel: Afficher un indicateur de chargement ou une erreur pendant le fetch initial
-    if (initialUsersLoading) {
-        return <div>Chargement des utilisateurs...</div>;
-    }
-
-    if (initialUsersError) {
-        return <div>Erreur lors du chargement des données.</div>;
-    }
-
-    // Nouvelle fonction pour envoyer les invitations
+    // Fonction pour envoyer les invitations
     const handleSendInvitations = async () => {
-        if (confirmedParticipants.length === 0) {
+        if (invitations.length === 0) {
             setAlertMessage('Aucun participant à inviter');
             setAlertType('warning');
             setShowAlert(true);
@@ -344,16 +394,22 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         }
 
         setIsSubmitting(true);
-
         closeSendInvitationModal();
-        navigateTo(`/Plan/annual/sendInvitation`, {
-            query: {
-                trainingId: trainingId,
-                groupId: groupData?.id,
-            }
-        });
 
-        setIsSubmitting(false);
+        try {
+            // Naviguer vers la page d'envoi d'invitations
+            navigateTo(`/Plan/annual/sendInvitation`, {
+                query: {
+                    trainingId: trainingId,
+                    groupId: groupData?.id,
+                }
+            });
+
+            // Recharger les invitations après l'envoi (cela pourrait changer le statut)
+            await fetchInvitations();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Créer les données pour le tableau de présence
@@ -378,16 +434,6 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         return attendanceData;
     };
 
-    const createAttendanceHeaders = () => {
-        const dates = groupData?.dates || [];
-        return ['Type', ...dates];
-    };
-
-    const createAttendanceKeys = () => {
-        const dates = groupData?.dates || [];
-        return ['type', ...dates.map((_, index) => `date_${index}`)];
-    };
-
     if (initialUsersLoading) {
         return <div>Chargement des utilisateurs...</div>;
     }
@@ -396,9 +442,8 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         return <div>Erreur lors du chargement des données.</div>;
     }
 
-
     return (
-        <form className=''> {/* Utiliser e.preventDefault() pour éviter le rechargement de page */}
+        <form className=''>
             {showAlert && (
                 <Alert
                     message={alertMessage}
@@ -406,13 +451,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                     onClose={handleCloseAlert}
                 />
             )}
+
             {/* Form Fields */}
             <div className="grid md:grid-cols-2 md:gap-10 gap-4">
                 <div>
                     <InputField
                         label="Public cible"
                         name="targetAudience"
-                        value={formData.targetAudience} // Lier la valeur à l'état du formulaire
+                        value={formData.targetAudience}
                         onChange={handleInputChange}
                     />
                 </div>
@@ -421,7 +467,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                         type='number'
                         label="Éffectif"
                         name="staff"
-                        value={formData.staff} // Lier la valeur à l'état du formulaire
+                        value={formData.staff}
                         onChange={handleInputChange}
                     />
                     {staffError && <p className="text-red text-sm">{staffError}</p>}
@@ -430,35 +476,35 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                             type='number'
                             label="Manager"
                             name="managerCount"
-                            value={formData.managerCount} // Lier la valeur à l'état du formulaire
+                            value={formData.managerCount}
                             onChange={handleInputChange}
                         />
                         <InputField
                             type='number'
                             label="Employé"
                             name="employeeCount"
-                            value={formData.employeeCount} // Lier la valeur à l'état du formulaire
+                            value={formData.employeeCount}
                             onChange={handleInputChange}
                         />
                         <InputField
                             type='number'
                             label="Ouvrier"
                             name="workerCount"
-                            value={formData.workerCount} // Lier la valeur à l'état du formulaire
+                            value={formData.workerCount}
                             onChange={handleInputChange}
                         />
                         <InputField
                             type='number'
                             label="Temporaire"
                             name="temporaryWorkerCount"
-                            value={formData.temporaryWorkerCount} // Lier la valeur à l'état du formulaire
+                            value={formData.temporaryWorkerCount}
                             onChange={handleInputChange}
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Tables and Buttons */}
+            {/* Premier tableau - Sélectionner les participants */}
             <div className="mt-10">
                 <h3 className="text-lg font-semibold mb-4">Sélectionner les participants</h3>
                 <Table
@@ -489,24 +535,28 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                     </button>
                 </div>
             </div>
-            {/* Deuxième tableau - Participants confirmés */}
+
+            {/* Deuxième tableau - Invitations */}
             <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Participants confirmés</h3>
+                <h3 className="text-lg font-semibold mb-4">Participants invités</h3>
+                {invitationsError && (
+                    <div className="text-red-600 mb-4">{invitationsError}</div>
+                )}
                 <Table
-                    data={paginatedConfirmedData}
+                    data={paginatedInvitationsData}
                     keys={TABLE_KEYS_2}
                     headers={TABLE_HEADERS_2}
-                    sortableCols={sortableColumnsConfirmed}
-                    onSort={(column, order) => handleSortDataConfirmed(column, order, handleSort)}
+                    sortableCols={sortableColumnsInvitations}
+                    onSort={(column, order) => handleSortDataInvitations(column, order, handleSort)}
                     isPagination={false}
                     pagination={{
-                        currentPage: currentPageConfirmed,
-                        totalPages: totalPagesConfirmed,
-                        onPageChange: setCurrentPageConfirmed,
+                        currentPage: currentPageInvitations,
+                        totalPages: totalPagesInvitations,
+                        onPageChange: setCurrentPageInvitations,
                     }}
-                    totalRecords={totalRecordsConfirmed}
-                    loading={initialUsersLoading}
-                    visibleColumns={visibleColumnsConfirmed}
+                    totalRecords={totalRecordsInvitations}
+                    loading={isLoadingInvitations}
+                    visibleColumns={visibleColumnsInvitations}
                     renderers={renderers2}
                 />
                 <div className="text-right text-xs md:text-sm lg:text-base mt-2">
@@ -514,7 +564,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                         type="button"
                         className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={openSendInvitationModal}
-                        disabled={confirmedParticipants.length === 0 || isSubmitting}
+                        disabled={invitations.length === 0 || isSubmitting}
                     >
                         {isSubmitting ? 'Envoi en cours...' : 'Envoyer une invitation aux participants'}
                     </button>
@@ -573,7 +623,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 </div>
             )}
 
-            {/* Cancel Modal */}
+            {/* Modal de confirmation */}
             <Modal
                 isOpen={isSendInvitationModalOpen}
                 onClose={closeSendInvitationModal}
@@ -586,7 +636,8 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                         onClick: handleGoToSendInvitationPage,
                         className: "bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd text-white",
                     },
-                ]} icon={""}>
+                ]}
+                icon={""}>
                 <div className="flex flex-col justify-center space-y-2">
                     <div className="font-bold text-center">
                         Vous êtes sur le point d'envoyer une invitation aux participants
