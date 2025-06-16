@@ -20,6 +20,7 @@ import Image from "next/image";
 import {useRouter} from "next/router";
 import {useAuth, UserRole} from "@/contexts/AuthContext";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import {BsFillEnvelopeFill} from "react-icons/bs";
 
 interface SubMenuItem {
     name: string;
@@ -97,6 +98,20 @@ const MENU_ITEMS: MenuItem[] = [
         key: "ProfileComponent",
         path: "/profile",
         allowedRoles: [UserRole.User, UserRole.Manager, UserRole.Collaborateur, UserRole.Formateur],
+    },
+    {
+        name: "Invitation",
+        icon: <BsFillEnvelopeFill/>,
+        key: "Invitation",
+        path: "/invitations",
+        allowedRoles: [UserRole.User, UserRole.Manager, UserRole.Collaborateur, UserRole.Formateur],
+    },
+    {
+        name: "Invitation Équipe",
+        icon: <BsFillEnvelopeFill/>,
+        key: "Team Invitation",
+        path: "/team-invitations",
+        allowedRoles: [UserRole.Manager],
     },
     {
         name: "Calendrier",

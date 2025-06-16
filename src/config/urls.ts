@@ -132,6 +132,8 @@ export const NEEDS_GROUP_URLS = {
     getDetails: `${API_URL}/needs/groups/get/details/group`,
     getGroupToAddOrEdit: `${API_URL}/needs/groups/get/groupToAddOrEdit`,
     sendInvitations: `${API_URL}/needs/groups/send-invitation`,
+    getGroupParticipants: `${API_URL}/needs/groups/get/getParticipants`,
+    removeGroupParticipant: `${API_URL}/needs/groups/remove/groupParticipant`,
 }
 
 export const TRAINERS_URLS = {
@@ -252,6 +254,7 @@ export const TRAINING_GROUPE_URLS = {
     addGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/add/groupExternalProvider`,
     editGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupExternalProvider`,
     sendInvitations: `${API_URL}/plan/trainings/training-groups/send-invitations`,
+    getParticipants: `${API_URL}/plan/trainings/training-groups/get/getParticipants`,
 }
 
 export const NEED_TO_ADD_TO_PLAN_URLS = {
@@ -268,4 +271,7 @@ export const GROUPE_INVOICE_URLS = {
 export const TRAINING_INVITATION_URLS = {
     mutate: `${API_URL}/plan/trainings/invitations/get/all`,
     sendInvitations: `${API_URL}/plan/trainings/invitations/send-invitations`,
+    getUserInvitations: `${API_URL}/plan/trainings/invitations/get/userInvitations`,
+    getTeamInvitations: `${API_URL}/plan/trainings/invitations/get/teamInvitations`,
+    respondToInvitation: `${API_URL}/plan/trainings/invitations/respond`
 }

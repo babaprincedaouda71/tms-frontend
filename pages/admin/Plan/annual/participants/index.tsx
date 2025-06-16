@@ -9,7 +9,7 @@ import StatusRenderer from '@/components/Tables/StatusRenderer';
 import {handleSort} from '@/utils/sortUtils';
 import {statusConfig} from '@/config/tableConfig';
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer';
-import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, USERS_URLS} from '@/config/urls';
+import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, TRAINING_URLS, USERS_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import useTable from '@/hooks/useTable';
 import Alert from '@/components/Alert';
@@ -235,7 +235,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
     // Fonction pour annuler une invitation
     const handleCancelInvitation = async (invitation: TrainingInvitationProps) => {
         try {
-            const response = await fetch(`${TRAINING_INVITATION_URLS.cancel}/${invitation.id}`, {
+            const response = await fetch(`${TRAINING_URLS.cancelTraining}/${invitation.id}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
@@ -322,7 +322,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         const numTemporary = typeof temporaryWorkerCount === 'number' ? temporaryWorkerCount : parseInt(temporaryWorkerCount as any, 10) || 0;
 
         // Récupérer les IDs existants depuis les invitations + les nouveaux utilisateurs
-        const existingUserIds = invitations.map(inv => parseInt(inv.id)); // Assuming invitation.id corresponds to userId
+        const existingUserIds = invitations.map(inv => inv.userId); // Assuming invitation.id corresponds to userId
         const selectedUserIds = [...existingUserIds, ...usersToAdd.map(user => user.id)];
 
         console.log('Selected user IDs:', selectedUserIds);

@@ -170,6 +170,12 @@ export const statusConfig: Record<string, StatusConfig> = {
         backgroundColor: "#08A71026",
         showDot: true,
     },
+    "Acceptée": {
+        label: "Acceptée",
+        color: "#08A710",
+        backgroundColor: "#08A71026",
+        showDot: true,
+    },
     "Rejetée": {
         label: "Rejetée",
         color: "#DB2525",
@@ -180,6 +186,12 @@ export const statusConfig: Record<string, StatusConfig> = {
         label: "Annulé",
         color: "#DB2525",
         backgroundColor: "#DB252526",
+        showDot: true,
+    },
+    "Non envoyée": {
+        label: "Non Envoyée",
+        color: "#475569",
+        backgroundColor: "#47556926",
         showDot: true,
     },
 };

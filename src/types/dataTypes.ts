@@ -738,6 +738,7 @@ export interface ValidatedNeedToAddToPlanProps {
 
 export interface TrainingInvitationProps {
     id: string;
+    userId: number;
     userFullName: string;
     invitationDate: string;
     status: string;
