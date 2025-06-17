@@ -1,4 +1,4 @@
-// pages/collaborator/TeamInvitations/index.tsx
+// pages/collaborator/TeamInvitations/OCFPage.tsx
 import React, {useMemo, useState} from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import useSWR from 'swr';

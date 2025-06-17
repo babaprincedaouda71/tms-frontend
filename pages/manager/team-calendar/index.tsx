@@ -1,13 +1,14 @@
-// pages/manager/team-calendar/index.tsx
+// pages/manager/team-calendar/OCFPage.tsx
 import React, {useMemo, useState} from 'react';
-import {Calendar, ChevronLeft, ChevronRight, Clock, Eye, MapPin, Users} from 'lucide-react';
+import {Calendar, Check, ChevronLeft, ChevronRight, Clock, MapPin, Users, X} from 'lucide-react';
 import {useAuth, UserRole} from '@/contexts/AuthContext';
 import useSWR from 'swr';
 import {fetcher} from '@/services/api';
 import {TRAINING_INVITATION_URLS} from '@/config/urls';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-interface TeamInvitation {
+// Même DTO que le calendrier personnel
+interface UserInvitation {
     id: string;
     trainingTheme: string;
     dates?: string[];
@@ -19,18 +20,19 @@ interface TeamInvitation {
     invitationDate: string;
     startTime?: string;
     endTime?: string;
-    // Informations supplémentaires pour les managers
-    teamMembers?: string[]; // Noms des membres de l'équipe invités
+    // Champs additionnels retournés par l'API pour les managers
+    userId?: string; // ID du collaborateur propriétaire de l'invitation
+    userName?: string; // Nom du collaborateur
 }
 
 const statusColors = {
     PENDING: {bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300'},
     ACCEPTED: {bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300'},
-    DECLINED: {bg: 'bg-red', text: 'text-red-800', border: 'border-red-300'},
+    DECLINED: {bg: 'bg-redShade-100', text: 'text-redShade-800', border: 'border-redShade-300'},
 
     'En attente': {bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300'},
     'Acceptée': {bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300'},
-    'Refusée': {bg: 'bg-red', text: 'text-red-800', border: 'border-red-300'}
+    'Refusée': {bg: 'bg-redShade-100', text: 'text-redShade-800', border: 'border-redShade-300'}
 };
 
 const statusLabels = {
@@ -42,16 +44,67 @@ const statusLabels = {
 const TeamCalendarPage: React.FC = () => {
     const {user} = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedInvitation, setSelectedInvitation] = useState<TeamInvitation | null>(null);
+    const [selectedInvitation, setSelectedInvitation] = useState<UserInvitation | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    // Chargement des invitations de l'équipe
-    const {data: teamInvitationsData} = useSWR<TeamInvitation[]>(
+    // Utilise le même endpoint que le calendrier personnel mais avec un paramètre manager
+    // GET /api/invitations/user/{managerId}?asManager=true
+    // Retourne les mêmes DTOs mais pour tous les collaborateurs de l'équipe
+    const {data: teamInvitationsData, mutate} = useSWR<UserInvitation[]>(
         user?.id ? `${TRAINING_INVITATION_URLS.getTeamInvitations}/${user.id}` : null,
-        fetcher
+        fetcher,
+        {
+            revalidateOnFocus: false,
+            dedupingInterval: 60000,
+        }
     );
 
     const teamInvitations = useMemo(() => teamInvitationsData || [], [teamInvitationsData]);
+
+    // Grouper les invitations par formation et date pour l'affichage
+    const groupedInvitations = useMemo(() => {
+        const groups: { [key: string]: UserInvitation[] } = {};
+
+        teamInvitations.forEach(invitation => {
+            // Créer une clé unique par formation (thème + dates)
+            const key = `${invitation.trainingTheme}-${invitation.dates?.join(',') || ''}`;
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(invitation);
+        });
+
+        return groups;
+    }, [teamInvitations]);
+
+    // Calcul des statistiques
+    const invitationStats = useMemo(() => {
+        const stats = {
+            pending: 0,
+            accepted: 0,
+            declined: 0
+        };
+
+        teamInvitations.forEach(invitation => {
+            switch (invitation.status) {
+                case 'En attente':
+                case 'PENDING':
+                    stats.pending++;
+                    break;
+                case 'Acceptée':
+                case 'ACCEPTED':
+                    stats.accepted++;
+                    break;
+                case 'Refusée':
+                case 'DECLINED':
+                    stats.declined++;
+                    break;
+            }
+        });
+
+        return stats;
+    }, [teamInvitations]);
 
     // Générer les jours du calendrier
     const generateCalendarDays = () => {
@@ -64,19 +117,16 @@ const TeamCalendarPage: React.FC = () => {
 
         const days = [];
 
-        // Jours du mois précédent
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             const date = new Date(year, month, -i);
             days.push({date, isCurrentMonth: false});
         }
 
-        // Jours du mois actuel
         for (let day = 1; day <= lastDayOfMonth.getDate(); day++) {
             const date = new Date(year, month, day);
             days.push({date, isCurrentMonth: true});
         }
 
-        // Jours du mois suivant
         const remainingDays = 42 - days.length;
         for (let day = 1; day <= remainingDays; day++) {
             const date = new Date(year, month + 1, day);
@@ -86,12 +136,23 @@ const TeamCalendarPage: React.FC = () => {
         return days;
     };
 
-    // Obtenir les formations pour une date
+    // Obtenir les formations groupées pour une date
     const getTeamTrainingsForDate = (date: Date) => {
         const dateString = date.toISOString().split('T')[0];
-        return teamInvitations.filter(invitation =>
-            invitation.dates && invitation.dates.includes(dateString)
-        );
+        const trainingsForDate: { [key: string]: UserInvitation[] } = {};
+
+        Object.entries(groupedInvitations).forEach(([key, invitations]) => {
+            const hasDate = invitations.some(invitation =>
+                invitation.dates && invitation.dates.includes(dateString)
+            );
+            if (hasDate) {
+                trainingsForDate[key] = invitations.filter(invitation =>
+                    invitation.dates && invitation.dates.includes(dateString)
+                );
+            }
+        });
+
+        return trainingsForDate;
     };
 
     const navigateMonth = (direction: number) => {
@@ -102,14 +163,56 @@ const TeamCalendarPage: React.FC = () => {
         });
     };
 
-    const openModal = (invitation: TeamInvitation) => {
-        setSelectedInvitation(invitation);
+    // Action manager sur une invitation spécifique d'un collaborateur
+    const handleManagerAction = async (invitationId: string, action: 'accept' | 'decline') => {
+        setActionLoading(`${invitationId}-${action}`);
+        try {
+            // Utilise le même endpoint que les collaborateurs mais avec identification du manager
+            const response = await fetch(`${TRAINING_INVITATION_URLS.respondToInvitation}/${invitationId}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    action,
+                    userId: user?.id
+                })
+            });
+
+            if (response.ok) {
+                await mutate();
+                // Mettre à jour l'invitation sélectionnée si on est dans le modal
+                if (selectedInvitation?.id === invitationId) {
+                    const updatedInvitations = await mutate();
+                    const updatedInvitation = updatedInvitations?.find(inv => inv.id === invitationId);
+                    if (updatedInvitation) {
+                        setSelectedInvitation(updatedInvitation);
+                    }
+                }
+            } else {
+                console.error('Erreur lors de la réponse à l\'invitation');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la réponse à l\'invitation:', error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const openModal = (invitations: UserInvitation[]) => {
+        // Prendre la première invitation pour les détails généraux
+        setSelectedInvitation(invitations[0]);
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setSelectedInvitation(null);
         setIsModalOpen(false);
+    };
+
+    // Obtenir toutes les invitations du même groupe que l'invitation sélectionnée
+    const getRelatedInvitations = (invitation: UserInvitation) => {
+        const key = `${invitation.trainingTheme}-${invitation.dates?.join(',') || ''}`;
+        return groupedInvitations[key] || [invitation];
     };
 
     const calendarDays = generateCalendarDays();
@@ -149,6 +252,28 @@ const TeamCalendarPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Statistiques rapides */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="text-yellow-800 font-semibold">En attente</div>
+                        <div className="text-2xl font-bold text-yellow-900">
+                            {invitationStats.pending}
+                        </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="text-green-800 font-semibold">Acceptées</div>
+                        <div className="text-2xl font-bold text-green-900">
+                            {invitationStats.accepted}
+                        </div>
+                    </div>
+                    <div className="bg-redShade-50 p-4 rounded-lg border border-redShade-200">
+                        <div className="text-redShade-800 font-semibold">Refusées</div>
+                        <div className="text-2xl font-bold text-redShade-900">
+                            {invitationStats.declined}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Légende */}
                 <div className="flex gap-4 mb-4 text-sm">
                     {Object.entries(statusLabels).map(([status, label]) => (
@@ -160,28 +285,6 @@ const TeamCalendarPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Statistiques rapides */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                        <div className="text-yellow-800 font-semibold">En attente</div>
-                        <div className="text-2xl font-bold text-yellow-900">
-                            {teamInvitations.filter(inv => inv.status === 'En attente').length}
-                        </div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                        <div className="text-green-800 font-semibold">Acceptées</div>
-                        <div className="text-2xl font-bold text-green-900">
-                            {teamInvitations.filter(inv => inv.status === 'Acceptée').length}
-                        </div>
-                    </div>
-                    <div className="bg-red p-4 rounded-lg border border-red-200">
-                        <div className="text-white font-semibold">Refusées</div>
-                        <div className="text-2xl font-bold text-white">
-                            {teamInvitations.filter(inv => inv.status === 'DECLINED').length}
-                        </div>
-                    </div>
-                </div>
-
                 {/* Grille calendrier */}
                 <div className="grid grid-cols-7 gap-1">
                     {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
@@ -191,7 +294,7 @@ const TeamCalendarPage: React.FC = () => {
                     ))}
 
                     {calendarDays.map((day, index) => {
-                        const trainings = getTeamTrainingsForDate(day.date);
+                        const trainingsGroups = getTeamTrainingsForDate(day.date);
                         const isToday = day.date.toDateString() === today;
 
                         return (
@@ -208,28 +311,28 @@ const TeamCalendarPage: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-1">
-                                    {trainings.map(training => {
-                                        const statusColor = statusColors[training.status] || statusColors.PENDING;
+                                    {Object.entries(trainingsGroups).map(([key, invitations]) => {
+                                        const firstInvitation = invitations[0];
+                                        const statusColor = statusColors[firstInvitation.status] || statusColors.PENDING;
+
                                         return (
                                             <div
-                                                key={training.id}
-                                                onClick={() => openModal(training)}
+                                                key={key}
+                                                onClick={() => openModal(invitations)}
                                                 className={`p-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity
                           ${statusColor.bg} ${statusColor.text} ${statusColor.border} border`}
                                             >
                                                 <div className="font-medium truncate">
-                                                    {training.trainingTheme}
+                                                    {firstInvitation.trainingTheme}
                                                 </div>
-                                                {training.teamMembers && training.teamMembers.length > 0 && (
-                                                    <div className="flex items-center gap-1 mt-1">
-                                                        <Users className="w-3 h-3"/>
-                                                        <span>{training.teamMembers.length}</span>
-                                                    </div>
-                                                )}
-                                                {training.startTime && (
+                                                <div className="flex items-center gap-1 mt-1">
+                                                    <Users className="w-3 h-3"/>
+                                                    <span>{invitations.length}</span>
+                                                </div>
+                                                {firstInvitation.startTime && (
                                                     <div className="flex items-center gap-1 mt-1">
                                                         <Clock className="w-3 h-3"/>
-                                                        <span>{training.startTime}</span>
+                                                        <span>{firstInvitation.startTime}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -244,7 +347,7 @@ const TeamCalendarPage: React.FC = () => {
                 {/* Modal de détails */}
                 {isModalOpen && selectedInvitation && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6">
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-lg font-semibold text-gray-900">
@@ -254,7 +357,7 @@ const TeamCalendarPage: React.FC = () => {
                                         onClick={closeModal}
                                         className="text-gray-400 hover:text-gray-600"
                                     >
-                                        <Eye className="w-5 h-5"/>
+                                        <X className="w-5 h-5"/>
                                     </button>
                                 </div>
 
@@ -263,12 +366,6 @@ const TeamCalendarPage: React.FC = () => {
                                         <h4 className="font-medium text-gray-900 mb-2">
                                             {selectedInvitation.trainingTheme}
                                         </h4>
-                                        <div className={`inline-block px-2 py-1 rounded text-xs font-medium
-                      ${statusColors[selectedInvitation.status]?.bg || statusColors.PENDING.bg} 
-                      ${statusColors[selectedInvitation.status]?.text || statusColors.PENDING.text}
-                      ${statusColors[selectedInvitation.status]?.border || statusColors.PENDING.border} border`}>
-                                            {statusLabels[selectedInvitation.status] || selectedInvitation.status}
-                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-3">
@@ -316,22 +413,65 @@ const TeamCalendarPage: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {selectedInvitation.teamMembers && selectedInvitation.teamMembers.length > 0 && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Membres de l'équipe invités
-                                            </label>
-                                            <div className="space-y-1">
-                                                {selectedInvitation.teamMembers.map((member, index) => (
-                                                    <div key={index}
-                                                         className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                                                        <Users className="w-4 h-4 text-gray-500"/>
-                                                        <span className="text-gray-900">{member}</span>
+                                    {/* Liste des collaborateurs concernés par cette formation */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Collaborateurs invités
+                                        </label>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {getRelatedInvitations(selectedInvitation).map((invitation) => {
+                                                const memberStatusColor = statusColors[invitation.status] || statusColors.PENDING;
+                                                const canTakeAction = invitation.status === 'En attente' || invitation.status === 'PENDING';
+
+                                                return (
+                                                    <div key={invitation.id}
+                                                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                                        <div className="flex items-center gap-3">
+                                                            <Users className="w-4 h-4 text-gray-500"/>
+                                                            <span className="text-gray-900 font-medium">
+                                                                {invitation.userName || 'Collaborateur'}
+                                                            </span>
+                                                            <div className={`px-2 py-1 rounded text-xs font-medium
+                                                                ${memberStatusColor.bg} ${memberStatusColor.text} ${memberStatusColor.border} border`}>
+                                                                {statusLabels[invitation.status] || invitation.status}
+                                                            </div>
+                                                        </div>
+
+                                                        {canTakeAction && (
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => handleManagerAction(invitation.id, 'accept')}
+                                                                    disabled={actionLoading === `${invitation.id}-accept`}
+                                                                    className="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Accepter pour ce collaborateur"
+                                                                >
+                                                                    {actionLoading === `${invitation.id}-accept` ? (
+                                                                        <div
+                                                                            className="w-3 h-3 animate-spin border border-white border-t-transparent rounded-full"/>
+                                                                    ) : (
+                                                                        <Check className="w-3 h-3"/>
+                                                                    )}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleManagerAction(invitation.id, 'decline')}
+                                                                    disabled={actionLoading === `${invitation.id}-decline`}
+                                                                    className="bg-redShade-600 text-white p-1.5 rounded hover:bg-redShade-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Refuser pour ce collaborateur"
+                                                                >
+                                                                    {actionLoading === `${invitation.id}-decline` ? (
+                                                                        <div
+                                                                            className="w-3 h-3 animate-spin border border-white border-t-transparent rounded-full"/>
+                                                                    ) : (
+                                                                        <X className="w-3 h-3"/>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ))}
-                                            </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
 
                                     <div className="pt-4 border-t">
                                         <button

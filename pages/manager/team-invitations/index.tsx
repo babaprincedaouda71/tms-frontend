@@ -1,4 +1,4 @@
-// pages/collaborator/TeamInvitations/index.tsx
+// pages/collaborator/TeamInvitations/OCFPage.tsx
 import React, {useMemo, useState} from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import useSWR from 'swr';
@@ -214,7 +214,7 @@ const TeamInvitations: React.FC = () => {
                         </button>
                         <button
                             onClick={() => handleInvitationAction(row.id, 'decline')}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm flex items-center gap-1"
+                            className="px-3 py-1 bg-red text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm flex items-center gap-1"
                         >
                             <X size={14}/>
                             Refuser

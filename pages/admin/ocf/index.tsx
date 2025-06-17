@@ -44,7 +44,7 @@ const TABLE_KEYS = [
 const ACTIONS_TO_SHOW = ["view", "edit", "delete"];
 const RECORDS_PER_PAGE = 4;
 
-const index = () => {
+const OCFPage = () => {
     const {navigateTo, isCurrentPath, getPathWithoutRolePrefix} = useRoleBasedNavigation();
     const {data: supplierData} = useSWR<SupplierProps[]>(SUPPLIERS_URLS.mutate, fetcher);
     const memoizedUserData = useMemo(() => supplierData || [], [supplierData]);
@@ -67,8 +67,6 @@ const index = () => {
         actions: (_: any, row: any) =>
             <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}/>
     };
-
-    const router = useRouter()
 
     const handleAdd = () => (
         navigateTo("/ocf/add"))
@@ -116,4 +114,4 @@ const index = () => {
     );
 };
 
-export default index;
+export default OCFPage;

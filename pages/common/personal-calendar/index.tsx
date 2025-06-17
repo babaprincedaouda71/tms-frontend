@@ -1,4 +1,4 @@
-// pages/collaborator/calendar/index.tsx
+// pages/common/personal-calendar/OCFPage.tsx
 import React, {useMemo, useState} from 'react';
 import {Calendar, Check, ChevronLeft, ChevronRight, Clock, MapPin, Users, X} from 'lucide-react';
 import {useAuth} from '@/contexts/AuthContext';
@@ -23,11 +23,11 @@ interface UserInvitation {
 const statusColors = {
     PENDING: {bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300'},
     ACCEPTED: {bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300'},
-    DECLINED: {bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300'},
+    DECLINED: {bg: 'bg-redShade-100', text: 'text-redShade-800', border: 'border-redShade-300'},
 
     'En attente': {bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300'},
     'Acceptée': {bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300'},
-    'Refusée': {bg: 'bg-red', text: 'text-red-800', border: 'border-red-300'}
+    'Refusée': {bg: 'bg-redShade-100', text: 'text-redShade-800', border: 'border-redShade-300'}
 };
 
 const statusLabels = {
@@ -42,15 +42,45 @@ const CalendarPage: React.FC = () => {
     const [selectedInvitation, setSelectedInvitation] = useState<UserInvitation | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Chargement des invitations
+    // Chargement des invitations avec optimisation pour grandes volumes
     const {data: invitationsData, mutate} = useSWR<UserInvitation[]>(
         user?.id ? `${TRAINING_INVITATION_URLS.getUserInvitations}/${user.id}` : null,
-        fetcher
+        fetcher,
+        {
+            revalidateOnFocus: false,
+            dedupingInterval: 60000, // Cache pendant 1 minute pour éviter trop de requêtes
+        }
     );
 
     const invitations = useMemo(() => invitationsData || [], [invitationsData]);
 
-    console.log(invitations);
+    // Calcul des statistiques avec optimisation mémoire
+    const invitationStats = useMemo(() => {
+        const stats = {
+            pending: 0,
+            accepted: 0,
+            declined: 0
+        };
+
+        invitations.forEach(invitation => {
+            switch (invitation.status) {
+                case 'En attente':
+                case 'PENDING':
+                    stats.pending++;
+                    break;
+                case 'Acceptée':
+                case 'ACCEPTED':
+                    stats.accepted++;
+                    break;
+                case 'Refusée':
+                case 'DECLINED':
+                    stats.declined++;
+                    break;
+            }
+        });
+
+        return stats;
+    }, [invitations]);
 
     // Générer les jours du calendrier
     const generateCalendarDays = () => {
@@ -85,7 +115,7 @@ const CalendarPage: React.FC = () => {
         return days;
     };
 
-    // Obtenir les formations pour une date
+    // Obtenir les formations pour une date avec optimisation
     const getTrainingsForDate = (date: Date) => {
         const dateString = date.toISOString().split('T')[0];
         return invitations.filter(invitation =>
@@ -162,6 +192,28 @@ const CalendarPage: React.FC = () => {
                     >
                         <ChevronRight className="w-5 h-5"/>
                     </button>
+                </div>
+            </div>
+
+            {/* Statistiques des invitations */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <div className="text-yellow-800 font-semibold">En attente</div>
+                    <div className="text-2xl font-bold text-yellow-900">
+                        {invitationStats.pending}
+                    </div>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="text-green-800 font-semibold">Acceptées</div>
+                    <div className="text-2xl font-bold text-green-900">
+                        {invitationStats.accepted}
+                    </div>
+                </div>
+                <div className="bg-redShade-50 p-4 rounded-lg border border-redShade-200">
+                    <div className="text-redShade-800 font-semibold">Refusées</div>
+                    <div className="text-2xl font-bold text-redShade-900">
+                        {invitationStats.declined}
+                    </div>
                 </div>
             </div>
 
@@ -304,7 +356,7 @@ const CalendarPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {selectedInvitation.status === 'En attente' && (
+                                {(selectedInvitation.status === 'En attente' || selectedInvitation.status === 'PENDING') && (
                                     <div className="flex gap-3 pt-4 border-t">
                                         <button
                                             onClick={() => handleInvitationAction(selectedInvitation.id, 'accept')}
@@ -315,7 +367,7 @@ const CalendarPage: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => handleInvitationAction(selectedInvitation.id, 'decline')}
-                                            className="flex-1 bg-red text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                                            className="flex-1 bg-redShade-600 text-white py-2 px-4 rounded-lg hover:bg-redShade-700 transition-colors flex items-center justify-center gap-2"
                                         >
                                             <X className="w-4 h-4"/>
                                             Refuser
