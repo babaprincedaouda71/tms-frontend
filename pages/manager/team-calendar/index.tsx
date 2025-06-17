@@ -1,4 +1,4 @@
-// pages/manager/team-calendar/OCFPage.tsx
+// pages/manager/team-calendar/index.tsx
 import React, {useMemo, useState} from 'react';
 import {Calendar, Check, ChevronLeft, ChevronRight, Clock, MapPin, Users, X} from 'lucide-react';
 import {useAuth, UserRole} from '@/contexts/AuthContext';
@@ -163,6 +163,18 @@ const TeamCalendarPage: React.FC = () => {
         });
     };
 
+    // Nouvelle fonction pour revenir à aujourd'hui
+    const goToToday = () => {
+        setCurrentDate(new Date());
+    };
+
+    // Vérifier si on est déjà sur le mois actuel
+    const isCurrentMonth = () => {
+        const today = new Date();
+        return currentDate.getMonth() === today.getMonth() &&
+            currentDate.getFullYear() === today.getFullYear();
+    };
+
     // Action manager sur une invitation spécifique d'un collaborateur
     const handleManagerAction = async (invitationId: string, action: 'accept' | 'decline') => {
         setActionLoading(`${invitationId}-${action}`);
@@ -232,6 +244,7 @@ const TeamCalendarPage: React.FC = () => {
                         <button
                             onClick={() => navigateMonth(-1)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label="Mois précédent"
                         >
                             <ChevronLeft className="w-5 h-5"/>
                         </button>
@@ -246,9 +259,21 @@ const TeamCalendarPage: React.FC = () => {
                         <button
                             onClick={() => navigateMonth(1)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label="Mois suivant"
                         >
                             <ChevronRight className="w-5 h-5"/>
                         </button>
+
+                        {/* Bouton Aujourd'hui */}
+                        {!isCurrentMonth() && (
+                            <button
+                                onClick={goToToday}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                aria-label="Aller à aujourd'hui"
+                            >
+                                Aujourd'hui
+                            </button>
+                        )}
                     </div>
                 </div>
 
