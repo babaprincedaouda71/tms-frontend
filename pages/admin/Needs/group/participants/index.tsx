@@ -24,7 +24,7 @@ const TABLE_KEYS_2 = ["firstName", "lastName", "cin", "cnss", "actions"];
 const ACTIONS_TO_SHOW = ["cancel"];
 const RECORDS_PER_PAGE = 5;
 
-// Interface pour les participants sélectionnés (similaire aux invitations dans Plan)
+// Interface pour les participants sélectionnés (similaire aux TeamInvitations dans Plan)
 interface SelectedParticipant {
     id: number;
     firstName: string;
@@ -88,7 +88,7 @@ const Participants = ({needId, groupData, onGroupDataUpdated}: ParticipantsProps
     } = useSWR<UserProps[]>(USERS_URLS.mutate, fetcher); // Ajoutez error et isLoading pour une meilleure gestion
 
     const [users, setUsers] = useState<UserProps[]>([]); // Utilisateurs disponibles à sélectionner
-    const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([]); // Participants sélectionnés (similaire aux invitations dans Plan)
+    const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([]); // Participants sélectionnés (similaire aux TeamInvitations dans Plan)
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
     const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
     const [participantsError, setParticipantsError] = useState<string | null>(null);

@@ -1,4 +1,4 @@
-// pages/collaborator/invitations/index.tsx
+// pages/collaborator/TeamInvitations/index.tsx
 import React, {useMemo, useState} from 'react';
 import {useAuth} from '@/contexts/AuthContext';
 import useSWR from 'swr';
@@ -265,7 +265,7 @@ const TeamInvitations: React.FC = () => {
                 />
             </div>
 
-            {/* Tableau des invitations */}
+            {/* Tableau des TeamInvitations */}
             <Table
                 data={paginatedData}
                 keys={TABLE_KEYS}

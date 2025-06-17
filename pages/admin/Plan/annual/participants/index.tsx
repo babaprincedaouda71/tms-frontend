@@ -99,12 +99,12 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
     const [users, setUsers] = useState<UserProps[]>([]); // Utilisateurs disponibles à sélectionner
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
 
-    // État pour les invitations (second tableau)
+    // État pour les TeamInvitations (second tableau)
     const [invitations, setInvitations] = useState<TrainingInvitationProps[]>([]);
     const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
     const [invitationsError, setInvitationsError] = useState<string | null>(null);
 
-    // Fonction pour charger les invitations depuis le backend
+    // Fonction pour charger les TeamInvitations depuis le backend
     const fetchInvitations = async () => {
         if (!groupId) return;
 
@@ -117,14 +117,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch invitations');
+                throw new Error('Failed to fetch TeamInvitations');
             }
 
             const data: TrainingInvitationProps[] = await response.json();
             setInvitations(data);
         } catch (error) {
-            console.error('Error fetching invitations:', error);
-            setInvitationsError('Erreur lors du chargement des invitations');
+            console.error('Error fetching TeamInvitations:', error);
+            setInvitationsError('Erreur lors du chargement des TeamInvitations');
         } finally {
             setIsLoadingInvitations(false);
         }
@@ -167,7 +167,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 setStaffError('');
             }
 
-            // Charger les invitations après avoir initialisé les utilisateurs
+            // Charger les TeamInvitations après avoir initialisé les utilisateurs
             fetchInvitations();
         } else if (initialUsersError) {
             console.error("Erreur lors du chargement des utilisateurs initiaux:", initialUsersError);
@@ -191,7 +191,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         RECORDS_PER_PAGE,
     );
 
-    // Hooks useTable pour le deuxième tableau (invitations)
+    // Hooks useTable pour le deuxième tableau (TeamInvitations)
     const {
         currentPage: currentPageInvitations,
         visibleColumns: visibleColumnsInvitations,
@@ -245,7 +245,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 setAlertType('success');
                 setShowAlert(true);
 
-                // Recharger les invitations
+                // Recharger les TeamInvitations
                 await fetchInvitations();
 
                 // Optionnellement, ajouter l'utilisateur de retour dans la liste des utilisateurs disponibles
@@ -321,7 +321,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         const numWorker = typeof workerCount === 'number' ? workerCount : parseInt(workerCount as any, 10) || 0;
         const numTemporary = typeof temporaryWorkerCount === 'number' ? temporaryWorkerCount : parseInt(temporaryWorkerCount as any, 10) || 0;
 
-        // Récupérer les IDs existants depuis les invitations + les nouveaux utilisateurs
+        // Récupérer les IDs existants depuis les TeamInvitations + les nouveaux utilisateurs
         const existingUserIds = invitations.map(inv => inv.userId); // Assuming invitation.id corresponds to userId
         const selectedUserIds = [...existingUserIds, ...usersToAdd.map(user => user.id)];
 
@@ -361,7 +361,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 setUsers(users.filter(user => !tempSelectedUsers.has(user.id.toString())));
                 setTempSelectedUsers(new Set());
 
-                // Recharger les invitations depuis le backend
+                // Recharger les TeamInvitations depuis le backend
                 await fetchInvitations();
 
                 setAlertMessage('Participants ajoutés avec succès !');
@@ -384,7 +384,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         }
     };
 
-    // Fonction pour envoyer les invitations
+    // Fonction pour envoyer les TeamInvitations
     const handleSendInvitations = async () => {
         if (invitations.length === 0) {
             setAlertMessage('Aucun participant à inviter');
@@ -397,7 +397,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         closeSendInvitationModal();
 
         try {
-            // Naviguer vers la page d'envoi d'invitations
+            // Naviguer vers la page d'envoi d'TeamInvitations
             navigateTo(`/Plan/annual/sendInvitation`, {
                 query: {
                     trainingId: trainingId,
@@ -405,7 +405,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 }
             });
 
-            // Recharger les invitations après l'envoi (cela pourrait changer le statut)
+            // Recharger les TeamInvitations après l'envoi (cela pourrait changer le statut)
             await fetchInvitations();
         } finally {
             setIsSubmitting(false);

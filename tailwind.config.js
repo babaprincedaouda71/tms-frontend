@@ -19,7 +19,7 @@ module.exports = {
         footerBgColor: "rgba(20, 20, 20, 1)",
         primary: "#5A62DD",
         primary_hover: "#2531EF",
-        red: "#FF0000",
+        red: "#F21F0C",
         draft: "#47556960",
         authBgColor: "#FDFDFD",
         btnColor: "#FBBE20",
