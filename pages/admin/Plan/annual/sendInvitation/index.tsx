@@ -8,7 +8,7 @@ import Switch from "@/components/FormComponents/Switch";
 import React, {ChangeEvent, useCallback, useEffect, useState} from "react";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
-import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, TRAINING_URLS} from "@/config/urls";
+import {TRAINERS_URLS, TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, TRAINING_URLS} from "@/config/urls";
 
 // Interface correspondant au DTO Java Participant
 interface ParticipantDto {
@@ -23,6 +23,21 @@ interface TrainingDto {
     startDate: string;
     location: string;
     theme: string;
+}
+
+// Interface pour le group
+interface GroupDto {
+    id: number;
+    location: string;
+    targetAudience: string;
+    participantCount: number;
+}
+
+// Interface pour les données du formateur
+interface TrainerDto {
+    id: number;
+    name: string;
+    email?: string;
 }
 
 // Interface pour les participants du SwitchSelect (utilisez celle du SwitchSelect)
@@ -48,14 +63,25 @@ interface FormData {
     content: string;
     allParticipant: boolean;
     sms: boolean;
+    // Nouveaux champs pour formateur
+    isTrainerInvitation?: boolean;
+    trainerId?: number;
+    confirmationLink?: string;
 }
 
 const SendInvitationPage = () => {
     const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
-    const {trainingId, groupId} = router.query;
+    const {trainingId, groupId, type, trainerId} = router.query;
 
-    // Fonction pour générer le contenu dynamique
+    // Déterminer si c'est une invitation formateur
+    const isTrainerInvitation = type === 'trainer';
+
+    // État pour les données du formateur
+    const [trainerData, setTrainerData] = useState<TrainerDto | null>(null);
+    const [groupInfo, setGroupInfo] = useState<GroupDto>(null);
+
+    // Fonction pour générer le contenu dynamique pour participants
     const generateDynamicContent = useCallback((training: TrainingDto | null): string => {
         if (!training) {
             return `Cher [Nom],
@@ -88,12 +114,73 @@ Lieu : ${training.location}
 Cordialement,`;
     }, []);
 
+    // Fonction pour générer le contenu pour formateur
+    const generateTrainerContent = useCallback((
+        training: TrainingDto | null,
+        trainer: TrainerDto | null,
+        group: any | null
+    ): string => {
+        if (!training || !trainer) {
+            return `Cher [Nom du formateur],
+
+Je suis heureux de vous informer que vous allez animer une session de formation sur [Thème de la formation].
+
+Date : [Date]
+Lieu : [Lieu]
+Public cible : [Public cible]
+Nombre de participants : [Nombre de participants]
+
+Veuillez confirmer votre disponibilité en cliquant sur le lien ci-dessous.
+
+Lien
+
+Cordialement,`;
+        }
+
+        const formattedDate = new Date(training.startDate).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        return `Cher ${trainer.name},
+
+Je suis heureux de vous informer que vous allez animer une session de formation sur ${training.theme}.
+
+Date : ${formattedDate}
+Lieu : ${group.location}
+Public cible : ${group?.targetAudience || '[Public cible]'}
+Nombre de participants : ${group ? group.participantCount : '[Nombre de participants]'}
+
+Veuillez confirmer votre disponibilité en cliquant sur le lien ci-dessous.
+
+[Lien de confirmation à générer]
+
+Cordialement,`;
+    }, []);
+
     // État pour stocker les données du formulaire
     const [formData, setFormData] = useState<FormData>({
         priority: "",
         recipient: "",
-        object: "Invitation à une session de formation",
-        content: `Cher [Nom],
+        object: isTrainerInvitation ? "Invitation à animer une session de formation" : "Invitation à une session de formation",
+        content: isTrainerInvitation ?
+            `Cher [Nom du formateur],
+
+Je suis heureux de vous informer que vous allez animer une session de formation sur [Thème de la formation].
+
+Date : [Date]
+Lieu : [Lieu]
+Public cible : [Public cible]
+Nombre de participants : [Nombre de participants]
+
+Veuillez confirmer votre disponibilité en cliquant sur le lien ci-dessous.
+
+Lien
+
+Cordialement,` :
+            `Cher [Nom],
 
 Vous êtes invité à participer à une session de formation sur : [Thème de la formation].
 
@@ -104,6 +191,8 @@ Lieu : [Lieu]
 Cordialement,`,
         allParticipant: false,
         sms: false,
+        isTrainerInvitation,
+        trainerId: trainerId ? parseInt(trainerId as string) : undefined,
     });
 
     // État pour les données de la formation
@@ -123,7 +212,6 @@ Cordialement,`,
     // État pour gérer le chargement et les erreurs
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
 
     // Fonction pour récupérer les participants depuis l'API
     const fetchTrainingParticipants = useCallback(async () => {
@@ -169,15 +257,13 @@ Cordialement,`,
                 )
             );
 
-            console.log("Participants après mise à jour : ", participants);
-
         } catch (error) {
             console.error('Erreur lors de la récupération des participants:', error);
             setError('Impossible de charger les participants. Veuillez réessayer.');
         } finally {
             setIsLoading(false);
         }
-    }, [trainingId]);
+    }, [trainingId, groupId]);
 
     // Fonction pour récupérer les données de la formation
     const fetchTrainingData = useCallback(async () => {
@@ -204,26 +290,88 @@ Cordialement,`,
         }
     }, [trainingId]);
 
-    // Charger les participants au montage du composant
-    useEffect(() => {
-        fetchTrainingParticipants();
-    }, [fetchTrainingParticipants]);
+    // Fonction pour récupérer les données du formateur
+    const fetchTrainerData = useCallback(async () => {
+        if (!trainerId || !isTrainerInvitation) return;
 
-    // Charger les données de la formation au montage du composant
+        try {
+            const response = await fetch(`${TRAINERS_URLS.getTrainerName}/${trainerId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+
+            const trainer: TrainerDto = await response.json();
+            console.log("Données du formateur récupérées : ", trainer);
+            setTrainerData(trainer);
+        } catch (error) {
+            console.error('Erreur lors de la récupération du formateur:', error);
+            setError('Impossible de charger les données du formateur.');
+        }
+    }, [trainerId, isTrainerInvitation]);
+
+    // Fonction pour récupérer les données du groupe
+    const fetchGroupData = useCallback(async () => {
+        if (!groupId || !isTrainerInvitation) return;
+
+        try {
+            const response = await fetch(`${TRAINING_GROUPE_URLS.getGroupDetailsForSendInvitationToTrainer}/${groupId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+
+            const group = await response.json();
+            console.log("Données du groupe récupérées : ", group);
+            setGroupInfo(group);
+        } catch (error) {
+            console.error('Erreur lors de la récupération du groupe:', error);
+        }
+    }, [groupId, isTrainerInvitation]);
+
+    // Charger les données selon le type d'invitation
+    useEffect(() => {
+        if (isTrainerInvitation) {
+            fetchTrainerData();
+            fetchGroupData();
+        } else {
+            fetchTrainingParticipants();
+        }
+    }, [isTrainerInvitation, fetchTrainerData, fetchGroupData, fetchTrainingParticipants]);
+
+    // Charger les données de la formation dans tous les cas
     useEffect(() => {
         fetchTrainingData();
     }, [fetchTrainingData]);
 
-    // Mettre à jour le contenu dynamiquement quand les données de formation arrivent
+    // Mettre à jour le contenu dynamiquement quand les données arrivent
     useEffect(() => {
-        if (trainingData) {
+        if (isTrainerInvitation && trainingData && trainerData) {
+            const dynamicContent = generateTrainerContent(trainingData, trainerData, groupInfo);
+            setFormData(prev => ({
+                ...prev,
+                content: dynamicContent
+            }));
+        } else if (!isTrainerInvitation && trainingData) {
             const dynamicContent = generateDynamicContent(trainingData);
             setFormData(prev => ({
                 ...prev,
                 content: dynamicContent
             }));
         }
-    }, [trainingData, generateDynamicContent]);
+    }, [trainingData, trainerData, groupInfo, isTrainerInvitation, generateTrainerContent, generateDynamicContent]);
 
     // Gestionnaire pour les changements d'input
     const handleInputChange = useCallback((
@@ -312,11 +460,12 @@ Cordialement,`,
             errors.push('Le contenu est obligatoire');
         }
 
-        // Validation des destinataires
-        const selectedParticipantIds = getSelectedParticipants();
-        const hasDestinataireSelected = selectedParticipantIds.length > 0
-        if (!hasDestinataireSelected) {
-            errors.push('Veuillez sélectionner au moins un destinataire');
+        // Validation des destinataires seulement pour les participants
+        if (!isTrainerInvitation) {
+            const selectedParticipantIds = getSelectedParticipants();
+            if (selectedParticipantIds.length === 0) {
+                errors.push('Veuillez sélectionner au moins un destinataire');
+            }
         }
 
         // Validation de la longueur du contenu
@@ -337,7 +486,7 @@ Cordialement,`,
             isValid: errors.length === 0,
             errors
         };
-    }, [formData, getSelectedParticipants]);
+    }, [formData, getSelectedParticipants, isTrainerInvitation]);
 
     // Gestionnaire pour l'envoi du formulaire
     const handleSubmit = useCallback(async () => {
@@ -361,22 +510,38 @@ Cordialement,`,
         setIsSubmitting(true);
 
         try {
-            const selectedParticipantIds = getSelectedParticipants();
+            let requestData;
+            let endpoint;
 
-            // Préparation des données pour l'envoi
-            const requestData = {
-                priority: formData.priority.trim(),
-                object: formData.object.trim(),
-                content: formData.content.trim(),
-                participantIds: selectedParticipantIds,
-                sendSms: formData.sms,
-                trainingId: trainingId
-            };
+            if (isTrainerInvitation) {
+                // Données pour invitation formateur
+                requestData = {
+                    priority: formData.priority.trim(),
+                    object: formData.object.trim(),
+                    content: formData.content.trim(),
+                    trainerId: formData.trainerId,
+                    sendSms: formData.sms,
+                    trainingId: trainingId
+                };
+                endpoint = `${TRAINING_INVITATION_URLS.sendTrainerInvitation}/${groupId}`;
+            } else {
+                // Données pour invitation participants
+                const selectedParticipantIds = getSelectedParticipants();
+                requestData = {
+                    priority: formData.priority.trim(),
+                    object: formData.object.trim(),
+                    content: formData.content.trim(),
+                    participantIds: selectedParticipantIds,
+                    sendSms: formData.sms,
+                    trainingId: trainingId
+                };
+                endpoint = `${TRAINING_INVITATION_URLS.sendInvitations}/${groupId}`;
+            }
 
             console.log('Données à envoyer:', requestData);
 
-            // Appel API pour l'annulation
-            const response = await fetch(`${TRAINING_INVITATION_URLS.sendInvitations}/${groupId}`, {
+            // Appel API
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -402,7 +567,7 @@ Cordialement,`,
                     } else if (response.status === 403) {
                         errorMessage = 'Accès refusé.';
                     } else if (response.status === 404) {
-                        errorMessage = 'Formation non trouvée.';
+                        errorMessage = isTrainerInvitation ? 'Formateur non trouvé.' : 'Formation non trouvée.';
                     } else if (response.status >= 500) {
                         errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
                     }
@@ -416,10 +581,12 @@ Cordialement,`,
             console.log('Réponse du serveur:', responseData);
 
             // Message de succès
-            alert('Annulation envoyée avec succès');
+            alert(isTrainerInvitation ?
+                'Invitation formateur envoyée avec succès' :
+                'Invitations participants envoyées avec succès'
+            );
 
-            // Redirection vers la page que vous définirez
-            // Option 1: Retour vers le plan annuel
+            // Redirection vers la page de gestion du groupe
             if (trainingId && groupId) {
                 navigateTo(`/Plan/annual/add-group`, {
                     query: {
@@ -428,8 +595,8 @@ Cordialement,`,
                     }
                 });
             } else {
-                // Option 2: Redirection par défaut (à personnaliser selon vos besoins)
-                navigateTo('/dashboard'); // Changez cette route selon votre besoin
+                // Option de secours
+                navigateTo('/dashboard');
             }
 
         } catch (error) {
@@ -438,14 +605,38 @@ Cordialement,`,
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, getSelectedParticipants, trainingId, validateForm, groupId, navigateTo]);
+    }, [formData, getSelectedParticipants, trainingId, validateForm, groupId, navigateTo, isTrainerInvitation]);
 
+    if (isLoading && !isTrainerInvitation) {
+        return (
+            <ProtectedRoute requiredRole={UserRole.Admin}>
+                <div className="min-h-screen bg-backColor px-4 py-6 flex items-center justify-center">
+                    <div>Chargement des participants...</div>
+                </div>
+            </ProtectedRoute>
+        );
+    }
 
     return (
         <ProtectedRoute requiredRole={UserRole.Admin}>
             <div className="min-h-screen bg-backColor px-4 py-6">
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4">
                     <form className="mx-auto bg-white font-title rounded-lg px-6 pb-14 pt-4">
+                        {/* Titre dynamique selon le type d'invitation */}
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                {isTrainerInvitation ?
+                                    'Invitation Formateur' :
+                                    'Invitation Participants'
+                                }
+                            </h1>
+                            {/*{isTrainerInvitation && trainerData && (*/}
+                            {/*    <p className="text-gray-600 mt-2">*/}
+                            {/*        Envoi d'invitation à {trainerData.name}*/}
+                            {/*    </p>*/}
+                            {/*)}*/}
+                        </div>
+
                         <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
                             <CustomSelect
                                 label="Priorité"
@@ -455,21 +646,39 @@ Cordialement,`,
                                 onChange={handleSelectChange}
                             />
 
-                            <div>
-                                <SwitchSelect
-                                    label="Destinataire"
-                                    options={participants}
-                                    onChange={handleSwitchSelectChange}
-                                />
-                                {isLoading && (
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Chargement des participants...
-                                    </p>
-                                )}
-                                {error && (
-                                    <p className="text-sm text-red-500 mt-1">{error}</p>
-                                )}
-                            </div>
+                            {/* Afficher le champ destinataire seulement pour les participants */}
+                            {!isTrainerInvitation && (
+                                <div>
+                                    <SwitchSelect
+                                        label="Destinataire"
+                                        options={participants}
+                                        onChange={handleSwitchSelectChange}
+                                    />
+                                    {isLoading && (
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            Chargement des participants...
+                                        </p>
+                                    )}
+                                    {error && (
+                                        <p className="text-sm text-red-500 mt-1">{error}</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Pour les formateurs, afficher les informations du formateur */}
+                            {/*{isTrainerInvitation && trainerData && (*/}
+                            {/*    <div>*/}
+                            {/*        <label className="block text-sm font-medium text-gray-700 mb-2">*/}
+                            {/*            Formateur sélectionné*/}
+                            {/*        </label>*/}
+                            {/*        <div className="p-3 bg-gray-50 rounded-lg border">*/}
+                            {/*            <p className="font-medium text-gray-900">{trainerData.name}</p>*/}
+                            {/*            {trainerData.email && (*/}
+                            {/*                <p className="text-sm text-gray-600">{trainerData.email}</p>*/}
+                            {/*            )}*/}
+                            {/*        </div>*/}
+                            {/*    </div>*/}
+                            {/*)}*/}
 
                             <InputField
                                 label="Objet"
@@ -481,9 +690,9 @@ Cordialement,`,
 
                         {/* Affichage des erreurs de validation */}
                         {submitError && (
-                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="mb-4 p-4 bg-redShade-50 border border-redShade-200 rounded-lg">
                                 <div className="flex items-start">
-                                    <div className="text-red-600 text-sm">
+                                    <div className="text-redShade-600 text-sm">
                                         <strong>Erreur(s) de validation :</strong>
                                         <div className="mt-1 whitespace-pre-line">
                                             {submitError}
@@ -502,7 +711,7 @@ Cordialement,`,
                                     onChange={handleInputChange}
                                     className="flex justify-start md-custom:w-[80%]"
                                     labelClassName="md-custom:flex-[0.49]"
-                                    textAreaClassName="h-[300px]"
+                                    textAreaClassName={isTrainerInvitation ? "h-[400px]" : "h-[300px]"}
                                 />
 
                                 <Switch
@@ -520,6 +729,7 @@ Cordialement,`,
                                 type="button"
                                 className="bg-white border font-bold p-2 md:p-3 lg:p-4 rounded-xl hover:bg-gray-100 transition-colors"
                                 onClick={handleCancel}
+                                disabled={isSubmitting}
                             >
                                 Annuler
                             </button>
@@ -538,6 +748,7 @@ Cordialement,`,
                 </div>
             </div>
         </ProtectedRoute>
-    )
-}
-export default SendInvitationPage
+    );
+};
+
+export default SendInvitationPage;

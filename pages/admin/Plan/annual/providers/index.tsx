@@ -93,6 +93,7 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
 
             // Mettre à jour le type sélectionné (interne/externe)
             setSelected(trainingType);
+            console.log(groupData.trainingType)
 
             // Pré-remplir les données du formulaire selon le type
             if (trainingType === "internal") {
@@ -159,6 +160,25 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
         }));
     };
 
+    const handleSendTrainerInvitation = () => {
+        if (!selectedTrainerForPopup) {
+            setAlertMessage('Veuillez sélectionner un formateur');
+            setAlertType('warning');
+            setShowAlert(true);
+            return;
+        }
+
+        // Naviguer vers la page sendInvitation avec les paramètres pour formateur interne
+        navigateTo(`/Plan/annual/sendInvitation`, {
+            query: {
+                trainingId: trainingId,
+                groupId: groupData?.id,
+                type: 'trainer', // Paramètre pour identifier le type d'invitation
+                trainerId: selectedTrainerForPopup.id
+            }
+        });
+    };
+
 
     // Fonction pour rendre le contenu conditionnel
     const renderContent = () => {
@@ -181,9 +201,10 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
                         <div className='flex gap-5 items-center'>
                             <label>Envoyer une invitation au formateur</label>
                             <button
-                                type={"button"}
-                                onClick={() => setShowPopup(true)}
+                                type="button"
+                                onClick={handleSendTrainerInvitation}
                                 className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-6 rounded-xl"
+                                disabled={!selectedTrainerForPopup}
                             >
                                 Envoyer
                             </button>

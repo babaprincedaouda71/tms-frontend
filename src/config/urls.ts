@@ -135,6 +135,7 @@ export const NEEDS_GROUP_URLS = {
 
 export const TRAINERS_URLS = {
     mutate: `${API_URL}/users/trainers/get/all`,
+    getTrainerName: `${API_URL}/users/trainers/get/trainerName`,
 }
 
 export const OCF_URLS = {
@@ -252,6 +253,7 @@ export const TRAINING_GROUPE_URLS = {
     editGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupExternalProvider`,
     sendInvitations: `${API_URL}/plan/trainings/training-groups/send-invitations`,
     getParticipants: `${API_URL}/plan/trainings/training-groups/get/getParticipants`,
+    getGroupDetailsForSendInvitationToTrainer: `${API_URL}/plan/trainings/training-groups/get/getGroupDetailsForSendInvitationToTrainer`,
 }
 
 export const NEED_TO_ADD_TO_PLAN_URLS = {
@@ -268,6 +270,7 @@ export const GROUPE_INVOICE_URLS = {
 export const TRAINING_INVITATION_URLS = {
     mutate: `${API_URL}/plan/trainings/invitations/get/all`,
     sendInvitations: `${API_URL}/plan/trainings/invitations/send-invitations`,
+    sendTrainerInvitation: `${API_URL}/plan/trainings/invitations/send-trainer-invitation`,
     getUserInvitations: `${API_URL}/plan/trainings/invitations/get/userInvitations`,
     getTeamInvitations: `${API_URL}/plan/trainings/invitations/get/teamInvitations`,
     respondToInvitation: `${API_URL}/plan/trainings/invitations/respond`
