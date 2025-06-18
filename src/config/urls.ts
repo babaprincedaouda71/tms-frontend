@@ -1,7 +1,4 @@
 const API_URL = "http://localhost:8888/api";
-
-/* const { navigateTo } = use(); */
-
 export const AUTH_URLS = {
     login: `${API_URL}/auth/login`,
     logout: `${API_URL}/auth/logout`,

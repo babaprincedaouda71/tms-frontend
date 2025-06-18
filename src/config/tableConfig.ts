@@ -181,6 +181,11 @@ export const statusConfig: Record<string, StatusConfig> = {
         ...STATUS_STYLES.ERROR,
         showDot: true,
     },
+    Refusée: {
+        label: "Refusée",
+        ...STATUS_STYLES.ERROR,
+        showDot: true,
+    },
 
     // === STATUTS FINANCIERS ===
     Réglé: {

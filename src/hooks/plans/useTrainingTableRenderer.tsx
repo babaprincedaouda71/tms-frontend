@@ -49,7 +49,14 @@ export const useTrainingTableRenderer = ({
                 row={row}
                 deleteUrl={NEED_TO_ADD_TO_PLAN_URLS.removeTheme}
                 openCancelModal={() => openCancelModal(row)}
-                viewUrl={buildRoleBasedPath(`${TRAINING_URLS.view}`)}
+                // Utiliser customViewHandler au lieu de viewUrl pour rediriger vers les détails du thème
+                customViewHandler={() => {
+                    navigateTo(`/Plan/annual/${exercice}/${row.theme}`, {
+                        query: {
+                            id: row.id,
+                        }
+                    });
+                }}
                 customEditHandler={(row) => {
                     navigateTo(buildRoleBasedPath(`/Plan/annual/${exercice}/editTraining`), {
                         query: {

@@ -1,6 +1,5 @@
 import React from "react";
 import SessionChart from "../../src/components/Sesssion";
-import NestedDropdown from "@/components/NestedDropdown";
 import DepartmentCard from "@/components/DepartmentCard";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -22,13 +21,6 @@ const Home = () => {
                 </div>
                 <div>
                     <DepartmentCard departments={departmentsData}/>
-                </div>
-                <div className="flex justify-center items-center min-h-screen bg-gray-100">
-                    <div className="flex flex-row">
-                        <div>Hello</div>
-                        <div>Hi</div>
-                    </div>
-                    <NestedDropdown/>
                 </div>
             </ProtectedRoute>
         </>
