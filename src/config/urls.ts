@@ -273,5 +273,6 @@ export const TRAINING_INVITATION_URLS = {
     sendTrainerInvitation: `${API_URL}/plan/trainings/invitations/send-trainer-invitation`,
     getUserInvitations: `${API_URL}/plan/trainings/invitations/get/userInvitations`,
     getTeamInvitations: `${API_URL}/plan/trainings/invitations/get/teamInvitations`,
-    respondToInvitation: `${API_URL}/plan/trainings/invitations/respond`
+    respondToInvitation: `${API_URL}/plan/trainings/invitations/respond`,
+    checkTrainerInvitationStatus: `${API_URL}/plan/trainings/invitations/checkTrainerInvitationStatus`,
 }

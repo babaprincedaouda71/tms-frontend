@@ -214,7 +214,6 @@ const Providers = ({trainingId, groupData, onGroupDataUpdated}: ProvidersProps) 
                             <button
                                 type="button"
                                 className="bg-gradient-to-b from-gradientYellowStart to-gradientYellowEnd hover:bg-gradientYellowEnd text-black font-bold p-2 md:p-3 lg:p-4 rounded-xl"
-                                onClick={() => alert("MyEvaluationsComponent ajoutée avec succès")}
                             >
                                 En attente de confirmation
                             </button>
