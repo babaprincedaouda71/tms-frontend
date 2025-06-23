@@ -8,7 +8,8 @@ import React, {ChangeEvent, useCallback, useEffect, useState} from "react";
 import SwitchSelect, {SwitchOption} from "@/components/FormComponents/SwitchSelect2";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
-import {TRAINING_URLS} from "@/config/urls";
+import {PDF_URLS, TRAINING_URLS} from "@/config/urls";
+import PDFGenerationModal from "@/components/ui/PDFGenerationModal";
 
 // Interface correspondant au DTO Java Participant
 interface ParticipantDto {
@@ -21,6 +22,7 @@ interface ParticipantDto {
 interface TrainingDto {
     id: string;
     startDate: string;
+    f
     location: string;
     theme: string;
 }
@@ -56,6 +58,9 @@ const CancelTraining: React.FC = () => {
     const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
     const {exercice, trainingId, planId} = router.query;
+
+    // états pour le modal PDF dans le composant CancelTraining
+    const [isPDFModalOpen, setPDFModalOpen] = useState(false);
 
     // Fonction pour générer le contenu dynamique
     const generateDynamicContent = useCallback((training: TrainingDto | null): string => {
@@ -454,6 +459,44 @@ Cordialement,`,
         }
     }, [formData, getSelectedParticipants, trainingId, validateForm, exercice, planId, navigateTo]);
 
+
+    // fonctions pour gérer l'enregistrement du PDF
+    const handleSavePDF = useCallback(async (pdfBlob: Blob) => {
+        try {
+            // Créer un FormData pour envoyer le fichier
+            const formData = new FormData();
+            formData.append('file', pdfBlob, `avis_annulation_${trainingData?.theme || 'formation'}_${new Date().toISOString().split('T')[0]}.pdf`);
+            formData.append('trainingId', trainingId as string);
+
+            // Appel API pour sauvegarder sur MinIO
+            const response = await fetch(`${PDF_URLS.savePDFToMinio}`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la sauvegarde du PDF');
+            }
+
+            const result = await response.json();
+            console.log('PDF sauvegardé:', result);
+
+            // Afficher un message de succès
+            alert('PDF enregistré avec succès');
+
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde du PDF:', error);
+            alert('Erreur lors de l\'enregistrement du PDF');
+            throw error;
+        }
+    }, [trainingId, trainingData]);
+
+    const handleSaveAndDownloadPDF = useCallback(async (pdfBlob: Blob) => {
+        // D'abord sauvegarder, puis le téléchargement sera géré par le modal
+        await handleSavePDF(pdfBlob);
+    }, [handleSavePDF]);
+
     return (
         <ProtectedRoute requiredRole={UserRole.Admin}>
             <div className="min-h-screen bg-backColor px-4 py-6">
@@ -527,7 +570,9 @@ Cordialement,`,
                                 />
 
                                 <span
-                                    className="text-primary font-tHead text-xs md:text-sm lg:text-base font-bold cursor-pointer ml-[18%] md-custom:ml-[9%]">
+                                    className="text-primary font-tHead text-xs md:text-sm lg:text-base font-bold cursor-pointer ml-[18%] md-custom:ml-[9%]"
+                                    onClick={() => setPDFModalOpen(true)}
+                                >
                                     Générer un avis d'annulation pour l'OFPPT
                                 </span>
                             </div>
@@ -554,6 +599,15 @@ Cordialement,`,
                         </div>
                     </form>
                 </div>
+                {/* PDF Generation Modal */}
+                <PDFGenerationModal
+                    isOpen={isPDFModalOpen}
+                    onClose={() => setPDFModalOpen(false)}
+                    trainingData={trainingData}
+                    groupData={null} // Vous devrez récupérer les données du groupe si nécessaire
+                    onSave={handleSavePDF}
+                    onSaveAndDownload={handleSaveAndDownloadPDF}
+                />
             </div>
         </ProtectedRoute>
     );

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useScreenSize } from '../../hooks/useScreenSize';
-import { useNavigation } from '../../hooks/useNavigation';
+import { useScreenSize } from '@/hooks/useScreenSize';
+import { useNavigation } from '@/hooks/useNavigation';
 import NavigationItem from './NavigationItem';
 import { FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import { NAVIGATION_CONSTANTS } from '../../constants/navigation';
+import { NAVIGATION_CONSTANTS } from '@/constants/navigation';
 import { NavItem } from '@/types/dataTypes';
 
 interface SecondaryNavbarProps {

@@ -1,4 +1,4 @@
-// pages/manager/team-calendar/index.tsx
+// pages/manager/team-calendar/index.ts
 import React, {useMemo, useState} from 'react';
 import {Calendar, Check, ChevronLeft, ChevronRight, Clock, MapPin, Users, X} from 'lucide-react';
 import {useAuth, UserRole} from '@/contexts/AuthContext';

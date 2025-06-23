@@ -256,6 +256,12 @@ export const TRAINING_GROUPE_URLS = {
     getGroupDetailsForSendInvitationToTrainer: `${API_URL}/plan/trainings/training-groups/get/getGroupDetailsForSendInvitationToTrainer`,
 }
 
+export const PDF_URLS = {
+    savePDFToMinio: `${API_URL}/plan/file/save-cancellation-notice`,
+    downloadPDF: `${API_URL}/plan/file/download`,
+    deletePDF: `${API_URL}/plan/file/delete`,
+};
+
 export const NEED_TO_ADD_TO_PLAN_URLS = {
     mutate: `${API_URL}/needs/get/allValidatedNeedToAddToPlan`,
     addTheme: `${API_URL}/plan/addThemeToPlan`,
