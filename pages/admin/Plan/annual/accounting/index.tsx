@@ -75,7 +75,12 @@ const Accounting = () => {
             <StatusRenderer value={value} groupeConfig={statusConfig}/>
         ),
         actions: (_: any, row: any) =>
-            <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}/>
+            <DynamicActionsRenderer
+                actions={ACTIONS_TO_SHOW}
+                row={row}
+                mutateUrl={GROUPE_INVOICE_URLS.mutate}
+                deleteUrl={GROUPE_INVOICE_URLS.deleteGroupeInvoice}
+            />
     };
 
     const handleAdd = () => {

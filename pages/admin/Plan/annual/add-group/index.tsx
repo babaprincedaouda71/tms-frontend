@@ -14,6 +14,7 @@ import {DepartmentProps, SiteProps} from '@/types/dataTypes';
 import {DEPARTMENT_URLS, SITE_URLS, TRAINING_GROUPE_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import Accounting from "../accounting";
+import LibraryPage from "../library";
 
 export interface TrainerProps {
     id: number;
@@ -59,8 +60,6 @@ const AddGroup = () => {
     const {trainingId, groupId} = router.query; // Récupérer l'ID depuis les paramètres de l'URL
 
     /* const { exercice, theme, group, id } = router.query; */
-    console.log('trainingId', trainingId);
-    console.log('groupId', groupId);
     const isEditMode = Boolean(groupId);
 
     // État pour stocker les données des sites, des départements et des groupes
@@ -201,6 +200,8 @@ const AddGroup = () => {
                     />;
                 case 'accounting':
                     return <Accounting/>;
+                case 'library':
+                    return <LibraryPage/>;
                 default:
                     return null;
             }

@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {TrainingInvitationProps, UserProps} from '@/types/dataTypes';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {UserProps} from '@/types/dataTypes';
 import useSWR from "swr";
 
 // Components
@@ -9,12 +9,20 @@ import StatusRenderer from '@/components/Tables/StatusRenderer';
 import {handleSort} from '@/utils/sortUtils';
 import {statusConfig} from '@/config/tableConfig';
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer';
-import {TRAINING_GROUPE_URLS, TRAINING_INVITATION_URLS, TRAINING_URLS, USERS_URLS} from '@/config/urls';
+import {
+    COMPANIES_URLS,
+    PDF_URLS,
+    TRAINING_GROUPE_URLS,
+    TRAINING_INVITATION_URLS,
+    TRAINING_URLS,
+    USERS_URLS
+} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import useTable from '@/hooks/useTable';
 import Alert from '@/components/Alert';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import Modal from "@/components/Modal";
+import AttendanceListModal from '@/components/ui/AttendanceListModal';
 
 const TABLE_HEADERS_1 = ["Code", "Nom", "Prénoms", "Poste", "Niveau", "Manager", "Sélection"];
 const TABLE_HEADERS_2 = ["Nom", "Date d'invitation", "État", "Actions"];
@@ -24,9 +32,37 @@ const TABLE_KEYS_2 = ["userFullName", "invitationDate", "status", "actions"];
 const ACTIONS_TO_SHOW = ["cancel"];
 const RECORDS_PER_PAGE = 5;
 
+// Interface pour les invitations de formation
+export interface TrainingInvitationProps {
+    id: string;
+    userId: number;
+    userFullName: string;
+    invitationDate: string;
+    status: string;
+}
+
+// Interface pour les données de la compagnie
+interface CompanyData {
+    id: number;
+    corporateName: string;
+    address?: string;
+}
+
+// Interface pour les participants du PDF
+interface ParticipantForPDF {
+    id: number;
+    firstName: string;
+    lastName: string;
+    code: string;
+    position: string;
+    level: string;
+    manager: string;
+}
+
 // Définir une interface pour les données du groupe, incluant les IDs des utilisateurs sélectionnés
 interface GroupData {
     id?: number;
+    name: string; // Nouveau champ ajouté
     targetAudience: string;
     managerCount: number;
     employeeCount: number;
@@ -34,6 +70,13 @@ interface GroupData {
     temporaryWorkerCount: number;
     userGroupIds: number[];
     dates?: string[]; // Ajout des dates pour le tableau de présence
+    location: string;
+    trainingType?: string;
+    ocf?: {
+        id: number;
+        corporateName: string;
+        emailMainContact?: string;
+    };
 }
 
 interface ParticipantsProps {
@@ -51,6 +94,13 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // États pour le modal de liste de présence
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [selectedListType, setSelectedListType] = useState<'internal' | 'csf'>('internal');
+    const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+    const [participantsForPDF, setParticipantsForPDF] = useState<ParticipantForPDF[]>([]);
 
     // Modal state
     const [isSendInvitationModalOpen, setIsSendInvitationModalOpen] = useState(false);
@@ -96,6 +146,9 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         isLoading: initialUsersLoading
     } = useSWR<UserProps[]>(USERS_URLS.mutate, fetcher);
 
+    // Hook pour récupérer les données de la compagnie
+    const {data: companyDataFromAPI} = useSWR<CompanyData>(COMPANIES_URLS.getCurrent, fetcher);
+
     const [users, setUsers] = useState<UserProps[]>([]); // Utilisateurs disponibles à sélectionner
     const [tempSelectedUsers, setTempSelectedUsers] = useState<Set<string>>(new Set()); // Pour suivre les sélections temporaires dans la première table
 
@@ -103,6 +156,13 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
     const [invitations, setInvitations] = useState<TrainingInvitationProps[]>([]);
     const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
     const [invitationsError, setInvitationsError] = useState<string | null>(null);
+
+    // useEffect pour charger les données de la compagnie
+    useEffect(() => {
+        if (companyDataFromAPI) {
+            setCompanyData(companyDataFromAPI);
+        }
+    }, [companyDataFromAPI]);
 
     // Fonction pour charger les TeamInvitations depuis le backend
     const fetchInvitations = async () => {
@@ -129,6 +189,124 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
             setIsLoadingInvitations(false);
         }
     };
+
+    // Fonction pour récupérer les participants complets pour le PDF
+    const fetchParticipantsForPDF = useCallback(async (): Promise<ParticipantForPDF[]> => {
+        if (invitations.length === 0 || !groupId) return [];
+
+        try {
+            // Récupérer les détails complets des participants via l'API existante
+            const response = await fetch(`${TRAINING_GROUPE_URLS.getParticipants}/${groupId}`, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la récupération des participants');
+            }
+
+            const participantsData: UserProps[] = await response.json();
+
+            // Obtenir les IDs des utilisateurs invités
+            const invitedUserIds = invitations.map(inv => inv.userId);
+
+            // Filtrer et formater les participants qui ont des invitations
+            return participantsData
+                .filter(user => invitedUserIds.includes(user.id))
+                .map(user => ({
+                    id: user.id,
+                    firstName: user.firstName || '',
+                    lastName: user.lastName || '',
+                    code: user.code || '',
+                    position: user.position || '',
+                    level: user.level || '',
+                    manager: user.manager || ''
+                }));
+
+        } catch (error) {
+            console.error('Erreur lors de la récupération des participants pour PDF:', error);
+            setAlertMessage('Erreur lors de la récupération des participants');
+            setAlertType('error');
+            setShowAlert(true);
+            return [];
+        }
+    }, [invitations, groupId]);
+
+    // Fonction pour ouvrir le modal de liste de présence
+    const openAttendanceModal = useCallback(async (date: string, listType: 'internal' | 'csf') => {
+        setSelectedDate(date);
+        setSelectedListType(listType);
+
+        // Récupérer les participants avec leurs détails complets
+        const participants = await fetchParticipantsForPDF();
+        setParticipantsForPDF(participants);
+
+        setIsAttendanceModalOpen(true);
+    }, [fetchParticipantsForPDF]);
+
+    // Fonction pour fermer le modal
+    const closeAttendanceModal = useCallback(() => {
+        setIsAttendanceModalOpen(false);
+        setSelectedDate('');
+        setSelectedListType('internal');
+        setParticipantsForPDF([]);
+    }, []);
+
+    // Fonctions pour gérer la sauvegarde des PDFs
+    const handleSaveAttendancePDF = useCallback(async (pdfBlob: Blob) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', pdfBlob, `liste_presence_${selectedListType}_${groupData?.name || 'formation'}_${selectedDate}.pdf`);
+            formData.append('trainingId', trainingId as string);
+            formData.append('groupId', groupId as string);
+            formData.append('date', selectedDate);
+            formData.append('type', selectedListType);
+
+            const response = await fetch(`${PDF_URLS.savePDFToMinio}`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la sauvegarde du PDF');
+            }
+
+            const result = await response.json();
+            console.log('PDF sauvegardé:', result);
+
+            setAlertMessage('PDF enregistré avec succès');
+            setAlertType('success');
+            setShowAlert(true);
+
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde du PDF:', error);
+            setAlertMessage('Erreur lors de l\'enregistrement du PDF');
+            setAlertType('error');
+            setShowAlert(true);
+            throw error;
+        }
+    }, [trainingId, groupId, selectedDate, selectedListType, groupData]);
+
+    const handleSaveAndDownloadAttendancePDF = useCallback(async (pdfBlob: Blob) => {
+        await handleSaveAttendancePDF(pdfBlob);
+    }, [handleSaveAttendancePDF]);
+
+    // Obtenir les données OCF pour le PDF
+    const ocfData = useMemo(() => {
+        if (groupData?.trainingType === "Externe" && groupData?.ocf) {
+            return {corporateName: groupData.ocf.corporateName};
+        }
+        return null;
+    }, [groupData]);
+
+    // Récupérer les données de formation pour le PDF
+    const trainingDataForPDF = useMemo(() => {
+        return {
+            theme: 'Formation', // Vous devrez adapter selon votre structure de données
+            location: groupData?.location || '',
+            startDate: groupData?.dates?.[0] || '',
+        };
+    }, [groupData]);
 
     // Charger les données initiales
     useEffect(() => {
@@ -412,28 +590,6 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
         }
     };
 
-    // Créer les données pour le tableau de présence
-    const createAttendanceTableData = () => {
-        const dates = groupData?.dates || [];
-        const attendanceData = [
-            {
-                type: 'Liste de présence interne',
-                ...dates.reduce((acc, date, index) => {
-                    acc[`date_${index}`] = 'PDF'; // Placeholder pour le PDF
-                    return acc;
-                }, {} as Record<string, string>)
-            },
-            {
-                type: 'Liste de présence CSF',
-                ...dates.reduce((acc, date, index) => {
-                    acc[`date_${index}`] = 'PDF'; // Placeholder pour le PDF
-                    return acc;
-                }, {} as Record<string, string>)
-            }
-        ];
-        return attendanceData;
-    };
-
     if (initialUsersLoading) {
         return <div>Chargement des utilisateurs...</div>;
     }
@@ -585,7 +741,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                                 {groupData.dates.map((date, index) => (
                                     <th key={index}
                                         className="px-4 py-3 text-center font-medium text-white bg-primary tracking-wider">
-                                        {date}
+                                        {new Date(date).toLocaleDateString('fr-FR')}
                                     </th>
                                 ))}
                             </tr>
@@ -595,10 +751,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                                 <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">
                                     Liste de présence interne
                                 </td>
-                                {groupData.dates.map((_, index) => (
+                                {groupData.dates.map((date, index) => (
                                     <td key={index} className="px-4 py-4 whitespace-nowrap text-center">
                                         <button
-                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">
+                                            type={"button"}
+                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => openAttendanceModal(date, 'internal')}
+                                            disabled={invitations.length === 0}
+                                        >
                                             PDF
                                         </button>
                                     </td>
@@ -608,10 +768,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                                 <td className="px-4 py-4 whitespace-nowrap font-medium text-gray-900">
                                     Liste de présence CSF
                                 </td>
-                                {groupData.dates.map((_, index) => (
+                                {groupData.dates.map((date, index) => (
                                     <td key={index} className="px-4 py-4 whitespace-nowrap text-center">
                                         <button
-                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">
+                                            type={"button"}
+                                            className="bg-red text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => openAttendanceModal(date, 'csf')}
+                                            disabled={invitations.length === 0}
+                                        >
                                             PDF
                                         </button>
                                     </td>
@@ -623,7 +787,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 </div>
             )}
 
-            {/* Modal de confirmation */}
+            {/* Modal de confirmation pour l'envoi d'invitations */}
             <Modal
                 isOpen={isSendInvitationModalOpen}
                 onClose={closeSendInvitationModal}
@@ -644,6 +808,21 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                     </div>
                 </div>
             </Modal>
+
+            {/* Modal de génération de liste de présence */}
+            <AttendanceListModal
+                isOpen={isAttendanceModalOpen}
+                onClose={closeAttendanceModal}
+                trainingData={trainingDataForPDF}
+                groupData={groupData}
+                participants={participantsForPDF}
+                selectedDate={selectedDate}
+                listType={selectedListType}
+                companyData={companyData}
+                ocfData={ocfData}
+                onSave={handleSaveAttendancePDF}
+                onSaveAndDownload={handleSaveAndDownloadAttendancePDF}
+            />
         </form>
     );
 };

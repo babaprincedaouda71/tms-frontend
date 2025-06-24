@@ -184,29 +184,29 @@ const TrainingDetailsPage = () => {
     ) : null;
 
     // Gestionnaire de clic pour la colonne Groupe
-    const handleGroupClick = (value: string, row: any) => {
-        navigateTo(`/Plan/annual/${exercice}/${theme}/${value}`, {
+    const handleGroupClick = (_: string, row: any) => {
+        // Utiliser la même logique que customEditHandler
+        navigateTo(buildRoleBasedPath("/Plan/annual/add-group"), {
             query: {
-                exercice: exercice, // Conserver l'exercice actuel
-                theme: theme, // Conserver le thème actuel
-                group: value, // Ajouter le groupe cliqué
-            },
+                trainingId: id,
+                groupId: row.id,
+            }
         });
     };
 
     // Configuration des colonnes cliquables
     const columnConfigs = {
-        group: {
+        name: {
             onClick: handleGroupClick,
             className: "hover:underline cursor-pointer",
         },
     };
 
     const renderers = {
-        group: (value: string, row: any) => (
+        name: (value: string, row: any) => (
             <div
-                onClick={() => columnConfigs.group.onClick(value, row)}
-                className={columnConfigs.group.className}
+                onClick={() => columnConfigs.name.onClick(value, row)}
+                className={columnConfigs.name.className}
             >
                 {value}
             </div>

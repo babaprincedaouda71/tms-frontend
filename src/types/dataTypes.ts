@@ -579,6 +579,8 @@ export interface ProfessionalInfosProps {
 }
 
 export interface UserProps {
+    level: string;
+    code: string;
     id: number;
     companyId: number;
     userId: number;

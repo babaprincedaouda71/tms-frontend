@@ -6,7 +6,8 @@ export const AUTH_URLS = {
 }
 
 export const COMPANIES_URLS = {
-    complete_register: `${API_URL}/companies/company/complete`
+    complete_register: `${API_URL}/companies/company/complete`,
+    getCurrent: `${API_URL}/companies/company/current`,
 }
 
 export const USERS_URLS = {
@@ -260,6 +261,7 @@ export const PDF_URLS = {
     savePDFToMinio: `${API_URL}/plan/file/save-cancellation-notice`,
     downloadPDF: `${API_URL}/plan/file/download`,
     deletePDF: `${API_URL}/plan/file/delete`,
+    saveAttendanceListPDF: `${API_URL}/plan/file/save-attendance-list`,
 };
 
 export const NEED_TO_ADD_TO_PLAN_URLS = {
@@ -271,6 +273,7 @@ export const NEED_TO_ADD_TO_PLAN_URLS = {
 export const GROUPE_INVOICE_URLS = {
     mutate: `${API_URL}/plan/groupeInvoice/get/all`,
     addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
+    deleteGroupeInvoice: `${API_URL}/plan/groupeInvoice/delete/groupeInvoice`,
 }
 
 export const TRAINING_INVITATION_URLS = {
