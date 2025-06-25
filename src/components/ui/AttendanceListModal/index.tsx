@@ -12,6 +12,7 @@ interface CompanyData {
 // Interface pour les participants
 interface Participant {
     id: number;
+    name: string;
     firstName: string;
     lastName: string;
     code: string;
@@ -226,7 +227,7 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                         const dataX = currentCellX + 2;
                         switch(mainHeaders[colIndex]) {
                             case 'Prénom':
-                                doc.text(participant.firstName, dataX, rowY + rowHeight - 4);
+                                doc.text(participant.name, dataX, rowY + rowHeight - 4);
                                 break;
                             case 'Nom':
                                 doc.text(participant.lastName, dataX, rowY + rowHeight - 4);

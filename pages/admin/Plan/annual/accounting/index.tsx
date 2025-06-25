@@ -71,14 +71,21 @@ const Accounting = () => {
     const [showForm, setShowForm] = useState(false);
 
     const renderers = {
-        status: (value: string) => (
-            <StatusRenderer value={value} groupeConfig={statusConfig}/>
+        status: (value: string, row: AccountingsProps) => (
+            <StatusRenderer
+                value={value}
+                groupeConfig={statusConfig}
+                statusOptions={['Non Réglée', 'Réglée', 'Annulée']}
+                mutateUrl={GROUPE_INVOICE_URLS.mutate + `/${groupId}`}
+                apiUrl={GROUPE_INVOICE_URLS.updateStatus}
+                row={row}
+            />
         ),
-        actions: (_: any, row: any) =>
+        actions: (_: any, row: AccountingsProps) =>
             <DynamicActionsRenderer
                 actions={ACTIONS_TO_SHOW}
                 row={row}
-                mutateUrl={GROUPE_INVOICE_URLS.mutate}
+                mutateUrl={GROUPE_INVOICE_URLS.mutate + `/${groupId}`}
                 deleteUrl={GROUPE_INVOICE_URLS.deleteGroupeInvoice}
             />
     };

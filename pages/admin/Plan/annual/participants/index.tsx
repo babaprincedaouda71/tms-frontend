@@ -209,11 +209,14 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
             // Obtenir les IDs des utilisateurs invités
             const invitedUserIds = invitations.map(inv => inv.userId);
 
+            console.log('Participants data:', participantsData);
+
             // Filtrer et formater les participants qui ont des invitations
             return participantsData
                 .filter(user => invitedUserIds.includes(user.id))
                 .map(user => ({
                     id: user.id,
+                    name: user.firstName + ' ' + user.lastName,
                     firstName: user.firstName || '',
                     lastName: user.lastName || '',
                     code: user.code || '',

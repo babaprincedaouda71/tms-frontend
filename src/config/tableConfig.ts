@@ -188,14 +188,14 @@ export const statusConfig: Record<string, StatusConfig> = {
     },
 
     // === STATUTS FINANCIERS ===
-    Réglé: {
-        label: "Réglé",
+    Réglée: {
+        label: "Réglée",
         ...STATUS_STYLES.SUCCESS,
         showDot: true,
     },
-    "Non Réglé": {
-        label: "Non Réglé",
-        ...STATUS_STYLES.ERROR,
+    "Non Réglée": {
+        label: "Non Réglée",
+        ...STATUS_STYLES.WARNING,
         showDot: true,
     },
     Remboursée: {

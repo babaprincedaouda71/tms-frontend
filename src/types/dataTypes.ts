@@ -520,6 +520,7 @@ export interface PlanGroupEvaluationProps {
 }
 
 export interface AccountingsProps {
+    id: string;
     type: string;
     creationDate: string;
     description: string;
