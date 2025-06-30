@@ -14,7 +14,10 @@ import {DepartmentProps, SiteProps} from '@/types/dataTypes';
 import {DEPARTMENT_URLS, SITE_URLS, TRAINING_GROUPE_URLS} from '@/config/urls';
 import {fetcher} from '@/services/api';
 import Accounting from "../accounting";
-import LibraryPage from "../library";
+import DocumentPage from "../library/document";
+import Certificate from "../library/certificate";
+import Media from "../library/media";
+import Evaluation from "../evaluation";
 
 export interface TrainerProps {
     id: number;
@@ -198,10 +201,22 @@ const AddGroup = () => {
                         groupData={groupData}
                         onGroupDataUpdated={handleGroupDataUpdated}
                     />;
+                case 'evaluation':
+                    return <Evaluation/>;
                 case 'accounting':
                     return <Accounting/>;
                 case 'library':
-                    return <LibraryPage/>;
+                    // Gérer les sous-éléments de library
+                    switch (state.activeSubItem) {
+                        case 'document':
+                            return <DocumentPage/>;
+                        case 'certificate':
+                            return <Certificate/>;
+                        case 'media':
+                            return <Media/>;
+                        default:
+                            return <DocumentPage/>; // Par défaut, afficher DocumentPage
+                    }
                 default:
                     return null;
             }
@@ -209,7 +224,7 @@ const AddGroup = () => {
             console.error('Error rendering content:', error);
             return <ErrorMessage error={error as Error}/>;
         }
-    };
+    }
 
 
     return (

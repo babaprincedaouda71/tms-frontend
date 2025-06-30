@@ -1,10 +1,10 @@
 import TabBar from '@/components/TabBar';
 import React, {useState} from 'react'
-import PresenceList from './PresenceList';
+import PresenceList from './AttendanceList';
 import Evaluation from './Evaluation';
 import EducationalDocuments from './EducationalDocuments';
 
-const Document = () => {
+const DocumentPage = () => {
     const [activeTab, setActiveTab] = useState("presenceList");
 
     const tabs = [
@@ -31,4 +31,4 @@ const Document = () => {
     )
 }
 
-export default Document
+export default DocumentPage

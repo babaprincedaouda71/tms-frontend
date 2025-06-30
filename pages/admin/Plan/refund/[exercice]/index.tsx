@@ -18,7 +18,7 @@ const TABLE_HEADERS = [
     "Coût",
     "OCF",
     "Statut",
-    "Document",
+    "DocumentPage",
     "Actions",
 ];
 const TABLE_KEYS = [

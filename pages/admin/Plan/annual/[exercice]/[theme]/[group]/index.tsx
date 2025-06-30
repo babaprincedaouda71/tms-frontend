@@ -58,7 +58,7 @@ const index = () => {
             // icon: <img src='/images/archive.svg' />,
             icon: <Library />,
             subItems: [
-                { id: "document", name: "Document" },
+                { id: "document", name: "DocumentPage" },
                 { id: "certificate", name: "Certificat" },
                 { id: "media", name: "Media" },
             ]

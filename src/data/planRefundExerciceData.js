@@ -7,7 +7,7 @@ export const planRefundExerciceData = [
     cost: "10000",
     ocf: "1000",
     status: "En cours",
-    document: "Document 1",
+    document: "DocumentPage 1",
   },
   {
     number: 2,
@@ -17,7 +17,7 @@ export const planRefundExerciceData = [
     cost: "5000",
     ocf: "500",
     status: "Clôturée",
-    document: "Document 2",
+    document: "DocumentPage 2",
   },
   {
     number: 3,
@@ -27,7 +27,7 @@ export const planRefundExerciceData = [
     cost: "8000",
     ocf: "800",
     status: "En cours",
-    document: "Document 3",
+    document: "DocumentPage 3",
   },
   {
     number: 4,
@@ -37,7 +37,7 @@ export const planRefundExerciceData = [
     cost: "12000",
     ocf: "1200",
     status: "En cours",
-    document: "Document 4",
+    document: "DocumentPage 4",
   },
   {
     number: 5,
@@ -47,7 +47,7 @@ export const planRefundExerciceData = [
     cost: "3000",
     ocf: "300",
     status: "Clôturée",
-    document: "Document 5",
+    document: "DocumentPage 5",
   },
   {
     number: 6,
@@ -57,7 +57,7 @@ export const planRefundExerciceData = [
     cost: "6000",
     ocf: "600",
     status: "Clôturée",
-    document: "Document 6",
+    document: "DocumentPage 6",
   },
   {
     number: 7,
@@ -67,7 +67,7 @@ export const planRefundExerciceData = [
     cost: "9000",
     ocf: "900",
     status: "En cours",
-    document: "Document 7",
+    document: "DocumentPage 7",
   },
   {
     number: 8,
@@ -77,7 +77,7 @@ export const planRefundExerciceData = [
     cost: "4000",
     ocf: "400",
     status: "En cours",
-    document: "Document 8",
+    document: "DocumentPage 8",
   },
   {
     number: 9,
@@ -87,7 +87,7 @@ export const planRefundExerciceData = [
     cost: "2000",
     ocf: "200",
     status: "En cours",
-    document: "Document 9",
+    document: "DocumentPage 9",
   },
   {
     number: 10,
@@ -97,7 +97,7 @@ export const planRefundExerciceData = [
     cost: "11000",
     ocf: "1100",
     status: "En cours",
-    document: "Document 10",
+    document: "DocumentPage 10",
   },
   {
     number: 11,
@@ -107,7 +107,7 @@ export const planRefundExerciceData = [
     cost: "5500",
     ocf: "550",
     status: "En cours",
-    document: "Document 11",
+    document: "DocumentPage 11",
   },
   {
     number: 12,
@@ -117,7 +117,7 @@ export const planRefundExerciceData = [
     cost: "8500",
     ocf: "850",
     status: "Clôturée",
-    document: "Document 12",
+    document: "DocumentPage 12",
   },
   {
     number: 13,
@@ -127,7 +127,7 @@ export const planRefundExerciceData = [
     cost: "12500",
     ocf: "1250",
     status: "Clôturée",
-    document: "Document 13",
+    document: "DocumentPage 13",
   },
   {
     number: 14,
@@ -137,7 +137,7 @@ export const planRefundExerciceData = [
     cost: "6000",
     ocf: "600",
     status: "En cours",
-    document: "Document 14",
+    document: "DocumentPage 14",
   },
   {
     number: 15,
@@ -147,6 +147,6 @@ export const planRefundExerciceData = [
     cost: "9500",
     ocf: "950",
     status: "Clôturée",
-    document: "Document 15",
+    document: "DocumentPage 15",
   },
 ];

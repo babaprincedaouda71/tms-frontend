@@ -392,7 +392,7 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                 <button
                     type="button"
                     onClick={handleBackToList}
-                    className="bg-gray-500 hover:bg-gray-600 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors"
+                    className="bg-redShade-500 hover:bg-redShade-600 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors"
                 >
                     Annuler
                 </button>

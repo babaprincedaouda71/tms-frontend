@@ -1,3 +1,5 @@
+// Modification du composant Accounting (pages/admin/Plan/annual/accounting/index.tsx)
+
 import Table from '@/components/Tables/Table/index'
 import React, {useMemo, useState} from 'react'
 import {AccountingsProps} from '@/types/dataTypes'
@@ -5,6 +7,7 @@ import StatusRenderer from '@/components/Tables/StatusRenderer'
 import SearchFilterAddBar from '@/components/SearchFilterAddBar'
 import ModalButton from '@/components/ModalButton'
 import AddFee from './addFee'
+import AccountingDetails from './details' // Import du nouveau composant
 import {handleSort} from '@/utils/sortUtils'
 import {statusConfig} from '@/config/tableConfig'
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer'
@@ -40,8 +43,12 @@ const RECORDS_PER_PAGE = 4;
 
 const Accounting = () => {
     const router = useRouter();
-    // Récupération du groupe id depuis le router
     const {groupId} = router.query;
+
+    // États pour gérer les vues
+    const [currentView, setCurrentView] = useState<'list' | 'add' | 'details'>('list');
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+
     // Récupération des données via SWR
     const {
         data: accountingData,
@@ -68,9 +75,45 @@ const Accounting = () => {
         RECORDS_PER_PAGE
     )
 
-    const [showForm, setShowForm] = useState(false);
+    // Renderer pour rendre le type de frais cliquable
+    const TypeRenderer = ({value, row}: { value: string, row: AccountingsProps }) => {
+        const handleTypeClick = () => {
+            setSelectedInvoiceId(row.id);
+            setCurrentView('details');
+        };
+
+        return (
+            <button
+                onClick={handleTypeClick}
+                className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left w-full"
+                title="Cliquer pour voir les détails"
+            >
+                {value}
+            </button>
+        );
+    };
 
     const renderers = {
+        type: (value: string, row: AccountingsProps) => (
+            <TypeRenderer value={value} row={row}/>
+        ),
+        // Formatage du montant avec devise
+        amount: (value: string) => (
+            <span className="font-medium">
+                {parseFloat(value).toLocaleString('fr-FR')} Dh
+            </span>
+        ),
+        // Formatage des dates
+        creationDate: (value: string) => (
+            <span>
+                {new Date(value).toLocaleDateString('fr-FR')}
+            </span>
+        ),
+        paymentDate: (value: string) => (
+            <span>
+                {value ? new Date(value).toLocaleDateString('fr-FR') : 'Non renseignée'}
+            </span>
+        ),
         status: (value: string, row: AccountingsProps) => (
             <StatusRenderer
                 value={value}
@@ -91,75 +134,86 @@ const Accounting = () => {
     };
 
     const handleAdd = () => {
-        setShowForm(true);
+        setCurrentView('add');
     };
 
-    const handleCancel = () => {
-        setShowForm(false);
-    };
-
-    // Fonction pour gérer le retour à la liste (fermer le formulaire)
     const handleBackToList = () => {
-        setShowForm(false);
+        setCurrentView('list');
+        setSelectedInvoiceId(null);
     };
 
-    // Fonction pour gérer le succès de soumission
     const handleSubmitSuccess = async () => {
-        // Actualiser les données via SWR
         await mutate();
-        // Fermer le formulaire
-        setShowForm(false);
+        setCurrentView('list');
+    };
+
+    // Rendu conditionnel basé sur la vue actuelle
+    const renderContent = () => {
+        switch (currentView) {
+            case 'add':
+                return (
+                    <AddFee
+                        onCancel={handleBackToList}
+                        onSuccess={handleSubmitSuccess}
+                    />
+                );
+            case 'details':
+                return selectedInvoiceId ? (
+                    <AccountingDetails
+                        invoiceId={selectedInvoiceId}
+                        groupId={groupId}
+                        onCancel={handleBackToList}
+                    />
+                ) : null;
+            case 'list':
+            default:
+                return (
+                    <>
+                        <div className="flex items-start gap-2 md:gap-8">
+                            <SearchFilterAddBar
+                                isLeftButtonVisible={false}
+                                isFiltersVisible={false}
+                                isRightButtonVisible={true}
+                                leftTextButton="Filtrer les colonnes"
+                                rightTextButton="Nouvelle"
+                                onRightButtonClick={handleAdd}
+                                filters={[]}
+                                placeholderText={"Recherche..."}
+                            />
+                            <ModalButton
+                                headers={TABLE_HEADERS}
+                                visibleColumns={visibleColumns}
+                                toggleColumnVisibility={toggleColumnVisibility}
+                            />
+                        </div>
+                        <Table
+                            data={paginatedData}
+                            keys={TABLE_KEYS}
+                            headers={TABLE_HEADERS}
+                            sortableCols={sortableColumns}
+                            onSort={(column, order) => handleSortData(column, order, handleSort)}
+                            isPagination={true}
+                            pagination={{
+                                currentPage,
+                                totalPages,
+                                onPageChange: setCurrentPage,
+                            }}
+                            totalRecords={totalRecords}
+                            loading={!accountingData && !error}
+                            onAdd={() => null}
+                            visibleColumns={visibleColumns}
+                            renderers={renderers}
+                        />
+                    </>
+                );
+        }
     };
 
     return (
         <ProtectedRoute requiredRole={UserRole.Admin}>
-            {!showForm ? (
-                <>
-                    <div className="flex items-start gap-2 md:gap-8">
-                        <SearchFilterAddBar
-                            isLeftButtonVisible={false}
-                            isFiltersVisible={false}
-                            isRightButtonVisible={true}
-                            leftTextButton="Filtrer les colonnes"
-                            rightTextButton="Nouvelle"
-                            onRightButtonClick={handleAdd}
-                            filters={[]}
-                            placeholderText={"Recherche..."}
-                        />
-                        {/* Bouton pour afficher/masquer la fenêtre modale */}
-                        <ModalButton
-                            headers={TABLE_HEADERS}
-                            visibleColumns={visibleColumns}
-                            toggleColumnVisibility={toggleColumnVisibility}
-                        />
-                    </div>
-                    <Table
-                        data={paginatedData}
-                        keys={TABLE_KEYS}
-                        headers={TABLE_HEADERS}
-                        sortableCols={sortableColumns}
-                        onSort={(column, order) => handleSortData(column, order, handleSort)}
-                        isPagination={true}
-                        pagination={{
-                            currentPage,
-                            totalPages,
-                            onPageChange: setCurrentPage,
-                        }}
-                        totalRecords={totalRecords}
-                        loading={!accountingData && !error}
-                        onAdd={() => null}
-                        visibleColumns={visibleColumns}
-                        renderers={renderers}
-                    />
-                </>
-            ) : (
-                <AddFee
-                    onCancel={handleBackToList}
-                    onSuccess={handleSubmitSuccess}
-                />
-            )}
+            {renderContent()}
         </ProtectedRoute>
-    )
+    );
 }
 
-export default Accounting
+export default Accounting;

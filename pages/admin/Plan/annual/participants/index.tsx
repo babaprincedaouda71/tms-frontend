@@ -57,12 +57,14 @@ interface ParticipantForPDF {
     position: string;
     level: string;
     manager: string;
+    cnss?: string;
+    cin?: string;
 }
 
 // Définir une interface pour les données du groupe, incluant les IDs des utilisateurs sélectionnés
 interface GroupData {
     id?: number;
-    name: string; // Nouveau champ ajouté
+    name?: string;
     targetAudience: string;
     managerCount: number;
     employeeCount: number;
@@ -196,7 +198,8 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
 
         try {
             // Récupérer les détails complets des participants via l'API existante
-            const response = await fetch(`${TRAINING_GROUPE_URLS.getParticipants}/${groupId}`, {
+            const response = await fetch(`${TRAINING_GROUPE_URLS.getParticipantsForList}/${groupId}`, {
+                method: 'GET',
                 credentials: 'include',
             });
 
@@ -204,7 +207,7 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 throw new Error('Erreur lors de la récupération des participants');
             }
 
-            const participantsData: UserProps[] = await response.json();
+            const participantsData: ParticipantForPDF[] = await response.json();
 
             // Obtenir les IDs des utilisateurs invités
             const invitedUserIds = invitations.map(inv => inv.userId);
@@ -222,7 +225,9 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                     code: user.code || '',
                     position: user.position || '',
                     level: user.level || '',
-                    manager: user.manager || ''
+                    manager: user.manager || '',
+                    cin: user.cin || '',
+                    cnss: user.cnss || ''
                 }));
 
         } catch (error) {

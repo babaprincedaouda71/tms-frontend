@@ -746,3 +746,11 @@ export interface TrainingInvitationProps {
     invitationDate: string;
     status: string;
 }
+
+export interface GroupeEvaluationProps {
+    id: string;
+    label: string;
+    description:string;
+    creationDate:string;
+    status:string;
+}

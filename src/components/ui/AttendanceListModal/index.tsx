@@ -9,22 +9,23 @@ interface CompanyData {
     // Ajoutez d'autres champs selon vos besoins
 }
 
-// Interface pour les participants
-interface Participant {
+// Interface pour les participants du PDF
+interface ParticipantForPDF {
     id: number;
-    name: string;
     firstName: string;
     lastName: string;
     code: string;
     position: string;
     level: string;
     manager: string;
+    cnss?:string;
+    cin?: string;
 }
 
 // Interface pour les données du groupe (mise à jour)
 interface GroupData {
     id?: number;
-    name: string; // Nouveau champ ajouté
+    name?: string; // Nouveau champ ajouté
     targetAudience: string;
     managerCount: number;
     employeeCount: number;
@@ -50,7 +51,7 @@ interface AttendanceListModalProps {
     onClose: () => void;
     trainingData: TrainingData | null;
     groupData: GroupData | null;
-    participants: Participant[];
+    participants: ParticipantForPDF[];
     selectedDate: string;
     listType: 'internal' | 'csf';
     companyData: CompanyData | null;
@@ -227,10 +228,20 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                         const dataX = currentCellX + 2;
                         switch(mainHeaders[colIndex]) {
                             case 'Prénom':
-                                doc.text(participant.name, dataX, rowY + rowHeight - 4);
+                                doc.text(participant.firstName, dataX, rowY + rowHeight - 4);
                                 break;
                             case 'Nom':
                                 doc.text(participant.lastName, dataX, rowY + rowHeight - 4);
+                                break;
+                            case 'N° CIN':
+                                if (participant.cin) {
+                                    doc.text(participant.cin, dataX, rowY + rowHeight - 4);
+                                }
+                                break;
+                            case 'N°CNSS':
+                                if (participant.cnss) {
+                                    doc.text(participant.cnss, dataX, rowY + rowHeight - 4);
+                                }
                                 break;
                             case 'C.S.P*':
                                 const level = participant.level?.toUpperCase().charAt(0);

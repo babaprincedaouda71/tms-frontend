@@ -254,6 +254,7 @@ export const TRAINING_GROUPE_URLS = {
     editGroupExternalProvider: `${API_URL}/plan/trainings/training-groups/edit/groupExternalProvider`,
     sendInvitations: `${API_URL}/plan/trainings/training-groups/send-invitations`,
     getParticipants: `${API_URL}/plan/trainings/training-groups/get/getParticipants`,
+    getParticipantsForList: `${API_URL}/plan/trainings/training-groups/get/getParticipantsForList`,
     getGroupDetailsForSendInvitationToTrainer: `${API_URL}/plan/trainings/training-groups/get/getGroupDetailsForSendInvitationToTrainer`,
 }
 
@@ -275,6 +276,8 @@ export const GROUPE_INVOICE_URLS = {
     addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
     deleteGroupeInvoice: `${API_URL}/plan/groupeInvoice/delete/groupeInvoice`,
     updateStatus: `${API_URL}/plan/groupeInvoice/update-status`,
+    getGroupeInvoiceDetails: `${API_URL}/plan/groupeInvoice/get/groupeInvoiceDetails`,
+    getPdf: `${API_URL}/plan/groupeInvoice/get/pdf`,
 }
 
 export const TRAINING_INVITATION_URLS = {
@@ -285,4 +288,12 @@ export const TRAINING_INVITATION_URLS = {
     getTeamInvitations: `${API_URL}/plan/trainings/invitations/get/teamInvitations`,
     respondToInvitation: `${API_URL}/plan/trainings/invitations/respond`,
     checkTrainerInvitationStatus: `${API_URL}/plan/trainings/invitations/checkTrainerInvitationStatus`,
+}
+
+export const GROUPE_EVALUATION_URLS = {
+    mutate: `${API_URL}/plan/groupes/evaluations/get/all`,
+    getDetails: `${API_URL}/plan/groupes/evaluations/get/details`,
+    sendEvaluation: `${API_URL}/plan/groupes/evaluations/send-evaluation`,
+    fetchParticipants: `${API_URL}/plan/groupes/evaluations/get/participants`,
+    add: `${API_URL}/plan/groupes/evaluations/add`,
 }

@@ -102,7 +102,7 @@ const PhotoGallery = () => {
                         {selectedPhotos.size > 0 && (
                             <button
                                 onClick={deleteSelectedPhotos}
-                                className="text-red-600 hover:text-red-700 text-sm flex items-center space-x-1"
+                                className="text-redShade-600 hover:text-redShade-700 text-sm flex items-center space-x-1"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 <span>Supprimer la sélection</span>
@@ -174,7 +174,7 @@ const PhotoGallery = () => {
 
                                 <button
                                     onClick={() => setViewingPhoto(photo)}
-                                    className="absolute bottom-2 left-2 p-1 bg-white rounded-full opacity-0 group-hover:opacity-100 
+                                    className="absolute bottom-2 left-2 p-1 bg-white rounded-full opacity-0 group-hover:opacity-100
                     transition-all duration-200 hover:scale-110 active:scale-90 hover:bg-gray-100"
                                 >
                                     <Eye className="w-3 h-3" />
