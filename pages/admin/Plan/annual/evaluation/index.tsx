@@ -1,3 +1,4 @@
+// pages/admin/Plan/annual/evaluation/index.tsx
 import ModalButton from '@/components/ModalButton'
 import SearchFilterAddBar from '@/components/SearchFilterAddBar'
 import StatusRenderer from '@/components/Tables/StatusRenderer'
@@ -14,6 +15,8 @@ import useSWR from "swr";
 import {GROUPE_EVALUATION_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import {useRouter} from "next/router";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 const TABLE_HEADERS = [
     "Label",
@@ -37,11 +40,12 @@ const Evaluation = () => {
     // Récupération du trainingId et du groupId
     const router = useRouter();
     const {trainingId, groupId} = router.query;
+
     // Récupération des données via SWR
     const {
         data: groupeEvaluationData,
         error,
-        mutate
+        mutate: mutateEvaluations
     } = useSWR<GroupeEvaluationProps[]>(GROUPE_EVALUATION_URLS.mutate + `/${trainingId}/${groupId}`, fetcher);
 
     // Mémorisation des données
@@ -73,6 +77,13 @@ const Evaluation = () => {
         setShowForm(false);
     };
 
+    // Fonction pour gérer le clic sur l'action "view"
+    const handleViewAction = (row: GroupeEvaluationProps) => {
+        setSelectedItem(row);
+        setShowDetails(true);
+        setShowForm(false);
+    };
+
     const renderers = {
         label: (value: string, row: GroupeEvaluationProps) => (
             <button
@@ -82,11 +93,23 @@ const Evaluation = () => {
                 {value}
             </button>
         ),
-        status: (value: string) => (
-            <StatusRenderer value={value} groupeConfig={statusConfig}/>
+        status: (value: string, row: GroupeEvaluationProps) => (
+            <StatusRenderer
+                value={value}
+                groupeConfig={statusConfig}
+                statusOptions={["Brouillon", "Publiée"]}
+                apiUrl={GROUPE_EVALUATION_URLS.updateStatus}
+                mutateUrl={GROUPE_EVALUATION_URLS.mutate + `/${trainingId}/${groupId}`}
+                row={row}
+            />
         ),
-        actions: (_: any, row: GroupeEvaluationProps) =>
-            <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}/>
+        actions: (_: any, row: GroupeEvaluationProps) => (
+            <DynamicActionsRenderer
+                actions={ACTIONS_TO_SHOW}
+                row={row}
+                customViewHandler={() => handleViewAction(row)}
+            />
+        )
     };
 
     const handleAdd = () => {
@@ -97,46 +120,67 @@ const Evaluation = () => {
         setShowForm(false);
     };
 
+    // Fonction pour revenir à la liste depuis les détails
+    const handleBackToList = () => {
+        setShowDetails(false);
+        setSelectedItem(null);
+    };
+
+    const handleFormSuccess = () => {
+        setShowForm(false);
+        mutateEvaluations();
+    };
 
     return (
-        <div className="mx-auto bg-white font-title rounded-lg px-6 pb-2 pt-6">
-            {!showForm ? !showDetails ? (
-                <>
-                    <div className="flex items-start gap-2 md:gap-8 mt-4">
-                        <SearchFilterAddBar
-                            isLeftButtonVisible={false}
-                            isFiltersVisible={false}
-                            isRightButtonVisible={true}
-                            leftTextButton="Filtrer les colonnes"
-                            rightTextButton="Nouvelle"
-                            onRightButtonClick={handleAdd}
-                            filters={[]}
-                            placeholderText={"Recherche..."}
-                        />
-                        <ModalButton
+        <ProtectedRoute requiredRole={UserRole.Admin}>
+            <div className="mx-auto bg-white font-title rounded-lg px-6 pb-2 pt-6">
+                {!showForm ? !showDetails ? (
+                    <>
+                        <div className="flex items-start gap-2 md:gap-8 mt-4">
+                            <SearchFilterAddBar
+                                isLeftButtonVisible={false}
+                                isFiltersVisible={false}
+                                isRightButtonVisible={true}
+                                leftTextButton="Filtrer les colonnes"
+                                rightTextButton="Nouvelle"
+                                onRightButtonClick={handleAdd}
+                                filters={[]}
+                                placeholderText={"Recherche..."}
+                            />
+                            <ModalButton
+                                headers={TABLE_HEADERS}
+                                visibleColumns={visibleColumns}
+                                toggleColumnVisibility={toggleColumnVisibility}
+                            />
+                        </div>
+                        <Table
+                            data={paginatedData}
+                            keys={TABLE_KEYS}
                             headers={TABLE_HEADERS}
+                            sortableCols={sortableColumns}
+                            onSort={(column, order) => handleSortData(column, order, handleSort)}
+                            isPagination={false}
+                            totalRecords={totalRecords}
+                            loading={false}
+                            onAdd={handleAdd}
                             visibleColumns={visibleColumns}
-                            toggleColumnVisibility={toggleColumnVisibility}
+                            renderers={renderers}
                         />
-                    </div>
-                    <Table
-                        data={paginatedData}
-                        keys={TABLE_KEYS}
-                        headers={TABLE_HEADERS}
-                        sortableCols={sortableColumns}
-                        onSort={(column, order) => handleSortData(column, order, handleSort)}
-                        isPagination={false}
-                        totalRecords={totalRecords}
-                        loading={false}
-                        onAdd={handleAdd}
-                        visibleColumns={visibleColumns}
-                        renderers={renderers}
+                    </>
+                ) : (
+                    // Passer l'ID de l'élément sélectionné au composant DetailEvaluation
+                    <DetailEvaluation
+                        groupeEvaluationId={selectedItem?.id}
+                        onBack={handleBackToList}
                     />
-                </>
-            ) : (
-                <DetailEvaluation/>
-            ) : (<EvaluationForm onClick={handleCancel}/>)}
-        </div>
+                ) : (
+                    <EvaluationForm
+                        onClick={handleCancel}
+                        onSuccess={handleFormSuccess}
+                    />
+                )}
+            </div>
+        </ProtectedRoute>
     )
 }
 

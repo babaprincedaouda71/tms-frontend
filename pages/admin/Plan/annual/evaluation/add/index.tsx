@@ -1,3 +1,4 @@
+// pages/admin/Plan/annual/evaluation/add/index.tsx
 import CustomSelect from '@/components/FormComponents/CustomSelect'
 import InputField from '@/components/FormComponents/InputField'
 import Table from '@/components/Tables/Table/index'
@@ -28,6 +29,11 @@ interface FormErrors {
     participantIds?: string;
 }
 
+interface EvaluationFormProps {
+    onClick: () => void;
+    onSuccess?: () => void; // Nouvelle prop pour gérer le succès
+}
+
 const TABLE_HEADERS = [
     "Nom",
     "Prénoms",
@@ -42,7 +48,7 @@ const TABLE_KEYS = [
 
 const RECORDS_PER_PAGE = 4;
 
-const EvaluationForm = ({onClick}) => {
+const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
     const router = useRouter();
     const {trainingId, groupId} = router.query;
 
@@ -185,9 +191,15 @@ const EvaluationForm = ({onClick}) => {
         setIsSubmitting(true);
 
         try {
+            // Récupérer le titre du questionnaire sélectionné
+            const selectedQuestionnaire = questionnairesOptionsFormatted.find(
+                opt => opt.value === formData.questionnaireId
+            );
+
             const payload = {
                 label: formData.label.trim(),
                 questionnaireId: formData.questionnaireId,
+                type: selectedQuestionnaire?.label || '', // Ajouter le titre comme type
                 participantIds: Array.from(selectedParticipants)
             };
 
@@ -207,8 +219,14 @@ const EvaluationForm = ({onClick}) => {
                 throw new Error('Erreur lors de la création de l\'évaluation');
             }
 
-            await mutate(); // Rafraîchir les données
-            onClick(); // Fermer le formulaire
+            await mutate(); // Rafraîchir les données des participants
+
+            // Appeler onSuccess si fourni pour rafraîchir les données parent
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                onClick(); // Fallback vers l'ancien comportement
+            }
 
         } catch (error) {
             console.error('Erreur lors de la soumission:', error);
@@ -216,7 +234,7 @@ const EvaluationForm = ({onClick}) => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, selectedParticipants, validateForm, groupId, onClick, mutate]);
+    }, [formData, selectedParticipants, validateForm, groupId, onClick, onSuccess, mutate]);
 
     // Renderers pour le tableau
     const renderers = {
@@ -236,7 +254,7 @@ const EvaluationForm = ({onClick}) => {
     // Gestion des états de chargement et d'erreur
     if (questionnairesError || participantsError) {
         return (
-            <div className="text-center p-4 text-red-500">
+            <div className="text-center p-4 text-redShade-500">
                 Erreur lors du chargement des données. Veuillez réessayer.
             </div>
         );
@@ -296,7 +314,7 @@ const EvaluationForm = ({onClick}) => {
                 </div>
 
                 {errors.participantIds && (
-                    <p className="text-sm text-red-500">{errors.participantIds}</p>
+                    <p className="text-sm text-redShade-500">{errors.participantIds}</p>
                 )}
 
                 <Table

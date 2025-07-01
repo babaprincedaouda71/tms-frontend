@@ -292,8 +292,12 @@ export const TRAINING_INVITATION_URLS = {
 
 export const GROUPE_EVALUATION_URLS = {
     mutate: `${API_URL}/plan/groupes/evaluations/get/all`,
-    getDetails: `${API_URL}/plan/groupes/evaluations/get/details`,
     sendEvaluation: `${API_URL}/plan/groupes/evaluations/send-evaluation`,
     fetchParticipants: `${API_URL}/plan/groupes/evaluations/get/participants`,
     add: `${API_URL}/plan/groupes/evaluations/add`,
+    updateStatus: `${API_URL}/plan/groupes/evaluations/update-status`,
+    delete: `${API_URL}/plan/groupes/evaluations/delete`,
+    view: `/Plan/annual/`,
+    edit: `${API_URL}/plan/groupes/evaluations/edit-evaluation`,
+    getDetails: `${API_URL}/evaluations/admin/groupe-evaluation-details`,
 }

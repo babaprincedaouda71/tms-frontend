@@ -754,3 +754,14 @@ export interface GroupeEvaluationProps {
     creationDate:string;
     status:string;
 }
+
+export interface GroupeEvaluationDetailProps {
+    id: number;
+    name:string;
+    position:string;
+    groupe:string;
+    progress:number;
+    status:string;
+    isSentToManager:boolean;
+    isSentToAdmin:boolean;
+}
