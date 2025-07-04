@@ -281,6 +281,7 @@ export const TRAINING_GROUPE_URLS = {
     getParticipants: `${API_URL}/plan/trainings/training-groups/get/getParticipants`,
     getParticipantsForList: `${API_URL}/plan/trainings/training-groups/get/getParticipantsForList`,
     getGroupDetailsForSendInvitationToTrainer: `${API_URL}/plan/trainings/training-groups/get/getGroupDetailsForSendInvitationToTrainer`,
+    getGroupDates: `${API_URL}/plan/trainings/training-groups/get/getGroupDates`,
 }
 
 export const PDF_URLS = {
@@ -330,4 +331,6 @@ export const GROUPE_EVALUATION_URLS = {
 export const ATTENDANCE_URLS = {
     saveList: `${API_URL}/plan/attendance/save-list`,
     scan: `${API_URL}/public/attendance/scan`,
+    markAttendance: `${API_URL}/public/attendance/mark`,
+    getAttendanceList: `${API_URL}/plan/attendance/get-list`,
 }

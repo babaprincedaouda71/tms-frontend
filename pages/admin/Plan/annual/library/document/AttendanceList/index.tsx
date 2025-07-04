@@ -6,7 +6,11 @@ import useTable from '@/hooks/useTable';
 import {PlanGroupUserProps} from '@/types/dataTypes';
 import {handleSort} from '@/utils/sortUtils';
 import {planGroupUserData} from '@/data/planGroupUserData';
-import React from 'react'
+import React, {useMemo} from 'react'
+import useSWR from "swr";
+import {TRAINING_GROUPE_URLS} from "@/config/urls";
+import {fetcher} from "@/services/api";
+import {useRouter} from "next/router";
 
 const TABLE_HEADERS = [
     "Nom",
@@ -23,9 +27,32 @@ const TABLE_KEYS = [
     "confirmation",
 ];
 
+// Interfaces
+interface AttendanceRecord {
+    recordId: string;
+    userId: number;
+    userFullName: string;
+    userCode: string;
+    userEmail: string;
+    status: string; // "PRESENT" ou "ABSENT"
+    statusDescription: string; // "présent" ou "absent"
+    markedDate: string | null;
+    canEdit: boolean;
+}
+
 const RECORDS_PER_PAGE = 4;
 
 const PresenceList = () => {
+    const router = useRouter();
+    const {groupId} = router.query;
+    const {
+        data: dateData,
+        error,
+        mutate
+    } = useSWR(TRAINING_GROUPE_URLS.getGroupDates + `/${groupId}`, fetcher)
+
+    const memorizedDateData = useMemo(() => dateData || [], [dateData]);
+    console.log(memorizedDateData)
     const {
         currentPage,
         visibleColumns,
