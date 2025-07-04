@@ -3,13 +3,14 @@ import CustomSelect from '@/components/FormComponents/CustomSelect'
 import InputField from '@/components/FormComponents/InputField'
 import Table from '@/components/Tables/Table/index'
 import React, {useCallback, useMemo, useState} from 'react'
-import {QuestionnaireProps} from '@/types/dataTypes'
+import {EvaluationsByTypeProps} from '@/types/dataTypes'
 import {handleSort} from '@/utils/sortUtils'
 import useTable from '@/hooks/useTable'
 import useSWR from "swr";
 import {GROUPE_EVALUATION_URLS, QUESTIONNAIRE_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import {useRouter} from "next/router";
+import QuestionnairePreviewModal from "@/components/ui/QuestionnairePreviewModal";
 
 interface ParticipantProps {
     id: number;
@@ -20,6 +21,7 @@ interface ParticipantProps {
 interface FormData {
     label: string;
     questionnaireId: string;
+    selectedType: string; // Type sélectionné par l'utilisateur
     participantIds: number[];
 }
 
@@ -31,7 +33,7 @@ interface FormErrors {
 
 interface EvaluationFormProps {
     onClick: () => void;
-    onSuccess?: () => void; // Nouvelle prop pour gérer le succès
+    onSuccess?: () => void;
 }
 
 const TABLE_HEADERS = [
@@ -56,25 +58,56 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
     const [formData, setFormData] = useState<FormData>({
         label: "",
         questionnaireId: "",
+        selectedType: "",
         participantIds: [],
     });
 
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedParticipants, setSelectedParticipants] = useState<Set<number>>(new Set());
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
-    // Récupération des données des questionnaires
-    const {data: questionnairesData, error: questionnairesError} = useSWR<QuestionnaireProps[]>(
-        QUESTIONNAIRE_URLS.mutate,
+    // Récupération des données des questionnaires groupés par type
+    const {data: questionnairesData, error: questionnairesError} = useSWR<EvaluationsByTypeProps[]>(
+        QUESTIONNAIRE_URLS.fetchAllByType,
         fetcher
     );
 
-    const questionnairesOptionsFormatted = useMemo(() => {
-        return questionnairesData ? questionnairesData.map(questionnaire => ({
-            label: questionnaire.title,
-            value: questionnaire.id.toString()
-        })) : [];
+    // Transformation des données pour les options du dropdown
+    const typeOptions = useMemo(() => {
+        if (!questionnairesData) return [];
+
+        // Filtrer pour ne garder que les types qui ont au moins un questionnaire par défaut
+        return questionnairesData
+            .filter(typeData =>
+                typeData.questionnaires &&
+                typeData.questionnaires.some(q => q.isDefault === true)
+            )
+            .map(typeData => typeData.type);
     }, [questionnairesData]);
+
+    // Fonction pour trouver le questionnaire par défaut d'un type donné
+    const getDefaultQuestionnaireForType = useCallback((type: string) => {
+        if (!questionnairesData) return null;
+
+        const typeData = questionnairesData.find(data => data.type === type);
+        if (!typeData?.questionnaires) return null;
+
+        return typeData.questionnaires.find(q => q.isDefault === true) || null;
+    }, [questionnairesData]);
+
+    // Fonction pour récupérer les détails du questionnaire sélectionné
+    const {data: selectedQuestionnaireDetails} = useSWR(
+        formData.questionnaireId ? `${QUESTIONNAIRE_URLS.getDetails}/${formData.questionnaireId}` : null,
+        fetcher
+    );
+
+    // Fonction pour ouvrir le modal de prévisualisation
+    const handlePreviewClick = useCallback(() => {
+        if (formData.selectedType && formData.questionnaireId) {
+            setIsPreviewModalOpen(true);
+        }
+    }, [formData.selectedType, formData.questionnaireId]);
 
     // Récupération des données des participants
     const {
@@ -108,9 +141,9 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
             newErrors.label = "Le label ne peut pas dépasser 100 caractères";
         }
 
-        // Validation du questionnaire
+        // Validation du questionnaire (vérifier que questionnaireId est défini)
         if (!formData.questionnaireId) {
-            newErrors.questionnaireId = "Veuillez sélectionner un questionnaire";
+            newErrors.questionnaireId = "Veuillez sélectionner un type de questionnaire";
         }
 
         // Validation des participants
@@ -139,6 +172,26 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
             }));
         }
     }, [errors]);
+
+    // Gestion spéciale pour la sélection de type
+    const handleTypeSelection = useCallback((event: { name: string; value: string }) => {
+        const selectedType = event.value;
+        const defaultQuestionnaire = getDefaultQuestionnaireForType(selectedType);
+
+        setFormData(prevFormData => ({
+            ...prevFormData,
+            selectedType: selectedType,
+            questionnaireId: defaultQuestionnaire?.id || ""
+        }));
+
+        // Effacer l'erreur de sélection
+        if (errors.questionnaireId) {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                questionnaireId: undefined,
+            }));
+        }
+    }, [getDefaultQuestionnaireForType, errors.questionnaireId]);
 
     // Gestion de la sélection des participants
     const handleParticipantToggle = useCallback((participant: ParticipantProps) => {
@@ -191,15 +244,10 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
         setIsSubmitting(true);
 
         try {
-            // Récupérer le titre du questionnaire sélectionné
-            const selectedQuestionnaire = questionnairesOptionsFormatted.find(
-                opt => opt.value === formData.questionnaireId
-            );
-
             const payload = {
                 label: formData.label.trim(),
                 questionnaireId: formData.questionnaireId,
-                type: selectedQuestionnaire?.label || '', // Ajouter le titre comme type
+                type: formData.selectedType, // Utiliser le type sélectionné
                 participantIds: Array.from(selectedParticipants)
             };
 
@@ -279,22 +327,22 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
                 error={errors.label}
             />
 
-            {/* Sélection du questionnaire */}
+            {/* Sélection du type de questionnaire */}
             <div className='flex items-center gap-4'>
                 <CustomSelect
-                    name='questionnaireId'
+                    name='selectedType'
                     label='Type de questionnaire *'
-                    options={questionnairesOptionsFormatted.map(opt => opt.label)}
-                    value={questionnairesOptionsFormatted.find(opt => opt.value === formData.questionnaireId)?.label || ''}
-                    onChange={(event) => {
-                        const selectedOption = questionnairesOptionsFormatted.find(opt => opt.label === event.value);
-                        if (selectedOption) {
-                            handleChange({name: 'questionnaireId', value: selectedOption.value});
-                        }
-                    }}
+                    options={typeOptions}
+                    value={formData.selectedType}
+                    onChange={handleTypeSelection}
                     error={errors.questionnaireId}
                 />
-                <img src='/images/view_eval.svg' alt="Voir l'évaluation" className="cursor-pointer"/>
+                <img
+                    src='/images/view_eval.svg'
+                    alt="Voir l'évaluation"
+                    className={`cursor-pointer ${!formData.selectedType ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+                    onClick={handlePreviewClick}
+                />
             </div>
 
             {/* Section participants */}
@@ -351,6 +399,14 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
                     {isSubmitting ? 'Création...' : 'Valider'}
                 </button>
             </div>
+
+            {/* Modal de prévisualisation du questionnaire */}
+            <QuestionnairePreviewModal
+                isOpen={isPreviewModalOpen}
+                onClose={() => setIsPreviewModalOpen(false)}
+                questionnaireData={selectedQuestionnaireDetails}
+                selectedType={formData.selectedType}
+            />
         </form>
     );
 };

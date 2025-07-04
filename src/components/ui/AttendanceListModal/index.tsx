@@ -1,12 +1,13 @@
 import React, {useRef, useState} from 'react';
 import {Download, FileText, Save, X} from 'lucide-react';
+import QRCode from 'qrcode';
+import { ATTENDANCE_URLS } from '@/config/urls';
 
 // Interface pour les données de la compagnie
 interface CompanyData {
     id: number;
     corporateName: string;
     address?: string;
-    // Ajoutez d'autres champs selon vos besoins
 }
 
 // Interface pour les participants du PDF
@@ -22,10 +23,10 @@ interface ParticipantForPDF {
     cin?: string;
 }
 
-// Interface pour les données du groupe (mise à jour)
+// Interface pour les données du groupe
 interface GroupData {
     id?: number;
-    name?: string; // Nouveau champ ajouté
+    name?: string;
     targetAudience: string;
     managerCount: number;
     employeeCount: number;
@@ -34,7 +35,6 @@ interface GroupData {
     userGroupIds: number[];
     dates?: string[];
     location: string;
-    // Ajoutez d'autres champs selon vos besoins
 }
 
 // Interface pour les données de formation
@@ -43,7 +43,6 @@ interface TrainingData {
     location: string;
     startDate: string;
     endDate?: string;
-    // Ajoutez d'autres champs selon vos besoins
 }
 
 interface AttendanceListModalProps {
@@ -58,6 +57,8 @@ interface AttendanceListModalProps {
     ocfData?: { corporateName: string } | null;
     onSave?: (pdfBlob: Blob) => Promise<void>;
     onSaveAndDownload?: (pdfBlob: Blob) => Promise<void>;
+    trainingId: string | string[] | undefined;
+    groupId: string | string[] | undefined;
 }
 
 const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
@@ -71,11 +72,14 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                                                                      companyData,
                                                                      ocfData,
                                                                      onSave,
-                                                                     onSaveAndDownload
+                                                                     onSaveAndDownload,
+                                                                     trainingId,
+                                                                     groupId
                                                                  }) => {
     const [pdfUrl, setPdfUrl] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [qrCodeToken, setQrCodeToken] = useState<string>('');
     const pdfBlobRef = useRef<Blob | null>(null);
 
     // Calculer l'effectif total
@@ -84,11 +88,32 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
         (groupData?.workerCount || 0) +
         (groupData?.temporaryWorkerCount || 0);
 
-    // Fonction pour générer le PDF avec jsPDF
+    // Fonction utilitaire pour obtenir l'URL de base
+    const getBaseUrl = () => {
+        // En développement, utiliser l'IP locale
+        if (process.env.NODE_ENV === 'development') {
+            return 'http://192.168.1.9:3000';
+        }
+        // En production, utiliser l'URL actuelle
+        return window.location.origin;
+    };
+
+    // Générer un token unique pour le QR code
+    const generateQRToken = () => {
+        return Math.random().toString(36).substring(2, 15) +
+            Math.random().toString(36).substring(2, 15) +
+            Date.now().toString(36);
+    };
+
+    // Fonction pour générer le PDF avec jsPDF et QR code
     const generatePDF = async () => {
         setIsGenerating(true);
 
         try {
+            // Générer le token QR
+            const token = generateQRToken();
+            setQrCodeToken(token);
+
             // Import dynamique de jsPDF
             const {jsPDF} = await import('jspdf');
 
@@ -115,6 +140,45 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
             const title = "LISTE DE PRESENCE PAR ACTION ET PAR GROUPE";
             const titleWidth = doc.getTextWidth(title);
             doc.text(title, (pageWidth - titleWidth) / 2, 30);
+
+            // --- QR Code ---
+            try {
+                // Générer l'URL pour le QR code avec la fonction utilitaire
+                const qrUrl = `${getBaseUrl()}/public/attendance/scan/${token}`;
+
+                // Debug : afficher l'URL générée
+                console.log('QR URL générée:', qrUrl);
+
+                // Générer le QR code
+                const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
+                    errorCorrectionLevel: 'M',
+                    type: 'image/png',
+                    margin: 1,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    },
+                    width: 128  // Taille en pixels
+                });
+
+                // Ajouter le QR code en haut à droite, SOUS le titre
+                const qrSize = 25; // Taille en mm
+                const qrX = pageWidth - margin - qrSize;
+                const qrY = 35; // Positionné sous le titre (était à 15)
+
+                doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+                // Ajouter le texte sous le QR code
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                const qrText = 'Scanner pour marquer';
+                const qrTextWidth = doc.getTextWidth(qrText);
+                doc.text(qrText, qrX + (qrSize - qrTextWidth) / 2, qrY + qrSize + 4);
+                doc.text('les présences', qrX + (qrSize - doc.getTextWidth('les présences')) / 2, qrY + qrSize + 8);
+
+            } catch (qrError) {
+                console.error('Erreur lors de la génération du QR code:', qrError);
+            }
 
             // --- Informations générales ---
             let currentY = 50;
@@ -199,12 +263,12 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                 currentX += colWidth;
             });
 
-            // --- Lignes des participants (logique mise à jour) ---
+            // --- Lignes des participants ---
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
 
             let rowY = tableStartY + headerHeight;
-            const minRows = 10; // MODIFICATION ICI : Définit un minimum de 10 lignes
+            const minRows = 10;
             const totalRows = Math.max(minRows, participants.length);
 
             for(let i = 0; i < totalRows; i++) {
@@ -307,46 +371,80 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
         };
     }, [isOpen, trainingData, groupData, participants, selectedDate]);
 
-    // Fonction pour enregistrer le PDF
-    const handleSave = async () => {
-        if (!pdfBlobRef.current || !onSave) return;
+    // Fonction pour envoyer au backend
+    const saveToBackend = async (pdfBlob: Blob, downloadAfter: boolean = false) => {
+        if (!groupId || !pdfBlob || !qrCodeToken) {
+            console.error('Données manquantes pour la sauvegarde');
+            return;
+        }
 
         setIsLoading(true);
         try {
-            await onSave(pdfBlobRef.current);
+            // Préparer les données pour l'envoi
+            const formData = new FormData();
+            formData.append('groupId', groupId.toString());
+            formData.append('attendanceDate', selectedDate);
+            formData.append('listType', listType);
+            formData.append('qrCodeToken', qrCodeToken);
+            formData.append('pdfFile', pdfBlob, `liste_presence_${listType}_${groupData?.name || 'formation'}_${selectedDate}.pdf`);
+
+            // Ajouter les IDs des participants
+            participants.forEach((participant, index) => {
+                formData.append(`participantIds`, participant.id.toString());
+            });
+
+            // Envoyer au backend
+            const response = await fetch(ATTENDANCE_URLS.saveList, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de la sauvegarde');
+            }
+
+            const result = await response.json();
+            console.log('Liste de présence sauvegardée avec succès:', result);
+
+            // Télécharger si demandé
+            if (downloadAfter) {
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                const fileName = `liste_presence_${listType}_${groupData?.name || 'formation'}_${selectedDate}.pdf`;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Fermer le modal
             onClose();
+
+            // Afficher un message de succès (vous pouvez adapter selon votre système d'alertes)
+            // alert('Liste de présence sauvegardée avec succès !');
+
         } catch (error) {
             console.error('Erreur lors de la sauvegarde:', error);
+            alert('Erreur lors de la sauvegarde de la liste de présence');
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Fonction pour enregistrer seulement
+    const handleSave = async () => {
+        if (!pdfBlobRef.current) return;
+        await saveToBackend(pdfBlobRef.current, false);
+    };
+
     // Fonction pour enregistrer et télécharger
     const handleSaveAndDownload = async () => {
-        if (!pdfBlobRef.current || !onSaveAndDownload) return;
-
-        setIsLoading(true);
-        try {
-            await onSaveAndDownload(pdfBlobRef.current);
-
-            // Télécharger le fichier
-            const url = URL.createObjectURL(pdfBlobRef.current);
-            const a = document.createElement('a');
-            a.href = url;
-            const fileName = `liste_presence_${listType}_${groupData?.name || 'formation'}_${selectedDate}.pdf`;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            onClose();
-        } catch (error) {
-            console.error('Erreur lors de la sauvegarde et téléchargement:', error);
-        } finally {
-            setIsLoading(false);
-        }
+        if (!pdfBlobRef.current) return;
+        await saveToBackend(pdfBlobRef.current, true);
     };
 
     if (!isOpen) return null;
@@ -375,8 +473,7 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                     {isGenerating ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="text-center">
-                                <div
-                                    className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                                 <p className="text-gray-600">Génération du PDF en cours...</p>
                             </div>
                         </div>

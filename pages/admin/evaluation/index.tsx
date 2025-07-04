@@ -47,7 +47,7 @@ const fixedEvaluationSectionsStructure: FixedSectionStructureItem[] = [
     }
 ]
 
-const index = () => {
+const EvaluationListPage = () => {
     // États pour le modal de suppression
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [questionnaireToDeleteId, setQuestionnaireToDeleteId] = useState<string | null>(null);
@@ -204,4 +204,4 @@ const index = () => {
     );
 };
 
-export default index;
+export default EvaluationListPage;

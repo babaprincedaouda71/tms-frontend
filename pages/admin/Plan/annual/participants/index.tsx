@@ -830,6 +830,8 @@ const Participants = ({trainingId, groupData, onGroupDataUpdated, groupId}: Part
                 ocfData={ocfData}
                 onSave={handleSaveAttendancePDF}
                 onSaveAndDownload={handleSaveAndDownloadAttendancePDF}
+                trainingId={trainingId}  // NOUVEAU
+                groupId={groupId}
             />
         </form>
     );

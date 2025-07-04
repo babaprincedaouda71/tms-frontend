@@ -1,4 +1,28 @@
-const API_URL = "http://localhost:8888/api";
+// src/config/urls.ts
+
+// Configuration dynamique de l'URL de base
+const getApiUrl = () => {
+    // Vérifier si on est côté client (navigateur)
+    if (typeof window !== 'undefined') {
+        const {protocol, hostname} = window.location;
+
+        // Si on accède via une IP (mobile), utiliser cette IP
+        if (hostname !== 'localhost') {
+            return `${protocol}//${hostname}:8888/api`;
+        }
+
+        // Sinon, utiliser localhost (développement sur PC)
+        return 'http://localhost:8888/api';
+    }
+
+    // Côté serveur (SSR) ou fallback via variable d'environnement
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888/api';
+};
+
+const API_URL = getApiUrl();
+
+
+// const API_URL = "http://localhost:8888/api";
 export const AUTH_URLS = {
     login: `${API_URL}/auth/login`,
     logout: `${API_URL}/auth/logout`,
@@ -201,6 +225,7 @@ export const QUESTIONNAIRE_URLS = {
     add: `${API_URL}/evaluations/questionnaire-evaluation/add`,
     mutate: `${API_URL}/evaluations/questionnaire-evaluation/get/all`,
     sendResponse: `${API_URL}/evaluations/questionnaire-evaluation/send-response`,
+    getDetails: `${API_URL}/evaluations/questionnaire-evaluation/get/questionnaire`
 }
 
 export const USER_RESPONSES_URLS = {
@@ -300,4 +325,9 @@ export const GROUPE_EVALUATION_URLS = {
     view: `/Plan/annual/`,
     edit: `${API_URL}/plan/groupes/evaluations/edit-evaluation`,
     getDetails: `${API_URL}/evaluations/admin/groupe-evaluation-details`,
+}
+
+export const ATTENDANCE_URLS = {
+    saveList: `${API_URL}/plan/attendance/save-list`,
+    scan: `${API_URL}/public/attendance/scan`,
 }

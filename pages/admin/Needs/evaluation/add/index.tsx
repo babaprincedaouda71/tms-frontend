@@ -3,7 +3,7 @@ import {
     DepartmentProps,
     EvaluationCampaignParticipantProps,
     NeedsEvaluationAddProps,
-    QuestionnaireProps,
+    EvaluationsByTypeProps,
     SiteProps,
     UpdateCampaignProps
 } from '@/types/dataTypes';
@@ -31,8 +31,9 @@ interface FormData {
     campaignTitle: string;
     instructions: string;
     site: number[];
-    department: number[]; // Stocke les IDs des départements sélectionnés
-    questionnaire: string[];
+    department: number[];
+    questionnaire: string[]; // Toujours les IDs des questionnaires
+    selectedTypes: string[]; // NOUVEAU : Types sélectionnés par l'utilisateur
     participantIds: number[];
 }
 
@@ -47,49 +48,92 @@ const Index = () => {
         campaignTitle: "",
         instructions: "",
         site: [],
-        department: [], // Stocke les IDs des départements sélectionnés
+        department: [],
         questionnaire: [],
+        selectedTypes: [], // NOUVEAU
         participantIds: [],
     });
     const [errors, setErrors] = useState({});
 
     // Fetching des données nécessaires
     const {data: user} = useSWR<EvaluationCampaignParticipantProps[]>(USERS_URLS.fetchCampaignEvaluationParticipants, fetcher);
-    // memoizedUserData contient la liste complète des utilisateurs non filtrée
     const memoizedUserData = useMemo(() => user || [], [user]);
 
     const {data: sitesData} = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
-    const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher); // Nous avons besoin de departmentsData
-    const {data: questionnairesData} = useSWR<QuestionnaireProps[]>(QUESTIONNAIRE_URLS.mutate, fetcher);
+    const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
+
+    // MODIFICATION : Utiliser fetchAllByType au lieu de mutate
+    const {data: questionnairesData} = useSWR<EvaluationsByTypeProps[]>(QUESTIONNAIRE_URLS.fetchAllByType, fetcher);
 
     const {data: campaignData} = useSWR<UpdateCampaignProps>(
         isEditMode && campaignId ? `${CAMPAIGN_URLS.getDetails}/${campaignId}` : null,
         fetcher
     );
 
+    // NOUVEAU : Fonction pour convertir les IDs de questionnaires en types
+    const getTypesFromQuestionnaireIds = useMemo(() => {
+        return (questionnaireIds: string[]): string[] => {
+            if (!questionnairesData || !questionnaireIds.length) return [];
+
+            const types: string[] = [];
+            questionnairesData.forEach(typeData => {
+                if (typeData.questionnaires) {
+                    typeData.questionnaires.forEach(questionnaire => {
+                        if (questionnaireIds.includes(questionnaire.id) && questionnaire.isDefault) {
+                            types.push(typeData.type);
+                        }
+                    });
+                }
+            });
+            return types;
+        };
+    }, [questionnairesData]);
+
+    // NOUVEAU : Fonction pour convertir les types en IDs de questionnaires par défaut
+    const getDefaultQuestionnaireIdsFromTypes = useMemo(() => {
+        return (types: string[]): string[] => {
+            if (!questionnairesData || !types.length) return [];
+
+            const questionnaireIds: string[] = [];
+            types.forEach(type => {
+                const typeData = questionnairesData.find(data => data.type === type);
+                if (typeData?.questionnaires) {
+                    const defaultQuestionnaire = typeData.questionnaires.find(q => q.isDefault === true);
+                    if (defaultQuestionnaire) {
+                        questionnaireIds.push(defaultQuestionnaire.id);
+                    }
+                }
+            });
+            return questionnaireIds;
+        };
+    }, [questionnairesData]);
+
     // Pré-remplissage du formulaire en mode édition
     useEffect(() => {
         if (isEditMode && campaignData) {
+            const types = getTypesFromQuestionnaireIds(campaignData.questionnaireIds || []);
+
             setFormData({
                 campaignTitle: campaignData.title || "",
                 instructions: campaignData.instructions || "",
                 site: campaignData.siteIds || [],
                 department: campaignData.departmentIds || [],
                 questionnaire: campaignData.questionnaireIds || [],
+                selectedTypes: types, // NOUVEAU : Pré-remplir les types
                 participantIds: campaignData.participantIds || [],
             });
         } else if (!isEditMode) {
-            // Réinitialiser le formulaire en mode ajout si nécessaire
             setFormData({
                 campaignTitle: "",
                 instructions: "",
                 site: [],
                 department: [],
                 questionnaire: [],
+                selectedTypes: [], // NOUVEAU
                 participantIds: [],
             });
         }
-    }, [isEditMode, campaignData]);
+    }, [isEditMode, campaignData, getTypesFromQuestionnaireIds]);
 
     // Formatage des options pour les Sélections Multiples
     const sitesOptionsFormatted = useMemo(() => {
@@ -100,43 +144,43 @@ const Index = () => {
         return departmentsData ? departmentsData.map(dept => ({label: dept.name, id: dept.id})) : [];
     }, [departmentsData]);
 
-    const questionnairesOptionsFormatted = useMemo(() => {
-        return questionnairesData ? questionnairesData.map(questionnaire => ({
-            label: questionnaire.title,
-            id: questionnaire.id
-        })) : [];
+    // MODIFICATION : Options des types au lieu des questionnaires individuels
+    const typeOptionsFormatted = useMemo(() => {
+        if (!questionnairesData) return [];
+
+        // Filtrer pour ne garder que les types qui ont au moins un questionnaire par défaut
+        return questionnairesData
+            .filter(typeData =>
+                typeData.questionnaires &&
+                typeData.questionnaires.some(q => q.isDefault === true)
+            )
+            .map(typeData => typeData.type);
     }, [questionnairesData]);
 
-    // **MODIFICATION : Filtrer les utilisateurs par département sélectionné (en utilisant les noms)**
+    // Filtrer les utilisateurs par département sélectionné
     const filteredUsers = useMemo(() => {
-        const selectedDepartmentIds = formData.department; // Tableau des IDs des départements sélectionnés
+        const selectedDepartmentIds = formData.department;
 
-        // Si aucun département n'est sélectionné, retourner tous les utilisateurs
         if (!selectedDepartmentIds || selectedDepartmentIds.length === 0) {
             return memoizedUserData;
         }
 
-        // Trouve les noms de départements correspondants aux IDs sélectionnés
         const selectedDepartmentNames = departmentsData
             ? departmentsData
                 .filter(dept => selectedDepartmentIds.includes(dept.id))
                 .map(dept => dept.name)
             : [];
 
-        // Si on n'a pas pu trouver de noms de départements pour les IDs sélectionnés, ne rien afficher (ou afficher tous, selon le besoin)
-        // Ici, on choisit de ne rien afficher si departmentsData n'est pas encore chargé ou si aucun nom correspondant n'est trouvé.
         if (selectedDepartmentNames.length === 0) {
             return memoizedUserData.length === 0 ? [] : memoizedUserData;
         }
 
-        // Filtrer les utilisateurs dont le nom de département est dans la liste des noms sélectionnés
         return memoizedUserData.filter(user =>
-            // On vérifie si user.department existe et s'il est inclus dans la liste des noms de départements sélectionnés
             user.department && selectedDepartmentNames.includes(user.department)
         );
-    }, [memoizedUserData, formData.department, departmentsData]); // Dépendances : la liste complète des users, les départements sélectionnés (IDs), et la liste complète des départements (pour trouver les noms)
+    }, [memoizedUserData, formData.department, departmentsData]);
 
-    // Configuration du tableau - utilise maintenant la liste filtrée
+    // Configuration du tableau
     const {
         visibleColumns,
         handleSortData,
@@ -167,7 +211,7 @@ const Index = () => {
             instructions: formData.instructions,
             siteIds: formData.site,
             departmentIds: formData.department,
-            questionnaireIds: formData.questionnaire,
+            questionnaireIds: formData.questionnaire, // Toujours envoyer les IDs des questionnaires
             participantIds: formData.participantIds,
         };
 
@@ -226,9 +270,23 @@ const Index = () => {
         },
     };
 
-    // Gestion des changements dans les MultiSelect
+    // MODIFICATION : Gestion spéciale pour la sélection de types
+    const handleTypeMultiSelectChange = (selectedTypes: string[]) => {
+        // Convertir les types sélectionnés en IDs de questionnaires par défaut
+        const questionnaireIds = getDefaultQuestionnaireIdsFromTypes(selectedTypes);
+
+        setFormData(prev => ({
+            ...prev,
+            selectedTypes: selectedTypes,
+            questionnaire: questionnaireIds
+        }));
+
+        setErrors(prevErrors => ({...prevErrors, questionnaire: ""}));
+    };
+
+    // Gestion des changements dans les autres MultiSelect
     const handleMultiSelectChange = (name: keyof FormData, selectedLabels: string[]) => {
-        let selectedIds: (number | string)[] = [];
+        let selectedIds: number[] = [];
         switch (name) {
             case "site":
                 selectedIds = selectedLabels
@@ -240,22 +298,15 @@ const Index = () => {
                     .map(label => departmentsData?.find(dept => dept.name === label)?.id)
                     .filter((id): id is number => id !== undefined);
                 break;
-            case "questionnaire":
-                selectedIds = selectedLabels
-                    .map(label => questionnairesData?.find(q => q.title === label)?.id)
-                    .filter((id): id is string => id !== undefined);
-                break;
             default:
                 break;
         }
         setFormData(prev => ({
             ...prev,
-            [name]: selectedIds.filter(id => typeof id === (name === 'questionnaire' ? 'string' : 'number')) as
-                (typeof name extends 'questionnaire' ? string[] : number[]),
+            [name]: selectedIds,
         }));
         setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
-
 
     // Gestion du retour à la liste
     const handleBackToList = () => {
@@ -270,7 +321,6 @@ const Index = () => {
             <div className='mx-auto bg-white font-title rounded-lg px-6 pb-2 pt-6'>
                 {/* Titre global et bouton Retour */}
                 <div className="relative flex items-center mb-4">
-                    {/* Bouton Retour à la liste alignée à gauche */}
                     <button
                         onClick={handleBackToList}
                         className="text-blue-500 border-2 rounded-xl p-2 hover:underline focus:outline-none"
@@ -284,6 +334,7 @@ const Index = () => {
                         </h1>
                     </div>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
                     <InputField
                         label="Titre de la campagne"
@@ -297,20 +348,21 @@ const Index = () => {
                         value={formData.site.map(id => sitesData?.find(s => s.id === id)?.label || '')}
                         onChange={(values) => handleMultiSelectChange("site", values)}
                     />
-                    {/* Champ de sélection de Département */}
                     <MultiSelectField
                         options={departmentsOptionsFormatted.map(opt => opt.label)}
                         label="Département"
                         value={formData.department.map(id => departmentsData?.find(d => d.id === id)?.name || '')}
                         onChange={(values) => handleMultiSelectChange("department", values)}
                     />
+                    {/* MODIFICATION : MultiSelect des types au lieu des questionnaires individuels */}
                     <MultiSelectField
-                        options={questionnairesOptionsFormatted.map(opt => opt.label)}
-                        label="Questionnaire"
-                        value={formData.questionnaire.map(id => questionnairesData?.find(q => q.id === id)?.title || '')}
-                        onChange={(values) => handleMultiSelectChange("questionnaire", values)}
+                        options={typeOptionsFormatted}
+                        label="Type de questionnaire"
+                        value={formData.selectedTypes} // Afficher les types sélectionnés
+                        onChange={handleTypeMultiSelectChange} // Utiliser la fonction spéciale
                     />
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-x-20">
                     <TextAreaField
                         label="Instruction"
@@ -332,7 +384,6 @@ const Index = () => {
                         filters={[]}
                         placeholderText={"Recherche de besoins"}
                     />
-                    {/* Bouton pour afficher/masquer la fenêtre modale */}
                     <ModalButton
                         headers={TABLE_HEADERS}
                         visibleColumns={visibleColumns}
@@ -342,12 +393,12 @@ const Index = () => {
 
                 {/* Section : Tableau des données */}
                 <Table
-                    data={paginatedData} // Le tableau utilise toujours les données paginées et filtrées
+                    data={paginatedData}
                     keys={TABLE_KEYS}
                     headers={TABLE_HEADERS}
                     sortableCols={sortableColumns}
                     onSort={(column, order) => handleSortData(column, order, handleSort)}
-                    totalRecords={totalRecords} // totalRecords est calculé sur les données filtrées
+                    totalRecords={totalRecords}
                     isPagination
                     pagination={{
                         currentPage,
