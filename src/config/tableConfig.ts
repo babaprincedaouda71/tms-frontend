@@ -212,14 +212,14 @@ export const statusConfig: Record<string, StatusConfig> = {
     },
 
     // === STATUTS DE PRÉSENCE ===
-    Présent: {
+    "Présent": {
         label: "Présent",
         ...STATUS_STYLES.SUCCESS,
         showDot: true,
     },
     Absent: {
         label: "Absent",
-        ...STATUS_STYLES.INFO,
+        ...STATUS_STYLES.ERROR,
         showDot: true,
     },
 

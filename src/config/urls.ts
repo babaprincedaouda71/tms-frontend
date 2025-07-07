@@ -332,5 +332,5 @@ export const ATTENDANCE_URLS = {
     saveList: `${API_URL}/plan/attendance/save-list`,
     scan: `${API_URL}/public/attendance/scan`,
     markAttendance: `${API_URL}/public/attendance/mark`,
-    getAttendanceList: `${API_URL}/plan/attendance/get-list`,
+    getAttendanceListPerDate: `${API_URL}/plan/attendance/get-list-per-date`,
 }
