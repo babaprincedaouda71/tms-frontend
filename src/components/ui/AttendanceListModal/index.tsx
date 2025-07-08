@@ -1,7 +1,7 @@
 import React, {useRef, useState} from 'react';
 import {Download, FileText, Save, X} from 'lucide-react';
 import QRCode from 'qrcode';
-import { ATTENDANCE_URLS } from '@/config/urls';
+import {ATTENDANCE_URLS} from '@/config/urls';
 
 // Interface pour les données de la compagnie
 interface CompanyData {
@@ -19,7 +19,7 @@ interface ParticipantForPDF {
     position: string;
     level: string;
     manager: string;
-    cnss?:string;
+    cnss?: string;
     cin?: string;
 }
 
@@ -271,14 +271,14 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
             const minRows = 10;
             const totalRows = Math.max(minRows, participants.length);
 
-            for(let i = 0; i < totalRows; i++) {
+            for (let i = 0; i < totalRows; i++) {
                 const participant = participants[i];
 
                 doc.rect(margin, rowY, totalTableWidth, rowHeight);
                 let currentCellX = margin;
 
                 colWidths.forEach((colWidth, colIndex) => {
-                    if (colIndex < colWidths.length -1) {
+                    if (colIndex < colWidths.length - 1) {
                         doc.line(currentCellX + colWidth, rowY, currentCellX + colWidth, rowY + rowHeight);
                     }
 
@@ -288,9 +288,9 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                         doc.line(cspStartX + cspSubColWidth * 2, rowY, cspStartX + cspSubColWidth * 2, rowY + rowHeight);
                     }
 
-                    if(participant) {
+                    if (participant) {
                         const dataX = currentCellX + 2;
-                        switch(mainHeaders[colIndex]) {
+                        switch (mainHeaders[colIndex]) {
                             case 'Prénom':
                                 doc.text(participant.firstName, dataX, rowY + rowHeight - 4);
                                 break;
@@ -473,7 +473,8 @@ const AttendanceListModal: React.FC<AttendanceListModalProps> = ({
                     {isGenerating ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="text-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                <div
+                                    className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                                 <p className="text-gray-600">Génération du PDF en cours...</p>
                             </div>
                         </div>

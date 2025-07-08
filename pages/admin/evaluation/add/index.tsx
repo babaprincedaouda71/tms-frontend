@@ -31,7 +31,7 @@ const QuestionnairePage = () => {
                 })
                 .then(data => {
                     // Supposons que votre API renvoie les données du questionnaire
-                    // directement ou sous une propriété (ex: data.questionnaire)
+                    // directement ou sous une propriété (ex : data. Questionnaire)
                     // Adaptez la ligne suivante à la structure de votre réponse API
                     setInitialData(data.questionnaire || data);
                 })
@@ -83,7 +83,7 @@ const QuestionnairePage = () => {
         );
     }
 
-    // Si questionnaireId est présent mais initialData est null (et pas en chargement),
+    // Si questionnaireId est présent, mais initialData est null (et pas en chargement),
     // cela peut signifier une erreur ou que le questionnaire n'a pas été trouvé.
     if (questionnaireId && !initialData && !isLoading) {
         return (

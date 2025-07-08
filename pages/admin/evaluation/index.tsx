@@ -44,6 +44,11 @@ const fixedEvaluationSectionsStructure: FixedSectionStructureItem[] = [
         id: "6",
         type: "Questionnaire pour les formateurs",
         questionnaires: []
+    },
+    {
+        id: "7",
+        type: "Formulaire F4",
+        questionnaires: []
     }
 ]
 

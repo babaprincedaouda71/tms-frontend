@@ -334,3 +334,7 @@ export const ATTENDANCE_URLS = {
     markAttendance: `${API_URL}/public/attendance/mark`,
     getAttendanceListPerDate: `${API_URL}/plan/attendance/get-list-per-date`,
 }
+
+export const F4_EVALUATION_URLS = {
+    scan: `${API_URL}/public/evaluation/scan`,
+}
