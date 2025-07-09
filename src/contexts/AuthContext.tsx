@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
     '/account-creation/activation-email',
     'setting-user-password',
     '/public/attendance/scan/[token]',
+    '/public/f4-evaluation/scan/[token]',
 ];
 
 export enum UserRole {

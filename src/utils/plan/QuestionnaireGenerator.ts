@@ -9,7 +9,8 @@ export class QuestionnaireGenerator {
     private doc: any;
     private pageWidth = 210;
     private pageHeight = 297;
-    private margin = 20;
+    private margin = 15;
+    private qrCodeCache: Map<string, string> = new Map();
 
     constructor(jsPDF: any) {
         this.doc = new jsPDF({
@@ -33,12 +34,17 @@ export class QuestionnaireGenerator {
         let participantsProcessed = 0;
         const validParticipants = [];
 
-        // Filtrer les participants avec tokens valides
+        // Import QRCode une seule fois
+        const QRCode = await import('qrcode');
+
+        // Filtrer les participants avec tokens valides et pré-générer les QR codes
         for (const participant of participants) {
             const qrToken = evaluationData.qrTokens.find((token: any) =>
                 token.participantId === participant.id
             );
             if (qrToken) {
+                // Pré-générer le QR code pour optimiser les performances
+                await this.preGenerateQRCode(qrToken.token, options.getBaseUrl, QRCode);
                 validParticipants.push({participant, qrToken});
             }
         }
@@ -47,8 +53,8 @@ export class QuestionnaireGenerator {
             throw new Error('Aucun token QR valide trouvé pour les participants sélectionnés');
         }
 
-        // Générer les pages par batch pour éviter la surcharge mémoire
-        const batchSize = 10; // Traiter 10 participants à la fois
+        // Générer les pages par batch optimisé
+        const batchSize = Math.min(15, validParticipants.length);
 
         for (let batchStart = 0; batchStart < validParticipants.length; batchStart += batchSize) {
             const batch = validParticipants.slice(batchStart, Math.min(batchStart + batchSize, validParticipants.length));
@@ -77,9 +83,9 @@ export class QuestionnaireGenerator {
                     // Continuer avec les autres participants
                 }
 
-                // Pause pour permettre à l'UI de se mettre à jour
-                if (participantsProcessed % 5 === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 10));
+                // Pause optimisée pour gros volumes
+                if (participantsProcessed % 10 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 5));
                 }
             }
         }
@@ -88,7 +94,26 @@ export class QuestionnaireGenerator {
             throw new Error('Aucun questionnaire généré avec succès');
         }
 
+        // Nettoyer le cache
+        this.qrCodeCache.clear();
+
         return this.doc.output('blob');
+    }
+
+    private async preGenerateQRCode(token: string, getBaseUrl: () => string, QRCode: any): Promise<void> {
+        try {
+            const qrUrl = `${getBaseUrl()}/public/f4-evaluation/scan/${token}`;
+            const qrCodeDataUrl = await QRCode.default.toDataURL(qrUrl, {
+                errorCorrectionLevel: 'M',
+                type: 'image/png',
+                margin: 1,
+                color: {dark: '#000000', light: '#FFFFFF'},
+                width: 120
+            });
+            this.qrCodeCache.set(token, qrCodeDataUrl);
+        } catch (error) {
+            console.error('Erreur pré-génération QR code:', error);
+        }
     }
 
     private async generateParticipantPage(
@@ -103,224 +128,228 @@ export class QuestionnaireGenerator {
             this.doc.addPage();
         }
 
-        // Import dynamique de QRCode seulement quand nécessaire
-        const QRCode = await import('qrcode');
+        // Calcul de l'espace disponible pour optimiser la mise en page
+        const availableHeight = this.pageHeight - 2 * this.margin - 20; // 20mm pour footer
+        const questionsCount = evaluationData.questionnaire.questions.length;
 
-        let currentY = this.generateHeader(evaluationData, qrToken, options);
-        currentY = this.generateParticipantInfo(participant, options, currentY);
-        currentY = this.generateInstructions(evaluationData, currentY);
-        await this.generateQuestions(evaluationData, participant, currentY);
+        let currentY = this.generateCompactHeader(evaluationData, qrToken, options);
+        currentY = this.generateCompactParticipantInfo(participant, options, currentY);
+        currentY = this.generateCompactInstructions(evaluationData, currentY);
+        currentY = this.generateCompactQuestions(evaluationData, currentY, availableHeight - currentY + this.margin);
         this.generateFooter(participant, qrToken, pageIndex);
     }
 
-    private generateHeader(evaluationData: any, qrToken: any, options: any): number {
-        // En-tête
-        this.doc.setFontSize(18);
+    private generateCompactHeader(evaluationData: any, qrToken: any, options: any): number {
+        // En-tête compact
+        this.doc.setFontSize(16);
         this.doc.setFont('helvetica', 'bold');
         const title = evaluationData.questionnaire.title;
-        const titleWidth = this.doc.getTextWidth(title);
-        this.doc.text(title, (this.pageWidth - titleWidth) / 2, 25);
 
-        // Sous-titre
-        this.doc.setFontSize(12);
+        // Position du titre décalée pour laisser place au QR code
+        const maxTitleWidth = this.pageWidth - 45; // 45mm pour QR code + marge
+        const titleLines = this.doc.splitTextToSize(title, maxTitleWidth);
+        this.doc.text(titleLines, this.margin, 20);
+
+        // Sous-titre compact
+        this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'normal');
         const subtitle = evaluationData.label;
-        const subtitleWidth = this.doc.getTextWidth(subtitle);
-        this.doc.text(subtitle, (this.pageWidth - subtitleWidth) / 2, 35);
+        const subtitleLines = this.doc.splitTextToSize(subtitle, maxTitleWidth);
+        this.doc.text(subtitleLines, this.margin, 28);
 
-        // QR Code (sans attendre la promesse pour ne pas bloquer)
-        this.generateQRCodeAsync(qrToken.token, options.getBaseUrl());
+        // QR Code depuis le cache
+        this.addQRCodeFromCache(qrToken.token);
 
-        return 55;
+        return 40;
     }
 
-    private async generateQRCodeAsync(token: string, getBaseUrl: () => string): Promise<void> {
-        try {
-            const QRCode = await import('qrcode');
-            const qrUrl = `${getBaseUrl()}/public/f4-evaluation/scan/${token}`;
-
-            const qrCodeDataUrl = QRCode.default.toDataURL(qrUrl, {
-                errorCorrectionLevel: 'M',
-                type: 'image/png',
-                margin: 1,
-                color: {dark: '#000000', light: '#FFFFFF'},
-                width: 128
-            });
-
-            const qrSize = 30;
+    private addQRCodeFromCache(token: string): void {
+        const qrCodeDataUrl = this.qrCodeCache.get(token);
+        if (qrCodeDataUrl) {
+            const qrSize = 25;
             const qrX = this.pageWidth - this.margin - qrSize;
             const qrY = 10;
 
             this.doc.addImage(qrCodeDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
 
-            // Texte sous le QR code
-            this.doc.setFontSize(8);
+            // Texte sous le QR code - compact
+            this.doc.setFontSize(7);
             this.doc.setFont('helvetica', 'normal');
             const qrText = 'Scanner pour répondre';
             const qrTextWidth = this.doc.getTextWidth(qrText);
-            this.doc.text(qrText, qrX + (qrSize - qrTextWidth) / 2, qrY + qrSize + 4);
-        } catch (error) {
-            console.error('Erreur QR code:', error);
+            this.doc.text(qrText, qrX + (qrSize - qrTextWidth) / 2, qrY + qrSize + 3);
         }
     }
 
-    private generateParticipantInfo(participant: any, options: any, startY: number): number {
+    private generateCompactParticipantInfo(participant: any, options: any, startY: number): number {
         let currentY = startY;
 
-        this.doc.setFontSize(12);
+        this.doc.setFontSize(10);
         this.doc.setFont('helvetica', 'bold');
         this.doc.text('Informations:', this.margin, currentY);
-        currentY += 8;
+        currentY += 6;
 
         this.doc.setFont('helvetica', 'normal');
-        this.doc.setFontSize(10);
+        this.doc.setFontSize(8);
 
         const infos = [
             `Participant: ${participant.name}`,
             `Formation: ${options.trainingTheme}`,
-            `Groupe: ${options.groupName}`,
             `Date: ${new Date().toLocaleDateString('fr-FR')}`
         ];
 
         for (const info of infos) {
-            this.doc.text(info, this.margin + 5, currentY);
-            currentY += 6;
+            this.doc.text(info, this.margin + 3, currentY);
+            currentY += 4;
         }
 
-        return currentY + 15;
+        return currentY + 8;
     }
 
-    private generateInstructions(evaluationData: any, startY: number): number {
+    private generateCompactInstructions(evaluationData: any, startY: number): number {
         let currentY = startY;
 
-        // Description
-        if (evaluationData.questionnaire.description) {
-            this.doc.setFontSize(10);
-            this.doc.setFont('helvetica', 'italic');
-            const lines = this.doc.splitTextToSize(
-                evaluationData.questionnaire.description,
-                this.pageWidth - 2 * this.margin
-            );
-            this.doc.text(lines, this.margin, currentY);
-            currentY += lines.length * 5 + 10;
-        }
-
-        // Instructions
-        this.doc.setFontSize(9);
+        // Instructions très compactes
+        this.doc.setFontSize(8);
         this.doc.setFont('helvetica', 'italic');
-        const instructions = [
-            'Instructions: Veuillez cocher la case correspondant à votre réponse pour chaque question.',
-            'Les questions marquées d\'un * sont obligatoires.'
-        ];
+        const instruction = 'Cochez la case correspondant à votre réponse. * = obligatoire';
 
-        for (const instruction of instructions) {
-            this.doc.text(instruction, this.margin, currentY);
-            currentY += 8;
-        }
+        const lines = this.doc.splitTextToSize(instruction, this.pageWidth - 2 * this.margin);
+        this.doc.text(lines, this.margin, currentY);
+        currentY += lines.length * 4 + 6;
 
-        return currentY + 15;
+        return currentY;
     }
 
-    private async generateQuestions(evaluationData: any, participant: any, startY: number): Promise<void> {
+    private generateCompactQuestions(evaluationData: any, startY: number, availableHeight: number): number {
         let currentY = startY;
-        this.doc.setFontSize(11);
+        this.doc.setFontSize(9);
         this.doc.setFont('helvetica', 'normal');
 
-        for (let i = 0; i < evaluationData.questionnaire.questions.length; i++) {
-            const question = evaluationData.questionnaire.questions[i];
+        const questions = evaluationData.questionnaire.questions;
 
-            // Vérifier l'espace disponible
-            const estimatedSpace = 20 + (question.options?.length || 3) * 6;
-            if (currentY + estimatedSpace > this.pageHeight - 30) {
-                this.doc.addPage();
-                currentY = this.margin;
-
-                // En-tête de continuation
-                this.doc.setFontSize(14);
-                this.doc.setFont('helvetica', 'bold');
-                this.doc.text(
-                    `${evaluationData.questionnaire.title} - ${participant.name} (suite)`,
-                    this.margin,
-                    currentY
-                );
-                currentY += 15;
-                this.doc.setFontSize(11);
-                this.doc.setFont('helvetica', 'normal');
-            }
-
-            currentY = this.generateSingleQuestion(question, i + 1, currentY);
-        }
-    }
-
-    private generateSingleQuestion(question: any, questionNumber: number, startY: number): number {
-        let currentY = startY;
-
-        // Titre de la question
-        this.doc.setFont('helvetica', 'bold');
-        const questionHeader = `${questionNumber}. ${question.text}${question.required ? ' *' : ''}`;
-        const questionLines = this.doc.splitTextToSize(questionHeader, this.pageWidth - 2 * this.margin);
-        this.doc.text(questionLines, this.margin, currentY);
-        currentY += questionLines.length * 5 + 3;
-
-        // Commentaire
-        if (question.comment) {
-            this.doc.setFont('helvetica', 'italic');
-            this.doc.setFontSize(9);
-            const commentLines = this.doc.splitTextToSize(
-                `(${question.comment})`,
-                this.pageWidth - 2 * this.margin - 10
-            );
-            this.doc.text(commentLines, this.margin + 5, currentY);
-            currentY += commentLines.length * 4 + 3;
-            this.doc.setFontSize(11);
+        // Calculer l'espace total nécessaire pour toutes les questions
+        let totalEstimatedHeight = 0;
+        for (const question of questions) {
+            totalEstimatedHeight += this.estimateQuestionHeight(question);
         }
 
-        // Options de réponse
-        this.doc.setFont('helvetica', 'normal');
-        currentY = this.generateQuestionOptions(question, currentY);
+        // Si l'espace estimé dépasse l'espace disponible, ajuster la taille des polices
+        let fontSize = 9;
+        let optionsFontSize = 8;
+        if (totalEstimatedHeight > availableHeight) {
+            fontSize = 8;
+            optionsFontSize = 7;
+            this.doc.setFontSize(fontSize);
+        }
 
-        return currentY + 10;
-    }
+        for (let i = 0; i < questions.length; i++) {
+            const question = questions[i];
 
-    private generateQuestionOptions(question: any, startY: number): number {
-        let currentY = startY;
-
-        if (question.options && question.options.length > 0) {
-            for (const option of question.options) {
-                this.doc.rect(this.margin + 5, currentY - 3, 4, 4);
-                const optionLines = this.doc.splitTextToSize(option, this.pageWidth - this.margin - 20);
-                this.doc.text(optionLines, this.margin + 12, currentY);
-                currentY += Math.max(6, optionLines.length * 5);
+            // Vérifier qu'il reste un minimum d'espace
+            if (currentY > this.pageHeight - 30) {
+                console.warn(`Question ${i + 1} ne peut pas être affichée par manque d'espace`);
+                break;
             }
-        } else if (question.levels && question.levels.length > 0) {
-            for (const level of question.levels) {
-                this.doc.rect(this.margin + 5, currentY - 3, 4, 4);
-                const levelLines = this.doc.splitTextToSize(level, this.pageWidth - this.margin - 20);
-                this.doc.text(levelLines, this.margin + 12, currentY);
-                currentY += Math.max(6, levelLines.length * 5);
-            }
-        } else {
-            // Zone de texte libre
-            this.doc.setFont('helvetica', 'italic');
-            this.doc.setFontSize(9);
-            this.doc.text('Réponse libre:', this.margin + 5, currentY);
-            currentY += 5;
-            this.doc.setFont('helvetica', 'normal');
 
-            for (let k = 0; k < 3; k++) {
-                this.doc.line(this.margin + 5, currentY, this.pageWidth - this.margin, currentY);
-                currentY += 8;
-            }
-            this.doc.setFontSize(11);
+            currentY = this.generateAdaptiveQuestion(question, i + 1, currentY, fontSize, optionsFontSize);
         }
 
         return currentY;
     }
 
+    private estimateQuestionHeight(question: any): number {
+        let height = 8; // Titre de la question
+
+        if (question.options && question.options.length > 0) {
+            height += question.options.length * 4; // 4mm par option
+        } else if (question.levels && question.levels.length > 0) {
+            height += question.levels.length * 4; // 4mm par niveau
+        } else {
+            height += 12; // Zone de texte libre (3 lignes * 4mm)
+        }
+
+        return height + 2; // +2mm d'espacement
+    }
+
+    private generateAdaptiveQuestion(question: any, questionNumber: number, startY: number, fontSize: number, optionsFontSize: number): number {
+        let currentY = startY;
+
+        // Titre de la question
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setFontSize(fontSize);
+        const questionHeader = `${questionNumber}. ${question.text}${question.required ? ' *' : ''}`;
+        const questionLines = this.doc.splitTextToSize(questionHeader, this.pageWidth - 2 * this.margin);
+
+        // Limiter à 2 lignes maximum pour le titre
+        const titleLines = questionLines.slice(0, 2);
+        if (questionLines.length > 2) {
+            titleLines[1] = titleLines[1].substring(0, titleLines[1].length - 3) + '...';
+        }
+
+        this.doc.text(titleLines, this.margin, currentY);
+        currentY += titleLines.length * (fontSize * 0.5) + 2;
+
+        // Options de réponse
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.setFontSize(optionsFontSize);
+
+        if (question.options && question.options.length > 0) {
+            // Afficher TOUTES les options avec espacement adaptatif
+            const optionSpacing = Math.max(3.5, Math.min(5, (this.pageHeight - currentY - 30) / question.options.length));
+
+            for (const option of question.options) {
+                if (currentY > this.pageHeight - 25) {
+                    console.warn('Option tronquée par manque d\'espace');
+                    break;
+                }
+
+                this.doc.rect(this.margin + 3, currentY - 2, 2.5, 2.5);
+
+                // Tronquer l'option si elle est trop longue
+                const maxOptionLength = Math.floor((this.pageWidth - this.margin - 15) / (optionsFontSize * 0.4));
+                const optionText = option.length > maxOptionLength ?
+                    option.substring(0, maxOptionLength - 3) + '...' : option;
+
+                this.doc.text(optionText, this.margin + 7, currentY);
+                currentY += optionSpacing;
+            }
+        } else if (question.levels && question.levels.length > 0) {
+            // Afficher TOUS les niveaux avec espacement adaptatif
+            const levelSpacing = Math.max(3.5, Math.min(5, (this.pageHeight - currentY - 30) / question.levels.length));
+
+            for (const level of question.levels) {
+                if (currentY > this.pageHeight - 25) {
+                    console.warn('Niveau tronqué par manque d\'espace');
+                    break;
+                }
+
+                this.doc.rect(this.margin + 3, currentY - 2, 2.5, 2.5);
+
+                // Tronquer le niveau si il est trop long
+                const maxLevelLength = Math.floor((this.pageWidth - this.margin - 15) / (optionsFontSize * 0.4));
+                const levelText = level.length > maxLevelLength ?
+                    level.substring(0, maxLevelLength - 3) + '...' : level;
+
+                this.doc.text(levelText, this.margin + 7, currentY);
+                currentY += levelSpacing;
+            }
+        } else {
+            // Zone de texte libre - toujours 3 lignes
+            for (let k = 0; k < 3; k++) {
+                if (currentY > this.pageHeight - 25) break;
+                this.doc.line(this.margin + 3, currentY, this.pageWidth - this.margin, currentY);
+                currentY += 4;
+            }
+        }
+
+        return currentY + 2; // Espacement entre questions
+    }
+
     private generateFooter(participant: any, qrToken: any, pageIndex: number): void {
-        this.doc.setFontSize(8);
+        this.doc.setFontSize(7);
         this.doc.setFont('helvetica', 'italic');
-        const footerText = `Page ${pageIndex + 1} - ${participant.name} - Token: ${qrToken.token.substring(0, 8)}...`;
-        this.doc.text(footerText, this.margin, this.pageHeight - 10);
+        const footerText = `${participant.name} - Token: ${qrToken.token.substring(0, 8)}... - Page ${pageIndex + 1}`;
+        this.doc.text(footerText, this.margin, this.pageHeight - 8);
     }
 }

@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import {AlertTriangle, CheckCircle, Download, FileText, X} from 'lucide-react';
 import {useQuestionnaireGenerator} from "@/hooks/plans/useQuestionnaireGenerator";
 
@@ -28,16 +28,9 @@ const QuestionnaireModal: React.FC<QuestionnaireModalOptimizedProps> = ({
         isGenerating,
         progress,
         error,
-        resetError
+        resetError,
+        getBaseUrl
     } = useQuestionnaireGenerator();
-
-    // Fonction pour obtenir l'URL de base
-    const getBaseUrl = () => {
-        if (process.env.NODE_ENV === 'development') {
-            return 'http://localhost:3000';
-        }
-        return window.location.origin;
-    };
 
     // Fonction pour générer le PDF
     const handleGenerate = async () => {
@@ -80,8 +73,8 @@ const QuestionnaireModal: React.FC<QuestionnaireModalOptimizedProps> = ({
         URL.revokeObjectURL(url);
     };
 
-    // Effet de nettoyage
-    React.useEffect(() => {
+    // Effet de génération et nettoyage
+    useEffect(() => {
         if (isOpen && selectedParticipants.length > 0 && !pdfUrl) {
             handleGenerate();
         }
