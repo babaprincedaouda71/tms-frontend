@@ -225,7 +225,8 @@ export const QUESTIONNAIRE_URLS = {
     add: `${API_URL}/evaluations/questionnaire-evaluation/add`,
     mutate: `${API_URL}/evaluations/questionnaire-evaluation/get/all`,
     sendResponse: `${API_URL}/evaluations/questionnaire-evaluation/send-response`,
-    getDetails: `${API_URL}/evaluations/questionnaire-evaluation/get/questionnaire`
+    getDetails: `${API_URL}/evaluations/questionnaire-evaluation/get/questionnaire`,
+    getF4Questionnaire: `${API_URL}/evaluations/questionnaire`,
 }
 
 export const USER_RESPONSES_URLS = {
@@ -326,6 +327,8 @@ export const GROUPE_EVALUATION_URLS = {
     view: `/Plan/annual/`,
     edit: `${API_URL}/plan/groupes/evaluations/edit-evaluation`,
     getDetails: `${API_URL}/evaluations/admin/groupe-evaluation-details`,
+    getEvaluationForF4: `${API_URL}/plan/groupes/evaluations/get/groupe-evaluation`,
+    getTokensForF4: `${API_URL}/plan/groupes/evaluations/get/qr-tokens`,
 }
 
 export const ATTENDANCE_URLS = {
