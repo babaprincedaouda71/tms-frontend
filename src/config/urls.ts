@@ -337,4 +337,5 @@ export const ATTENDANCE_URLS = {
 
 export const F4_EVALUATION_URLS = {
     scan: `${API_URL}/public/evaluation/scan`,
+    submit: `${API_URL}/public/evaluation/submit`,
 }
