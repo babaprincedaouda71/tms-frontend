@@ -11,19 +11,6 @@ import {GROUPE_EVALUATION_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import QuestionnaireModal from "@/components/ui/QuestionnaireModal";
 
-const TABLE_HEADERS = [
-    "Nom",
-    "État d'avancement",
-    "Actions",
-    "Sélection"
-];
-const TABLE_KEYS = [
-    "name",
-    "progress",
-    "actions",
-    "selection",
-];
-
 const RECORDS_PER_PAGE = 5;
 
 interface DetailEvaluationProps {
@@ -56,14 +43,6 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
     );
 
     const memorizedData = useMemo(() => groupeEvaluationDetails || [], [groupeEvaluationDetails]);
-
-    const {
-        visibleColumns,
-        handleSortData,
-        totalRecords,
-        sortableColumns,
-        paginatedData,
-    } = useTable(memorizedData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE);
 
     // Fonction pour gérer la sélection des participants
     const handleParticipantSelection = (participantId: number, isSelected: boolean) => {
@@ -107,6 +86,32 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
         setIsQuestionnaireModalOpen(true);
     };
 
+    const TABLE_HEADERS = [
+        "Nom",
+        "État d'avancement",
+        "Actions",
+        "Sélection"
+    ];
+
+    const TABLE_KEYS = [
+        "name",
+        "progress",
+        "actions",
+        "selection",
+    ];
+
+    const {
+        visibleColumns,
+        handleSortData,
+        totalRecords,
+        sortableColumns,
+        paginatedData,
+    } = useTable(memorizedData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE);
+
+    // Calcul des états de sélection
+    const isAllSelected = selectedParticipants.size === memorizedData.length && memorizedData.length > 0;
+    const isPartiallySelected = selectedParticipants.size > 0 && selectedParticipants.size < memorizedData.length;
+
     // Préparer les données des participants sélectionnés pour le modal
     const selectedParticipantsData: Participant[] = memorizedData
         .filter(item => selectedParticipants.has(item.id))
@@ -114,6 +119,23 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
             id: item.id,
             name: item.name
         }));
+
+    // Renderers pour les en-têtes personnalisés
+    const headerRenderers = {
+        "Sélection": () => (
+            <input
+                type="checkbox"
+                className="h-5 w-5 accent-primary cursor-pointer"
+                checked={isAllSelected}
+                ref={(input) => {
+                    if (input) input.indeterminate = isPartiallySelected;
+                }}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                aria-label="Sélectionner tous les participants"
+                title={isAllSelected ? 'Désélectionner tout' : 'Sélectionner tout'}
+            />
+        )
+    };
 
     const renderers = {
         progress: (value: number) => (
@@ -189,9 +211,6 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
         );
     }
 
-    const isAllSelected = selectedParticipants.size === memorizedData.length && memorizedData.length > 0;
-    const isPartiallySelected = selectedParticipants.size > 0 && selectedParticipants.size < memorizedData.length;
-
     return (
         <>
             <div className='flex flex-col gap-4'>
@@ -218,57 +237,6 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                     </p>
                 </div>
 
-                {/* Section de sélection des participants */}
-                {memorizedData.length > 0 && (
-                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="h-4 w-4 accent-primary"
-                                        checked={isAllSelected}
-                                        ref={(input) => {
-                                            if (input) input.indeterminate = isPartiallySelected;
-                                        }}
-                                        onChange={(e) => handleSelectAll(e.target.checked)}
-                                    />
-                                    <span className="text-sm font-medium">
-                                        {isAllSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
-                                    </span>
-                                </label>
-                                <div className="text-sm text-gray-600">
-                                    <span className="font-medium text-blue-600">
-                                        {selectedParticipants.size}
-                                    </span> / {memorizedData.length} participant(s) sélectionné(s)
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleDownloadQuestionnaires}
-                                disabled={selectedParticipants.size === 0}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2 justify-center sm:justify-start"
-                            >
-                                <PDFIcon className="h-4 w-4"/>
-                                Générer questionnaires PDF
-                                {selectedParticipants.size > 0 && (
-                                    <span className="bg-blue-500 text-xs px-2 py-1 rounded-full">
-                                        {selectedParticipants.size}
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-
-                        {selectedParticipants.size > 10 && (
-                            <div
-                                className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                                ⚠️ Génération de {selectedParticipants.size} questionnaires. Cela peut prendre quelques
-                                minutes.
-                            </div>
-                        )}
-                    </div>
-                )}
-
                 {/* Tableau des participants */}
                 <Table
                     data={paginatedData}
@@ -282,9 +250,10 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                     onAdd={() => null}
                     visibleColumns={visibleColumns}
                     renderers={renderers}
+                    headerRenderers={headerRenderers}
                 />
 
-                {/* Section : Bouton d'action principal (bouton original) */}
+                {/* Section : Bouton d'action principal */}
                 <div className="text-right text-xs md:text-sm lg:text-base">
                     <button
                         type="button"

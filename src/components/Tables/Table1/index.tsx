@@ -5,19 +5,26 @@ import TableHead from "../TableHead1/index";
 import Skeleton from "react-loading-skeleton";
 import {TableProps} from "../../../types/Table.types";
 
-const Table: React.FC<TableProps> = ({
-                                         data,
-                                         keys,
-                                         headers,
-                                         sortableCols,
-                                         onSort,
-                                         isPagination = true,
-                                         pagination,
-                                         totalRecords = 0,
-                                         loading = false,
-                                         visibleColumns,
-                                         renderers,
-                                     }) => {
+interface ExtendedTableProps extends TableProps {
+    headerRenderers?: {
+        [key: string]: () => React.ReactNode;
+    };
+}
+
+const Table: React.FC<ExtendedTableProps> = ({
+                                                 data,
+                                                 keys,
+                                                 headers,
+                                                 sortableCols,
+                                                 onSort,
+                                                 isPagination = true,
+                                                 pagination,
+                                                 totalRecords = 0,
+                                                 loading = false,
+                                                 visibleColumns,
+                                                 renderers,
+                                                 headerRenderers,
+                                             }) => {
 
     const [sortColumn, setSortColumn] = useState<string>("");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -47,6 +54,7 @@ const Table: React.FC<TableProps> = ({
                             onSort={handleSort}
                             sort={sortOrder}
                             sortColumn={sortColumn}
+                            headerRenderers={headerRenderers}
                         />
 
                         {!loading ? (

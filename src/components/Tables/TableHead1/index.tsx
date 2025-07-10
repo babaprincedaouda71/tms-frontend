@@ -3,18 +3,34 @@ import ChevronDown from "../../Svgs/ChevronDown";
 import ChevronUp from "../../Svgs/ChevronUp";
 import {TableHeadProps} from "@/types/Table.types";
 
-const TableHead: React.FC<TableHeadProps> = ({
-                                                 cols,
-                                                 sortableCols,
-                                                 sort,
-                                                 onSort,
-                                                 sortColumn,
-                                             }) => {
+interface ExtendedTableHeadProps extends TableHeadProps {
+    headerRenderers?: {
+        [key: string]: () => React.ReactNode;
+    };
+}
+
+const TableHead: React.FC<ExtendedTableHeadProps> = ({
+                                                         cols,
+                                                         sortableCols,
+                                                         sort,
+                                                         onSort,
+                                                         sortColumn,
+                                                         headerRenderers,
+                                                     }) => {
 
     const handleClick = (col: string) => {
         if (!sortableCols.includes(col)) return;
         // On inverse l'ordre actuel
         onSort(col, sort === "asc" ? "desc" : "asc");
+    };
+
+    const renderHeaderContent = (item: string) => {
+        // Si un renderer personnalisé existe pour cette colonne, l'utiliser
+        if (headerRenderers && headerRenderers[item]) {
+            return headerRenderers[item]();
+        }
+        // Sinon, afficher le texte normal
+        return item;
     };
 
     return (
@@ -37,7 +53,7 @@ const TableHead: React.FC<TableHeadProps> = ({
                   {sort === "desc" ? <ChevronDown/> : <ChevronUp/>}
                 </span>
                         )}
-                        {item}
+                        {renderHeaderContent(item)}
                     </div>
                 </th>
             ))}
