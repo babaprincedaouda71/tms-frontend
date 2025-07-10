@@ -198,7 +198,7 @@ export default function F4EvaluationResponsePage() {
                         response?.singleChoiceResponse === option
                             ? 'border-blue-500 bg-blue-50 shadow-md'
                             : hasError
-                                ? 'border-red-300 hover:border-red-400 bg-red-50'
+                                ? 'border-redShade-300 hover:border-redShade-400 bg-redShade-50'
                                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
                     }`}>
                         <input
@@ -240,7 +240,7 @@ export default function F4EvaluationResponsePage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full">
                     <div className="text-center">
-                        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6"/>
+                        <AlertCircle className="w-16 h-16 text-redShade-500 mx-auto mb-6"/>
                         <h2 className="text-xl font-bold text-gray-900 mb-4">Erreur</h2>
                         <p className="text-gray-600 mb-8 leading-relaxed">{error}</p>
                         <button
@@ -334,7 +334,7 @@ export default function F4EvaluationResponsePage() {
                                             </span>
                                             <h3 className="text-lg font-semibold text-gray-900 leading-relaxed">
                                                 {question.text}
-                                                {question.required && <span className="text-red-500 ml-1">*</span>}
+                                                {question.required && <span className="text-redShade-500 ml-1">*</span>}
                                             </h3>
                                         </div>
                                         {question.comment && (
@@ -348,7 +348,7 @@ export default function F4EvaluationResponsePage() {
 
                                     {validationErrors[question.questionId] && (
                                         <div className="ml-11 mt-3">
-                                            <p className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-lg">
+                                            <p className="text-redShade-500 text-sm font-medium bg-redShade-50 p-3 rounded-lg">
                                                 {validationErrors[question.questionId]}
                                             </p>
                                         </div>

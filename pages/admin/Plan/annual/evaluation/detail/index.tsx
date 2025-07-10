@@ -15,11 +15,13 @@ const TABLE_HEADERS = [
     "Nom",
     "État d'avancement",
     "Actions",
+    "Sélection"
 ];
 const TABLE_KEYS = [
     "name",
     "progress",
     "actions",
+    "selection",
 ];
 
 const RECORDS_PER_PAGE = 5;
@@ -128,16 +130,18 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                 <PDFIcon
                     className='h-6 w-6 cursor-pointer hover:text-red-600 transition-colors'
                 />
-                <input
-                    type="checkbox"
-                    className="h-5 w-5 accent-primary cursor-pointer"
-                    checked={selectedParticipants.has(row.id)}
-                    onChange={(e) => handleParticipantSelection(row.id, e.target.checked)}
-                    aria-label={`Sélectionner ${row.name}`}
-                    title={`Sélectionner ${row.name} pour génération groupée`}
-                />
             </div>
-        )
+        ),
+        selection: (_: string, row: Participant) => (
+            <input
+                type="checkbox"
+                className="h-5 w-5 accent-primary cursor-pointer"
+                checked={selectedParticipants.has(row.id)}
+                onChange={(e) => handleParticipantSelection(row.id, e.target.checked)}
+                aria-label={`Sélectionner ${row.name}`}
+                title={`Sélectionner ${row.name} pour génération groupée`}
+            />
+        ),
     };
 
     // Gestion des états de chargement et d'erreur
