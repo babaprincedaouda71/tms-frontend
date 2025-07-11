@@ -10,6 +10,7 @@ import useSWR from "swr";
 import {GROUPE_EVALUATION_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import QuestionnaireModal from "@/components/ui/QuestionnaireModal";
+import SyntheseModal from "@/components/ui/SyntheseModal";
 
 const RECORDS_PER_PAGE = 5;
 
@@ -30,6 +31,13 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
     // État pour gérer les participants sélectionnés et le modal
     const [selectedParticipants, setSelectedParticipants] = useState<Set<number>>(new Set());
     const [isQuestionnaireModalOpen, setIsQuestionnaireModalOpen] = useState(false);
+
+    // Nouvel état pour gérer le PDF individuel
+    const [individualParticipant, setIndividualParticipant] = useState<Participant | null>(null);
+    const [isIndividualModalOpen, setIsIndividualModalOpen] = useState(false);
+
+    // 🆕 ÉTAT pour le modal de synthèse
+    const [isSyntheseModalOpen, setIsSyntheseModalOpen] = useState(false);
 
     // Récupération des détails de l'évaluation
     const {
@@ -67,7 +75,7 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
         }
     };
 
-    // Fonction pour ouvrir le modal de génération de questionnaires
+    // Fonction pour ouvrir le modal de génération de questionnaires groupés
     const handleDownloadQuestionnaires = () => {
         if (selectedParticipants.size === 0) {
             alert('Veuillez sélectionner au moins un participant');
@@ -85,6 +93,41 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
 
         setIsQuestionnaireModalOpen(true);
     };
+
+    // Nouvelle fonction pour gérer le PDF individuel
+    const handleIndividualPDF = (participant: GroupeEvaluationDetailProps) => {
+        const participantData: Participant = {
+            id: participant.id,
+            name: participant.name
+        };
+
+        setIndividualParticipant(participantData);
+        setIsIndividualModalOpen(true);
+    };
+
+    // Fonction pour fermer le modal individuel
+    const handleCloseIndividualModal = () => {
+        setIsIndividualModalOpen(false);
+        setIndividualParticipant(null);
+    };
+
+    // 🆕 FONCTION pour ouvrir le modal de synthèse
+    const handleGenerateSynthese = () => {
+        // Vérifier que tous les participants ont un progress à 100%
+        const allComplete = memorizedData.every(participant => participant.progress === 100);
+
+        if (!allComplete) {
+            alert('Tous les participants doivent avoir terminé leur évaluation pour générer la fiche de synthèse');
+            return;
+        }
+
+        setIsSyntheseModalOpen(true);
+    };
+
+    // 🆕 CALCUL pour savoir si tous ont terminé
+    const allParticipantsComplete = useMemo(() => {
+        return memorizedData.length > 0 && memorizedData.every(participant => participant.progress === 100);
+    }, [memorizedData]);
 
     const TABLE_HEADERS = [
         "Nom",
@@ -112,7 +155,7 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
     const isAllSelected = selectedParticipants.size === memorizedData.length && memorizedData.length > 0;
     const isPartiallySelected = selectedParticipants.size > 0 && selectedParticipants.size < memorizedData.length;
 
-    // Préparer les données des participants sélectionnés pour le modal
+    // Préparer les données des participants sélectionnés pour le modal groupé
     const selectedParticipantsData: Participant[] = memorizedData
         .filter(item => selectedParticipants.has(item.id))
         .map(item => ({
@@ -144,14 +187,18 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                 <ProgressBar progress={value}/>
             </div>
         ),
-        actions: (_: string, row: any) => (
+        actions: (_: string, row: GroupeEvaluationDetailProps) => (
             <div className="flex justify-around items-center">
                 <EyeFileIcon
                     className='h-6 w-6 cursor-pointer hover:text-blue-600 transition-colors'
                 />
-                <PDFIcon
-                    className='h-6 w-6 cursor-pointer hover:text-red-600 transition-colors'
-                />
+                <div
+                    onClick={() => handleIndividualPDF(row)}
+                >
+                    <PDFIcon
+                        className='h-6 w-6 cursor-pointer hover:text-red-600 transition-colors'
+                    />
+                </div>
             </div>
         ),
         selection: (_: string, row: Participant) => (
@@ -268,17 +315,38 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                     </button>
                 </div>
 
-                {/* Lien vers la fiche d'évaluation synthétique */}
+                {/* 🆕 LIEN MODIFIÉ vers la fiche d'évaluation synthétique */}
                 <div
-                    className='flex items-center justify-start gap-4 hover:cursor-pointer p-4 rounded-lg hover:bg-gray-50 transition-colors'
-                    onClick={() => alert("Fonctionnalité à implémenter")}
+                    className={`flex items-center justify-start gap-4 p-4 rounded-lg transition-colors ${
+                        allParticipantsComplete
+                            ? 'hover:cursor-pointer hover:bg-gray-50'
+                            : 'opacity-50 cursor-not-allowed'
+                    }`}
+                    onClick={allParticipantsComplete ? handleGenerateSynthese : undefined}
+                    title={allParticipantsComplete
+                        ? "Générer la fiche d'évaluation synthétique"
+                        : "Tous les participants doivent terminer avant de générer la synthèse"
+                    }
                 >
-                    <span className='text-primary font-extrabold'>Générer la fiche d'évaluation synthétique</span>
-                    <img src='/images/pdf.svg' className='h-8 w-8' alt="PDF"/>
+                    <span className={`font-extrabold ${
+                        allParticipantsComplete ? 'text-primary' : 'text-gray-400'
+                    }`}>
+                        Générer la fiche d'évaluation synthétique
+                    </span>
+                    <img
+                        src='/images/pdf.svg'
+                        className={`h-8 w-8 ${allParticipantsComplete ? '' : 'grayscale'}`}
+                        alt="PDF"
+                    />
+                    {!allParticipantsComplete && (
+                        <span className="text-xs text-gray-500 ml-2">
+                            (Disponible quand tous auront terminé)
+                        </span>
+                    )}
                 </div>
             </div>
 
-            {/* Modal de génération de questionnaires optimisé */}
+            {/* Modal de génération de questionnaires groupés */}
             <QuestionnaireModal
                 isOpen={isQuestionnaireModalOpen}
                 onClose={() => setIsQuestionnaireModalOpen(false)}
@@ -286,6 +354,26 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                 selectedParticipants={selectedParticipantsData}
                 trainingTheme="Formation" // À adapter selon vos données réelles
                 groupName="Groupe" // À adapter selon vos données réelles
+            />
+
+            {/* Modal de génération de questionnaire individuel */}
+            {individualParticipant && (
+                <QuestionnaireModal
+                    isOpen={isIndividualModalOpen}
+                    onClose={handleCloseIndividualModal}
+                    groupeEvaluationId={groupeEvaluationId.toString()}
+                    selectedParticipants={[individualParticipant]}
+                    trainingTheme="Formation" // À adapter selon vos données réelles
+                    groupName="Groupe" // À adapter selon vos données réelles
+                />
+            )}
+
+            {/* 🆕 MODAL de synthèse d'évaluation */}
+            <SyntheseModal
+                isOpen={isSyntheseModalOpen}
+                onClose={() => setIsSyntheseModalOpen(false)}
+                groupeEvaluationId={groupeEvaluationId.toString()}
+                evaluationLabel="Évaluation de formation"
             />
         </>
     )
