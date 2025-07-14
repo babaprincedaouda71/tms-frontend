@@ -331,6 +331,7 @@ export const GROUPE_EVALUATION_URLS = {
     getTokensForF4: `${API_URL}/plan/groupes/evaluations/get/qr-tokens`,
     // 🆕 NOUVELLE URL pour la synthèse
     synthese: `${API_URL}/plan/groupes/evaluations/synthese`,
+    fetchParticipantResponses: `${API_URL}/plan/groupes/evaluations/responses`,
 }
 
 export const ATTENDANCE_URLS = {

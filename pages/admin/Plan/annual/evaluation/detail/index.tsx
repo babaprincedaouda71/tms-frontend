@@ -11,6 +11,7 @@ import {GROUPE_EVALUATION_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import QuestionnaireModal from "@/components/ui/QuestionnaireModal";
 import SyntheseModal from "@/components/ui/SyntheseModal";
+import QuestionResponseCard from "@/components/ui/QuestionResponseCard";
 
 const RECORDS_PER_PAGE = 5;
 
@@ -38,6 +39,49 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
 
     // 🆕 ÉTAT pour le modal de synthèse
     const [isSyntheseModalOpen, setIsSyntheseModalOpen] = useState(false);
+
+    // les états pour gérer le modal des réponses
+    const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
+    const [selectedParticipantResponses, setSelectedParticipantResponses] = useState<any>(null);
+    const [loadingResponses, setLoadingResponses] = useState(false);
+    const [errorLoadingResponses, setErrorLoadingResponses] = useState<string | null>(null);
+
+    // Fonction pour récupérer les réponses d'un participant
+    const fetchParticipantResponses = async (participantId: number, groupeEvaluationId: string) => {
+        setLoadingResponses(true);
+        setErrorLoadingResponses(null);
+
+        try {
+            const response = await fetch(`${GROUPE_EVALUATION_URLS.fetchParticipantResponses}/${participantId}/${groupeEvaluationId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setSelectedParticipantResponses(data);
+            setIsResponseModalOpen(true);
+        } catch (error: any) {
+            console.error("Erreur lors de la récupération des réponses :", error);
+            setErrorLoadingResponses("Erreur lors du chargement des réponses.");
+        } finally {
+            setLoadingResponses(false);
+        }
+    };
+
+// 4. Fonction pour fermer le modal
+    const handleCloseResponseModal = () => {
+        setIsResponseModalOpen(false);
+        setSelectedParticipantResponses(null);
+        setErrorLoadingResponses(null);
+    };
+
 
     // Récupération des détails de l'évaluation
     const {
@@ -189,15 +233,25 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
         ),
         actions: (_: string, row: GroupeEvaluationDetailProps) => (
             <div className="flex justify-around items-center">
-                <EyeFileIcon
-                    className='h-6 w-6 cursor-pointer hover:text-blue-600 transition-colors'
-                />
+                {/* Bouton pour voir les réponses */}
                 <div
-                    onClick={() => handleIndividualPDF(row)}
+                    onClick={() => {
+                        // Vous devrez récupérer le groupeEvaluationId du contexte
+                        // Pour cela, vous pouvez soit le passer en prop ou le récupérer depuis l'URL
+                        const currentGroupeEvaluationId = groupeEvaluationId?.toString(); // À adapter selon votre implémentation
+                        if (currentGroupeEvaluationId) {
+                            fetchParticipantResponses(row.id, currentGroupeEvaluationId);
+                        }
+                    }}
+                    className="cursor-pointer hover:text-blue-600 transition-colors"
+                    title="Voir les réponses"
                 >
-                    <PDFIcon
-                        className='h-6 w-6 cursor-pointer hover:text-red-600 transition-colors'
-                    />
+                    <EyeFileIcon className='h-6 w-6'/>
+                </div>
+
+                {/* Bouton PDF existant */}
+                <div onClick={() => handleIndividualPDF(row)}>
+                    <PDFIcon className='h-6 w-6 cursor-pointer hover:text-red-600 transition-colors'/>
                 </div>
             </div>
         ),
@@ -374,6 +428,22 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
                 onClose={() => setIsSyntheseModalOpen(false)}
                 groupeEvaluationId={groupeEvaluationId.toString()}
                 evaluationLabel="Évaluation de formation"
+            />
+
+            {/* Modal pour afficher les réponses */}
+            <QuestionResponseCard
+                isOpen={isResponseModalOpen}
+                onClose={handleCloseResponseModal}
+                title={selectedParticipantResponses?.title || "Réponses du participant"}
+                category={selectedParticipantResponses?.type || "Évaluation de groupe"}
+                description={selectedParticipantResponses?.description || ""}
+                questions={selectedParticipantResponses?.questions}
+                progress={selectedParticipantResponses?.progress || 100}
+                initialResponses={selectedParticipantResponses?.responses || []}
+                mode="view" // Mode lecture seule
+                questionCardRef={null} // Pas besoin de ref en mode view
+                loadingResponses={loadingResponses}
+                errorLoadingResponses={errorLoadingResponses}
             />
         </>
     )

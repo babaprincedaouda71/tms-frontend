@@ -1,10 +1,10 @@
 // src/components/QuestionResponseCard.tsx (ou le chemin de votre choix)
 
-import React, { RefObject } from 'react';
-import { X } from 'lucide-react'; // Assurez-vous que lucide-react est installé
+import React, {RefObject} from 'react';
+import {X} from 'lucide-react'; // Assurez-vous que lucide-react est installé
 import ProgressBar from '@/components/ProgressBar'; // Adaptez le chemin si nécessaire
 import QuestionCard from '@/components/ui/QuestionCard'; // Adaptez le chemin si nécessaire
-import { QuestionsProps} from '@/types/dataTypes'; // Adaptez le chemin vers vos types
+import {QuestionsProps} from '@/types/dataTypes'; // Adaptez le chemin vers vos types
 
 // Définition des props pour le composant QuestionResponseCard
 interface QuestionResponseCardProps {
@@ -46,20 +46,20 @@ interface UserResponse {
 }
 
 const QuestionResponseCard: React.FC<QuestionResponseCardProps> = ({
-                                                             isOpen,
-                                                             onClose,
-                                                             title,
-                                                             category,
-                                                             description,
-                                                             progress,
-                                                             loadingResponses,
-                                                             errorLoadingResponses,
-                                                             questions,
-                                                             initialResponses,
-                                                             mode,
-                                                             onSaveDraft,
-                                                             questionCardRef,
-                                                         }) => {
+                                                                       isOpen,
+                                                                       onClose,
+                                                                       title,
+                                                                       category,
+                                                                       description,
+                                                                       progress,
+                                                                       loadingResponses,
+                                                                       errorLoadingResponses,
+                                                                       questions,
+                                                                       initialResponses,
+                                                                       mode,
+                                                                       onSaveDraft,
+                                                                       questionCardRef,
+                                                                   }) => {
     // Si la modale n'est pas ouverte, ne rien rendre
     if (!isOpen) {
         return null;
@@ -73,7 +73,7 @@ const QuestionResponseCard: React.FC<QuestionResponseCardProps> = ({
                     onClick={onClose} // Utilise la prop onClose
                     className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
                 >
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5"/>
                 </button>
                 <h2 className="text-xl font-semibold mb-1">{title}</h2>
                 <p className="text-sm text-gray-600 mb-4">{category}</p>
@@ -85,13 +85,13 @@ const QuestionResponseCard: React.FC<QuestionResponseCardProps> = ({
                         <span className="text-sm font-medium">Progression</span>
                         <span className="text-sm font-medium">{progress ?? 0}% complété</span>
                     </div>
-                    <ProgressBar progress={progress} />
+                    <ProgressBar progress={progress}/>
                 </div>
 
                 {loadingResponses ? (
                     <div>Chargement des réponses...</div>
                 ) : errorLoadingResponses ? (
-                    <div className="text-red-600">{errorLoadingResponses}</div>
+                    <div className="text-redShade-600">{errorLoadingResponses}</div>
                 ) : questions && questions.length > 0 ? (
                     <>
                         <QuestionCard
