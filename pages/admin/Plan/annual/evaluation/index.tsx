@@ -4,7 +4,7 @@ import SearchFilterAddBar from '@/components/SearchFilterAddBar'
 import StatusRenderer from '@/components/Tables/StatusRenderer'
 import Table from '@/components/Tables/Table/index'
 import {GroupeEvaluationProps} from '@/types/dataTypes'
-import React, {useMemo, useState} from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 import EvaluationForm from './add'
 import DetailEvaluation from './detail'
 import {handleSort} from '@/utils/sortUtils'
@@ -33,7 +33,20 @@ const TABLE_KEYS = [
     "actions",
 ];
 
-const ACTIONS_TO_SHOW = ["view", "edit", "delete"];
+// Définition des actions selon le statut
+const getActionsForStatus = (status: string): string[] => {
+    switch (status) {
+        case "Brouillon":
+            return ["view", "edit", "delete"];
+        case "Publiée":
+            return ["view", "delete"];
+        case "Terminée":
+            return ["view"]; // Optionnel : pour le statut "Terminée" si vous l'implémentez plus tard
+        default:
+            return ["view"]; // Actions par défaut
+    }
+};
+
 const RECORDS_PER_PAGE = 5;
 
 const Evaluation = () => {
@@ -84,6 +97,26 @@ const Evaluation = () => {
         setShowForm(false);
     };
 
+    // Fonction pour déterminer si une action est désactivée
+    const getActionDisabledState = useCallback((actionKey: string, row: GroupeEvaluationProps): boolean => {
+        const allowedActions = getActionsForStatus(row.status);
+        return !allowedActions.includes(actionKey);
+    }, []);
+
+    // Fonction pour gérer l'édition (quand elle sera implémentée)
+    const handleEditAction = useCallback((row: GroupeEvaluationProps) => {
+        console.log("Édition de l'évaluation:", row);
+        // TODO: Implémenter la logique d'édition
+        // Par exemple: ouvrir un modal d'édition ou naviguer vers une page d'édition
+    }, []);
+
+    // Fonction pour gérer la suppression (quand elle sera implémentée)
+    const handleDeleteSuccess = useCallback((deletedId: number) => {
+        console.log("Évaluation supprimée avec succès:", deletedId);
+        // Rafraîchir les données après suppression
+        mutateEvaluations();
+    }, [mutateEvaluations]);
+
     const renderers = {
         label: (value: string, row: GroupeEvaluationProps) => (
             <button
@@ -103,13 +136,26 @@ const Evaluation = () => {
                 row={row}
             />
         ),
-        actions: (_: any, row: GroupeEvaluationProps) => (
-            <DynamicActionsRenderer
-                actions={ACTIONS_TO_SHOW}
-                row={row}
-                customViewHandler={() => handleViewAction(row)}
-            />
-        )
+        actions: (_: any, row: GroupeEvaluationProps) => {
+            const allowedActions = getActionsForStatus(row.status);
+
+            return (
+                <DynamicActionsRenderer
+                    actions={allowedActions}
+                    row={row}
+                    customViewHandler={() => handleViewAction(row)}
+                    customEditHandler={handleEditAction}
+                    getActionDisabledState={getActionDisabledState}
+                    deleteUrl={GROUPE_EVALUATION_URLS.delete} // TODO: Ajouter cette URL dans votre config
+                    mutateUrl={GROUPE_EVALUATION_URLS.mutate + `/${trainingId}/${groupId}`}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    confirmMessage={(row) =>
+                        row ? `Êtes-vous sûr de vouloir supprimer l'évaluation "${row.label}" ?`
+                            : "Êtes-vous sûr de vouloir supprimer cette évaluation ?"
+                    }
+                />
+            );
+        }
     };
 
     const handleAdd = () => {
