@@ -146,13 +146,18 @@ const Evaluation = () => {
                     customViewHandler={() => handleViewAction(row)}
                     customEditHandler={handleEditAction}
                     getActionDisabledState={getActionDisabledState}
-                    deleteUrl={GROUPE_EVALUATION_URLS.delete} // TODO: Ajouter cette URL dans votre config
+                    deleteUrl={GROUPE_EVALUATION_URLS.delete} // ✅ URL ajoutée
                     mutateUrl={GROUPE_EVALUATION_URLS.mutate + `/${trainingId}/${groupId}`}
                     onDeleteSuccess={handleDeleteSuccess}
-                    confirmMessage={(row) =>
-                        row ? `Êtes-vous sûr de vouloir supprimer l'évaluation "${row.label}" ?`
-                            : "Êtes-vous sûr de vouloir supprimer cette évaluation ?"
-                    }
+                    confirmMessage={(row) => {
+                        // Vérification de sécurité pour éviter l'erreur
+                        if (!row) {
+                            return "Êtes-vous sûr de vouloir supprimer cette évaluation ?";
+                        }
+
+                        // Message de confirmation avec avertissement sur les données associées
+                        return `Êtes-vous sûr de vouloir supprimer l'évaluation "${row.label || 'sans nom'}" ?`;
+                    }}
                 />
             );
         }
