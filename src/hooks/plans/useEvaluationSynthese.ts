@@ -21,6 +21,12 @@ export interface EvaluationSynthese {
     completionPercentage: number;
     questionStats: QuestionStats[];
     generationDate: string;
+    location: string;
+    city: string;
+    trainerName: string;
+    date: string;
+    trainingTheme: string;
+    groupeNumber: number;
 }
 
 export const useEvaluationSynthese = () => {
