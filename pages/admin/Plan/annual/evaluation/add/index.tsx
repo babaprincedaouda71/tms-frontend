@@ -1,9 +1,9 @@
-// pages/admin/Plan/annual/evaluation/add/index.tsx
+// pages/admin/Plan/annual/evaluation/add/index.tsx - Version finale avec édition
 import CustomSelect from '@/components/FormComponents/CustomSelect'
 import InputField from '@/components/FormComponents/InputField'
 import Table from '@/components/Tables/Table/index'
-import React, {useCallback, useMemo, useState} from 'react'
-import {EvaluationsByTypeProps} from '@/types/dataTypes'
+import React, {useCallback, useMemo, useState, useEffect} from 'react'
+import {EvaluationsByTypeProps, GroupeEvaluationProps} from '@/types/dataTypes'
 import {handleSort} from '@/utils/sortUtils'
 import useTable from '@/hooks/useTable'
 import useSWR from "swr";
@@ -21,7 +21,7 @@ interface ParticipantProps {
 interface FormData {
     label: string;
     questionnaireId: string;
-    selectedType: string; // Type sélectionné par l'utilisateur
+    selectedType: string;
     participantIds: number[];
 }
 
@@ -34,6 +34,7 @@ interface FormErrors {
 interface EvaluationFormProps {
     onClick: () => void;
     onSuccess?: () => void;
+    editingEvaluation?: GroupeEvaluationProps | null; // 🆕 Prop pour l'édition
 }
 
 const TABLE_HEADERS = [
@@ -50,9 +51,12 @@ const TABLE_KEYS = [
 
 const RECORDS_PER_PAGE = 4;
 
-const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
+const EvaluationForm = ({onClick, onSuccess, editingEvaluation}: EvaluationFormProps) => {
     const router = useRouter();
     const {trainingId, groupId} = router.query;
+
+    // 🆕 Déterminer si on est en mode édition
+    const isEditMode = !!editingEvaluation;
 
     // États du formulaire
     const [formData, setFormData] = useState<FormData>({
@@ -66,6 +70,7 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedParticipants, setSelectedParticipants] = useState<Set<number>>(new Set());
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [isLoadingEditData, setIsLoadingEditData] = useState(false); // 🆕 État de chargement
 
     // Récupération des données des questionnaires groupés par type
     const {data: questionnairesData, error: questionnairesError} = useSWR<EvaluationsByTypeProps[]>(
@@ -73,11 +78,81 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
         fetcher
     );
 
+    // Récupération des données des participants
+    const {
+        data: participantsData,
+        error: participantsError,
+        mutate
+    } = useSWR<ParticipantProps[]>(
+        GROUPE_EVALUATION_URLS.fetchParticipants + `/${trainingId}/${groupId}`,
+        fetcher
+    );
+
+    // 🆕 Effet pour charger les données d'édition
+    useEffect(() => {
+        if (isEditMode && editingEvaluation) {
+            console.log("Chargement des données d'édition pour:", editingEvaluation);
+            setIsLoadingEditData(true);
+
+            // 🆕 Appel API réel pour récupérer les détails d'édition
+            const loadEditData = async () => {
+                try {
+                    const response = await fetch(
+                        `${GROUPE_EVALUATION_URLS.editDetails}/${editingEvaluation.id}`,
+                        {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Erreur lors du chargement des données');
+                    }
+
+                    const editData = await response.json();
+
+                    setFormData({
+                        label: editData.label,
+                        questionnaireId: editData.questionnaireId,
+                        selectedType: editData.type, // 🔄 Utiliser 'type' depuis le backend
+                        participantIds: editData.participantIds,
+                    });
+
+                    // 🆕 Pré-sélectionner les participants dans le tableau
+                    setSelectedParticipants(new Set(editData.participantIds));
+
+                    console.log("Données d'édition chargées:", editData);
+
+                } catch (error) {
+                    console.error('Erreur lors du chargement:', error);
+                    alert("Erreur lors du chargement des données d'édition");
+                } finally {
+                    setIsLoadingEditData(false);
+                }
+            };
+
+            loadEditData();
+
+        } else {
+            // Mode ajout - réinitialiser le formulaire
+            setFormData({
+                label: "",
+                questionnaireId: "",
+                selectedType: "",
+                participantIds: [],
+            });
+            setSelectedParticipants(new Set());
+            setErrors({});
+        }
+    }, [isEditMode, editingEvaluation]);
+
     // Transformation des données pour les options du dropdown
     const typeOptions = useMemo(() => {
         if (!questionnairesData) return [];
 
-        // Filtrer pour ne garder que les types qui ont au moins un questionnaire par défaut
         return questionnairesData
             .filter(typeData =>
                 typeData.questionnaires &&
@@ -109,16 +184,6 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
         }
     }, [formData.selectedType, formData.questionnaireId]);
 
-    // Récupération des données des participants
-    const {
-        data: participantsData,
-        error: participantsError,
-        mutate
-    } = useSWR<ParticipantProps[]>(
-        GROUPE_EVALUATION_URLS.fetchParticipants + `/${trainingId}/${groupId}`,
-        fetcher
-    );
-
     const memorizedData = useMemo(() => participantsData || [], [participantsData]);
     const {
         visibleColumns,
@@ -141,7 +206,7 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
             newErrors.label = "Le label ne peut pas dépasser 100 caractères";
         }
 
-        // Validation du questionnaire (vérifier que questionnaireId est défini)
+        // Validation du questionnaire
         if (!formData.questionnaireId) {
             newErrors.questionnaireId = "Veuillez sélectionner un type de questionnaire";
         }
@@ -235,7 +300,7 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
         }
     }, [memorizedData, selectedParticipants]);
 
-    // Soumission du formulaire
+    // 🆕 Soumission du formulaire avec gestion édition/ajout
     const handleSubmit = useCallback(async () => {
         if (!validateForm()) {
             return;
@@ -247,25 +312,39 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
             const payload = {
                 label: formData.label.trim(),
                 questionnaireId: formData.questionnaireId,
-                type: formData.selectedType, // Utiliser le type sélectionné
+                type: formData.selectedType,
                 participantIds: Array.from(selectedParticipants)
             };
 
-            const response = await fetch(
-                `${GROUPE_EVALUATION_URLS.add}/${trainingId}/${groupId}`,
-                {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                }
-            );
+            let url: string;
+            let method: string;
+
+            if (isEditMode && editingEvaluation?.id) {
+                // 🆕 Mode édition
+                url = `${GROUPE_EVALUATION_URLS.edit}/${editingEvaluation.id}`;
+                method = 'PUT';
+                console.log("Mise à jour de l'évaluation:", editingEvaluation.id, payload);
+            } else {
+                // Mode ajout
+                url = `${GROUPE_EVALUATION_URLS.add}/${trainingId}/${groupId}`;
+                method = 'POST';
+                console.log("Création d'une nouvelle évaluation:", payload);
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
 
             if (!response.ok) {
-                throw new Error('Erreur lors de la création de l\'évaluation');
+                throw new Error(`Erreur lors de ${isEditMode ? 'la modification' : 'la création'} de l'évaluation`);
             }
+
+            console.log(`${isEditMode ? 'Modification' : 'Création'} réussie !`);
 
             await mutate(); // Rafraîchir les données des participants
 
@@ -278,11 +357,11 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
 
         } catch (error) {
             console.error('Erreur lors de la soumission:', error);
-            alert("Erreur lors de la création de l'évaluation");
+            alert(`Erreur lors de ${isEditMode ? 'la modification' : 'la création'} de l'évaluation`);
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, selectedParticipants, validateForm, groupId, onClick, onSuccess, mutate]);
+    }, [formData, selectedParticipants, validateForm, isEditMode, editingEvaluation?.id, trainingId, groupId, onClick, onSuccess, mutate]);
 
     // Renderers pour le tableau
     const renderers = {
@@ -308,16 +387,36 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
         );
     }
 
-    if (!questionnairesData || !participantsData) {
+    if (!questionnairesData || !participantsData || isLoadingEditData) {
         return (
             <div className="text-center p-4">
-                Chargement...
+                {isLoadingEditData ? 'Chargement des données d\'édition...' : 'Chargement...'}
             </div>
         );
     }
 
     return (
         <form className='flex flex-col gap-4' onSubmit={(e) => e.preventDefault()}>
+            {/* 🆕 Bouton de retour à la liste */}
+            <div className="mb-4">
+                <button
+                    type="button"
+                    onClick={onClick}
+                    className="text-primary hover:underline flex items-center gap-2 font-medium mb-4"
+                >
+                    ← Retour à la liste
+                </button>
+
+                <h2 className="text-xl font-bold">
+                    {isEditMode ? 'Modifier l\'évaluation' : 'Nouvelle évaluation'}
+                </h2>
+                {isEditMode && editingEvaluation && (
+                    <p className="text-gray-600 text-sm mt-1">
+                        Modification de l'évaluation: {editingEvaluation.label}
+                    </p>
+                )}
+            </div>
+
             {/* Champ Label */}
             <InputField
                 label="Label"
@@ -396,7 +495,10 @@ const EvaluationForm = ({onClick, onSuccess}: EvaluationFormProps) => {
                     onClick={handleSubmit}
                     disabled={isSubmitting || selectedParticipants.size === 0}
                 >
-                    {isSubmitting ? 'Création...' : 'Valider'}
+                    {isSubmitting
+                        ? (isEditMode ? 'Modification...' : 'Création...')
+                        : (isEditMode ? 'Modifier' : 'Valider')
+                    }
                 </button>
             </div>
 

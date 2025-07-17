@@ -269,7 +269,7 @@ export const useQuestionnaireGenerator = () => {
     // Fonction pour obtenir l'URL de base correcte
     const getBaseUrl = useCallback(() => {
         if (process.env.NODE_ENV === 'development') {
-            return 'http://192.168.1.9:3000';
+            return 'http://192.168.1.12:3000';
         }
         return window.location.origin;
     }, []);

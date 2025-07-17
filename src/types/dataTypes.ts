@@ -765,3 +765,28 @@ export interface GroupeEvaluationDetailProps {
     isSentToManager:boolean;
     isSentToAdmin:boolean;
 }
+
+// 🆕 Interface pour les détails d'édition (correspondant au DTO backend)
+export interface GroupeEvaluationEditDetailsProps {
+    id: string;
+    label: string;
+    type: string;
+    description: string;
+    creationDate: string;
+    status: string;
+    questionnaireId: string; // UUID côté backend
+    participantIds: number[];
+}
+
+// Mise à jour de l'interface existante
+export interface GroupeEvaluationProps {
+    id: string;
+    label: string;
+    description: string;
+    creationDate: string;
+    status: string;
+    // 🆕 Champs optionnels pour l'édition
+    type?: string;
+    questionnaireId?: string;
+    participantIds?: number[];
+}

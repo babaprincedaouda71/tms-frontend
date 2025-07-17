@@ -1,4 +1,4 @@
-// pages/admin/Plan/annual/evaluation/EvaluationListPage.tsx
+// pages/admin/Plan/annual/evaluation/index.tsx - Modifications pour l'édition
 import ModalButton from '@/components/ModalButton'
 import SearchFilterAddBar from '@/components/SearchFilterAddBar'
 import StatusRenderer from '@/components/Tables/StatusRenderer'
@@ -41,18 +41,17 @@ const getActionsForStatus = (status: string): string[] => {
         case "Publiée":
             return ["view", "delete"];
         case "Terminée":
-            return ["view"]; // Optionnel : pour le statut "Terminée" si vous l'implémentez plus tard
+            return ["view"];
         default:
-            return ["view"]; // Actions par défaut
+            return ["view"];
     }
 };
 
 const RECORDS_PER_PAGE = 5;
 
 const Evaluation = () => {
-    // Récupération du trainingId et du groupId
     const router = useRouter();
-    const {trainingId, groupId} = router.query;
+    const {trainingId, groupId, evaluationId} = router.query; // 🆕 Ajout d'evaluationId
 
     // Récupération des données via SWR
     const {
@@ -83,37 +82,66 @@ const Evaluation = () => {
     const [showForm, setShowForm] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [selectedItem, setSelectedItem] = useState<GroupeEvaluationProps | null>(null);
+    const [editingItem, setEditingItem] = useState<GroupeEvaluationProps | null>(null); // 🆕 État pour l'édition
+
+    // 🆕 Effet pour gérer l'édition via URL
+    React.useEffect(() => {
+        if (evaluationId && memorizedData.length > 0) {
+            const itemToEdit = memorizedData.find(item => item.id === evaluationId);
+            if (itemToEdit) {
+                setEditingItem(itemToEdit);
+                setShowForm(true);
+                setShowDetails(false);
+            }
+        }
+    }, [evaluationId, memorizedData]);
 
     const handleLabelClick = (row: GroupeEvaluationProps) => {
         setSelectedItem(row);
         setShowDetails(true);
         setShowForm(false);
+        setEditingItem(null); // 🆕 Reset editing
     };
 
-    // Fonction pour gérer le clic sur l'action "view"
     const handleViewAction = (row: GroupeEvaluationProps) => {
         setSelectedItem(row);
         setShowDetails(true);
         setShowForm(false);
+        setEditingItem(null); // 🆕 Reset editing
     };
 
-    // Fonction pour déterminer si une action est désactivée
     const getActionDisabledState = useCallback((actionKey: string, row: GroupeEvaluationProps): boolean => {
         const allowedActions = getActionsForStatus(row.status);
         return !allowedActions.includes(actionKey);
     }, []);
 
-    // Fonction pour gérer l'édition (quand elle sera implémentée)
+    // 🆕 Fonction pour gérer l'édition
     const handleEditAction = useCallback((row: GroupeEvaluationProps) => {
         console.log("Édition de l'évaluation:", row);
-        // TODO: Implémenter la logique d'édition
-        // Par exemple: ouvrir un modal d'édition ou naviguer vers une page d'édition
-    }, []);
 
-    // Fonction pour gérer la suppression (quand elle sera implémentée)
+        // Vérifier si l'édition est autorisée
+        if (row.status !== "Brouillon") {
+            console.log("L'édition n'est pas autorisée pour ce statut:", row.status);
+            return;
+        }
+
+        // Mettre à jour l'URL avec l'ID de l'évaluation
+        router.push({
+            pathname: router.pathname,
+            query: {
+                ...router.query,
+                evaluationId: row.id
+            }
+        }, undefined, { shallow: true });
+
+        setEditingItem(row);
+        setShowForm(true);
+        setShowDetails(false);
+        setSelectedItem(null);
+    }, [router]);
+
     const handleDeleteSuccess = useCallback((deletedId: number) => {
         console.log("Évaluation supprimée avec succès:", deletedId);
-        // Rafraîchir les données après suppression
         mutateEvaluations();
     }, [mutateEvaluations]);
 
@@ -146,16 +174,13 @@ const Evaluation = () => {
                     customViewHandler={() => handleViewAction(row)}
                     customEditHandler={handleEditAction}
                     getActionDisabledState={getActionDisabledState}
-                    deleteUrl={GROUPE_EVALUATION_URLS.delete} // ✅ URL ajoutée
+                    deleteUrl={GROUPE_EVALUATION_URLS.delete}
                     mutateUrl={GROUPE_EVALUATION_URLS.mutate + `/${trainingId}/${groupId}`}
                     onDeleteSuccess={handleDeleteSuccess}
                     confirmMessage={(row) => {
-                        // Vérification de sécurité pour éviter l'erreur
                         if (!row) {
                             return "Êtes-vous sûr de vouloir supprimer cette évaluation ?";
                         }
-
-                        // Message de confirmation avec avertissement sur les données associées
                         return `Êtes-vous sûr de vouloir supprimer l'évaluation "${row.label || 'sans nom'}" ?`;
                     }}
                 />
@@ -164,22 +189,53 @@ const Evaluation = () => {
     };
 
     const handleAdd = () => {
+        setEditingItem(null); // 🆕 Reset editing
         setShowForm(true);
+
+        // 🆕 Nettoyer l'URL des paramètres d'édition
+        const {evaluationId, ...cleanQuery} = router.query;
+        router.push({
+            pathname: router.pathname,
+            query: cleanQuery
+        }, undefined, { shallow: true });
     };
 
     const handleCancel = () => {
         setShowForm(false);
+        setEditingItem(null); // 🆕 Reset editing
+
+        // 🆕 Nettoyer l'URL des paramètres d'édition
+        const {evaluationId, ...cleanQuery} = router.query;
+        router.push({
+            pathname: router.pathname,
+            query: cleanQuery
+        }, undefined, { shallow: true });
     };
 
-    // Fonction pour revenir à la liste depuis les détails
     const handleBackToList = () => {
         setShowDetails(false);
         setSelectedItem(null);
+        setEditingItem(null); // 🆕 Reset editing
+
+        // 🆕 Nettoyer l'URL des paramètres d'édition
+        const {evaluationId, ...cleanQuery} = router.query;
+        router.push({
+            pathname: router.pathname,
+            query: cleanQuery
+        }, undefined, { shallow: true });
     };
 
     const handleFormSuccess = () => {
         setShowForm(false);
+        setEditingItem(null); // 🆕 Reset editing
         mutateEvaluations();
+
+        // 🆕 Nettoyer l'URL des paramètres d'édition
+        const {evaluationId, ...cleanQuery} = router.query;
+        router.push({
+            pathname: router.pathname,
+            query: cleanQuery
+        }, undefined, { shallow: true });
     };
 
     return (
@@ -219,7 +275,6 @@ const Evaluation = () => {
                         />
                     </>
                 ) : (
-                    // Passer l'ID de l'élément sélectionné au composant DetailEvaluation
                     <DetailEvaluation
                         groupeEvaluationId={selectedItem?.id}
                         onBack={handleBackToList}
@@ -228,6 +283,7 @@ const Evaluation = () => {
                     <EvaluationForm
                         onClick={handleCancel}
                         onSuccess={handleFormSuccess}
+                        editingEvaluation={editingItem} // 🆕 Passer l'évaluation à éditer
                     />
                 )}
             </div>

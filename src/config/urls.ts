@@ -326,6 +326,7 @@ export const GROUPE_EVALUATION_URLS = {
     delete: `${API_URL}/plan/groupes/evaluations/delete`,
     view: `/Plan/annual/`,
     edit: `${API_URL}/plan/groupes/evaluations/edit-evaluation`,
+    editDetails: `${API_URL}/plan/groupes/evaluations/get/edit-details`, // 🆕 Nouvelle URL
     getDetails: `${API_URL}/evaluations/admin/groupe-evaluation-details`,
     getEvaluationForF4: `${API_URL}/plan/groupes/evaluations/get/groupe-evaluation`,
     getTokensForF4: `${API_URL}/plan/groupes/evaluations/get/qr-tokens`,
