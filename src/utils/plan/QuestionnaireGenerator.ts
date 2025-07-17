@@ -153,7 +153,7 @@ export class QuestionnaireGenerator {
         // Séparateur épais
         this.doc.setLineWidth(4 * 0.35); // 4pt converti en mm
         this.doc.line(this.margin, currentY, this.pageWidth - this.margin, currentY);
-        currentY += 5; // Espacement réduit après le séparateur
+        currentY += 8; // Espacement réduit après le séparateur
 
         return currentY;
     }
@@ -378,13 +378,24 @@ export class QuestionnaireGenerator {
         this.doc.setFont('helvetica', 'normal');
         this.doc.setFontSize(this.baseFont);
 
-        // Partie gauche
-        this.doc.text("Fait à:", this.margin + 2, currentY + 8);
-        this.doc.line(this.margin + 15, currentY + 8, this.margin + leftWidth - 2, currentY + 8);
+        // Partie gauche - Labels sur la première ligne
+        const firstLineY = currentY + 6;
+        const secondLineY = currentY + 14;
 
-        this.doc.text("Le:", this.margin + 2, currentY + 16);
-        this.doc.line(this.margin + 10, currentY + 16, this.margin + leftWidth - 15, currentY + 16);
-        this.doc.text("📅", this.margin + leftWidth - 12, currentY + 16);
+        // LIGNE 1: Labels "Fait à:" (gauche) et "Le:" (droite)
+        this.doc.text("Fait à:", this.margin + 2, firstLineY);
+        this.doc.text("Le:", this.margin + leftWidth * 0.55, firstLineY);
+
+        // LIGNE 2: Champs de saisie de même taille
+        const fieldWidth = leftWidth * 0.4; // Largeur identique pour les deux champs
+
+        // Champ "Fait à"
+        this.doc.line(this.margin + 2, secondLineY, this.margin + 2 + fieldWidth, secondLineY);
+
+        // Champ "Le" avec icône calendrier
+        const leFieldStart = this.margin + leftWidth * 0.55;
+        this.doc.line(leFieldStart, secondLineY, leFieldStart + fieldWidth - 8, secondLineY);
+        this.doc.text("📅", leFieldStart + fieldWidth - 6, secondLineY);
 
         // Partie droite
         this.doc.text("Signature du bénéficiaire:", this.margin + leftWidth + 5, currentY + 8);
