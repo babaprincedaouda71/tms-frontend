@@ -221,9 +221,9 @@ async function generateSynthesePDFContent(
     // Mesurer la largeur exacte du texte précédent
     const evaluationTextWidth = doc.getTextWidth("EVALUATION CRITERE");
 
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text(" (Synthèse)", leftMargin + evaluationTextWidth, currentY);
+    doc.text(" (Synthèse)", leftMargin + evaluationTextWidth + 2, currentY);
 
     currentY += 6;
 
