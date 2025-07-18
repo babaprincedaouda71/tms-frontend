@@ -262,34 +262,46 @@ export class QuestionnaireGenerator {
         const cellHeight = blockHeight / 3;
         const halfWidth = (this.pageWidth - 2 * this.margin) / 2;
 
-        // Contour principal
+        // Dimensions des champs de saisie - largeur s'étend sur toute la partie
+        const fieldHeight = 5; // Hauteur des rectangles de saisie
+        const leftFieldWidth = halfWidth - 4; // Largeur partie gauche (-4mm pour marges)
+        const rightFieldWidth = halfWidth - 4; // Largeur partie droite (-4mm pour marges)
+
+        // Contour principal avec épaisseur normale
         this.doc.setLineWidth(0.5 * 0.35);
         this.doc.rect(this.margin, currentY, this.pageWidth - 2 * this.margin, blockHeight);
-
-        // Lignes horizontales internes
-        this.doc.line(this.margin, currentY + cellHeight, this.pageWidth - this.margin, currentY + cellHeight);
-        this.doc.line(this.margin, currentY + 2 * cellHeight, this.pageWidth - this.margin, currentY + 2 * cellHeight);
-
-        // Ligne verticale centrale
-        this.doc.line(this.margin + halfWidth, currentY, this.margin + halfWidth, currentY + blockHeight);
 
         this.doc.setFontSize(10); // Taille de police réduite
         this.doc.setFont('helvetica', 'normal');
 
-        // Rangée 1
-        this.doc.text("Thème de l'Action de Formation:", this.margin + 2, currentY + 4);
-        this.doc.text("Dates de la formation:", this.margin + halfWidth + 2, currentY + 4);
+        // Définir l'épaisseur pour les champs de saisie
+        this.doc.setLineWidth(0.6); // Épaisseur plus importante pour les champs
 
-        // Rangée 2
+        // Rangée 1 - Labels et champs
+        this.doc.text("Thème de l'Action de Formation:", this.margin + 2, currentY + 4);
+        this.doc.rect(this.margin + 2, currentY + 6, leftFieldWidth, fieldHeight);
+
+        this.doc.text("Dates de la formation:", this.margin + halfWidth + 2, currentY + 4);
+        this.doc.rect(this.margin + halfWidth + 2, currentY + 6, rightFieldWidth, fieldHeight);
+
+        // Rangée 2 - Labels et champs avec données
         this.doc.text("Nom du bénéficiaire:", this.margin + 2, currentY + cellHeight + 4);
-        this.doc.text(participant.name.split(' ').slice(-1)[0] || '', this.margin + 2, currentY + cellHeight + 8);
+        this.doc.rect(this.margin + 2, currentY + cellHeight + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(participant.name.split(' ').slice(-1)[0] || '', this.margin + 4, currentY + cellHeight + 9);
 
         this.doc.text("Prénom du bénéficiaire:", this.margin + halfWidth + 2, currentY + cellHeight + 4);
-        this.doc.text(participant.name.split(' ').slice(0, -1).join(' ') || '', this.margin + halfWidth + 2, currentY + cellHeight + 8);
+        this.doc.rect(this.margin + halfWidth + 2, currentY + cellHeight + 6, rightFieldWidth, fieldHeight);
+        this.doc.text(participant.name.split(' ').slice(0, -1).join(' ') || '', this.margin + halfWidth + 4, currentY + cellHeight + 9);
 
-        // Rangée 3
+        // Rangée 3 - Labels et champs
         this.doc.text("N° CIN:", this.margin + 2, currentY + 2 * cellHeight + 4);
+        this.doc.rect(this.margin + 2, currentY + 2 * cellHeight + 6, leftFieldWidth, fieldHeight);
+
         this.doc.text("N° CNSS:", this.margin + halfWidth + 2, currentY + 2 * cellHeight + 4);
+        this.doc.rect(this.margin + halfWidth + 2, currentY + 2 * cellHeight + 6, rightFieldWidth, fieldHeight);
+
+        // Remettre l'épaisseur par défaut pour les éléments suivants
+        this.doc.setLineWidth(0.5 * 0.35);
 
         return currentY + blockHeight + 8; // Espacement réduit
     }
@@ -431,6 +443,7 @@ export class QuestionnaireGenerator {
         const secondLineY = currentY + 14;
 
         // LIGNE 1: Labels "Fait à:" (gauche) et "Le:" (droite)
+        this.doc.setLineWidth(0.6);
         this.doc.text("Fait à:", this.margin + 2, firstLineY);
         this.doc.text("Le:", this.margin + leftWidth * 0.55, firstLineY);
 
@@ -444,27 +457,29 @@ export class QuestionnaireGenerator {
         // Champ "Le" - Rectangle avec icône calendrier
         const leFieldStart = this.margin + leftWidth * 0.55;
         this.doc.rect(leFieldStart, secondLineY - 4, fieldWidth, fieldHeight);
+
         // Ajouter l'icône calendrier (image ou fallback)
         if (this.calendarIconCache) {
             try {
                 // Utiliser l'icône chargée depuis /images/f4-calendar-icon.png
-                const iconSize = 5; // Taille de l'icône en mm
-                const iconX = leFieldStart + fieldWidth;
-                const iconY = secondLineY - 2; // Centrer verticalement dans le rectangle
+                const iconSize = fieldHeight; // Même taille que la hauteur du rectangle
+                const iconX = leFieldStart + fieldWidth + 1; // Petite marge après le rectangle
+                const iconY = secondLineY - 4; // Même position Y que le rectangle
                 this.doc.addImage(this.calendarIconCache, 'PNG', iconX, iconY, iconSize, iconSize);
             } catch (error) {
                 console.warn('Erreur lors de l\'ajout de l\'icône:', error);
                 // Fallback vers le texte
                 this.doc.setFontSize(8);
-                this.doc.text("CAL", leFieldStart + fieldWidth - 7, secondLineY);
+                this.doc.text("CAL", leFieldStart + fieldWidth + 1, secondLineY - 1);
             }
         } else {
             // Fallback: utiliser un texte simple
             this.doc.setFontSize(8);
-            this.doc.text("CAL", leFieldStart + fieldWidth - 7, secondLineY);
+            this.doc.text("CAL", leFieldStart + fieldWidth + 1, secondLineY - 1);
         }
 
         // Partie droite
+        this.doc.setLineWidth(0.5 * 0.35);
         this.doc.text("Signature du bénéficiaire:", this.margin + leftWidth + 5, currentY + 8);
         this.doc.rect(this.margin + leftWidth + 5, currentY + 10, rightWidth - 10, 12);
 
@@ -476,9 +491,32 @@ export class QuestionnaireGenerator {
         this.doc.setFont('helvetica', 'normal');
         this.doc.setFontSize(this.baseFont * 0.9);
 
-        const footerText = "Ce formulaire est disponible sur le Portail des CSF à l'adresse: http://csf.ofppt.org.ma";
-        const textWidth = this.doc.getTextWidth(footerText);
-        this.doc.text(footerText, (this.pageWidth - textWidth) / 2, footerY);
+        // Texte avant le lien
+        const prefixText = "Ce formulaire est disponible sur le Portail des CSF à l'adresse: ";
+        const linkText = "http://csf.ofppt.org.ma";
+
+        // Afficher le texte normal en noir
+        this.doc.setTextColor(0, 0, 0); // Noir
+        this.doc.text(prefixText, this.margin, footerY);
+
+        // Calculer la position du lien après le texte
+        const prefixWidth = this.doc.getTextWidth(prefixText);
+        const linkX = this.margin + prefixWidth;
+
+        // Afficher le lien en bleu
+        this.doc.setTextColor(0, 0, 255); // Bleu
+        this.doc.text(linkText, linkX, footerY);
+
+        // Ajouter le soulignement du lien
+        const linkWidth = this.doc.getTextWidth(linkText);
+        this.doc.setDrawColor(0, 0, 255); // Couleur du trait en bleu
+        this.doc.setLineWidth(0.2); // Épaisseur fine pour le soulignement
+        this.doc.line(linkX, footerY + 0.5, linkX + linkWidth, footerY + 0.5);
+
+        // Remettre les couleurs par défaut
+        this.doc.setTextColor(0, 0, 0); // Noir pour le texte
+        this.doc.setDrawColor(0, 0, 0); // Noir pour les traits
+        this.doc.setLineWidth(0.5); // Épaisseur normale
     }
 
     private addQRCodeToForm(token: string): void {
