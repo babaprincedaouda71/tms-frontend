@@ -280,9 +280,11 @@ export class QuestionnaireGenerator {
         const rightFieldWidth = halfWidth - 4; // Largeur partie droite (-4mm pour marges)
 
         // Contour principal avec épaisseur normale
+        this.doc.setDrawColor(169, 169, 169);
         this.doc.setLineWidth(0.5 * 0.35);
         this.doc.rect(this.margin, currentY, this.pageWidth - 2 * this.margin, blockHeight);
 
+        this.doc.setDrawColor(0, 0, 0)
         this.doc.setFontSize(10); // Taille de police réduite
         this.doc.setFont('helvetica', 'normal');
 
@@ -290,30 +292,30 @@ export class QuestionnaireGenerator {
         this.doc.setLineWidth(0.6); // Épaisseur plus importante pour les champs
 
         // Rangée 1 - Labels et champs
-        this.doc.text("Thème de l'Action de Formation:", this.margin + 2, currentY + 4);
-        this.doc.rect(this.margin + 2, currentY + 6, leftFieldWidth, fieldHeight);
-        this.doc.text(evaluationData.theme || '', this.margin + 4, currentY + 9);
+        this.doc.text("Thème de l'Action de Formation:", this.margin + 0.5, currentY + 4);
+        this.doc.rect(this.margin + 1, currentY + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(evaluationData.theme || '', this.margin + 3, currentY + 10);
 
-        this.doc.text("Dates de la formation:", this.margin + halfWidth + 2, currentY + 4);
-        this.doc.rect(this.margin + halfWidth + 2, currentY + 6, rightFieldWidth, fieldHeight);
+        this.doc.text("Dates de la formation:", this.margin + halfWidth + 0.5, currentY + 4);
+        this.doc.rect(this.margin + halfWidth + 1, currentY + 6, rightFieldWidth, fieldHeight);
 
         // Rangée 2 - Labels et champs avec données
-        this.doc.text("Nom du bénéficiaire:", this.margin + 2, currentY + cellHeight + 4);
-        this.doc.rect(this.margin + 2, currentY + cellHeight + 6, leftFieldWidth, fieldHeight);
-        this.doc.text(participant.lastName || '', this.margin + 4, currentY + 1 + cellHeight + 9);
+        this.doc.text("Nom du bénéficiaire:", this.margin + 0.5, currentY + cellHeight + 4);
+        this.doc.rect(this.margin + 1, currentY + cellHeight + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(participant.lastName || '', this.margin + 3, currentY + 1 + cellHeight + 9);
 
-        this.doc.text("Prénom du bénéficiaire:", this.margin + halfWidth + 2, currentY + cellHeight + 4);
-        this.doc.rect(this.margin + halfWidth + 2, currentY + cellHeight + 6, rightFieldWidth, fieldHeight);
-        this.doc.text(participant.firstName || '', this.margin + halfWidth + 4, currentY + 1 + cellHeight + 9);
+        this.doc.text("Prénom du bénéficiaire:", this.margin + halfWidth + 0.5, currentY + cellHeight + 4);
+        this.doc.rect(this.margin + halfWidth + 1, currentY + cellHeight + 6, rightFieldWidth, fieldHeight);
+        this.doc.text(participant.firstName || '', this.margin + halfWidth + 3, currentY + 1 + cellHeight + 9);
 
         // Rangée 3 - Labels et champs
-        this.doc.text("N° CIN:", this.margin + 2, currentY + 2 * cellHeight + 4);
-        this.doc.rect(this.margin + 2, currentY + 2 * cellHeight + 6, leftFieldWidth, fieldHeight);
-        this.doc.text(participant.cin || '', this.margin + 4, currentY + 2 * cellHeight + 10);
+        this.doc.text("N° CIN:", this.margin + 0.5, currentY + 2 * cellHeight + 4);
+        this.doc.rect(this.margin + 1, currentY + 2 * cellHeight + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(participant.cin || '', this.margin + 3, currentY + 2 * cellHeight + 10);
 
-        this.doc.text("N° CNSS:", this.margin + halfWidth + 2, currentY + 2 * cellHeight + 4);
-        this.doc.rect(this.margin + halfWidth + 2, currentY + 2 * cellHeight + 6, rightFieldWidth, fieldHeight);
-        this.doc.text(participant.cnss || '', this.margin + halfWidth + 4, currentY + 2 * cellHeight + 10);
+        this.doc.text("N° CNSS:", this.margin + halfWidth + 0.5, currentY + 2 * cellHeight + 4);
+        this.doc.rect(this.margin + halfWidth + 1, currentY + 2 * cellHeight + 6, rightFieldWidth, fieldHeight);
+        this.doc.text(participant.cnss || '', this.margin + halfWidth + 3, currentY + 2 * cellHeight + 10);
 
 
         // Remettre l'épaisseur par défaut pour les éléments suivants
@@ -402,8 +404,11 @@ export class QuestionnaireGenerator {
         const totalHeight = headerHeight + questionHeights.reduce((sum, height) => sum + height, 0);
 
         // Contour principal du bloc
+        this.doc.setDrawColor(169, 169, 169);
         this.doc.setLineWidth(0.5 * 0.35);
         this.doc.rect(this.margin, startY, this.pageWidth - 2 * this.margin, totalHeight);
+
+        this.doc.setDrawColor(0, 0, 0); // Noir par défaut
 
         // Ligne sous l'en-tête (titre + options)
         this.doc.line(this.margin, startY + headerHeight, this.pageWidth - this.margin, startY + headerHeight);
@@ -413,7 +418,7 @@ export class QuestionnaireGenerator {
         this.doc.setFontSize(9.5);
 
         // Titre du bloc à gauche
-        this.doc.text(title, this.margin + 2, startY + 4.5);
+        this.doc.text(title, this.margin + 0.5, startY + 4.5);
 
         // En-tête des options à droite (sur la même ligne)
         this.doc.setFontSize(8.5);
@@ -428,7 +433,7 @@ export class QuestionnaireGenerator {
 
         // LIGNES SUIVANTES: Questions avec cases à cocher
         this.doc.setFont('helvetica', 'normal');
-        this.doc.setFontSize(8.5);
+        this.doc.setFontSize(9.5);
 
         let currentQuestionY = startY + headerHeight;
 
@@ -443,11 +448,20 @@ export class QuestionnaireGenerator {
 
             // Texte de la question - positionné en haut de la cellule avec marge
             const questionLines = this.doc.splitTextToSize(questions[i], col1Width - 4);
-            let textY = currentQuestionY + textMargin + 3; // Commencer en haut avec une petite marge
+            // 🔧 AJUSTEMENT : Position plus haute pour les questions multi-lignes
+            let startTextY;
+            if (questionLines.length === 1) {
+                // Une seule ligne : centrer verticalement
+                startTextY = currentQuestionY + (questionHeight / 2) + 1;
+            } else {
+                // Deux lignes : commencer plus haut pour bien s'ajuster
+                startTextY = currentQuestionY + textMargin + 2; // Réduit de 3 à 2.5
+            }
+            let textY = startTextY
 
             for (const line of questionLines) {
-                this.doc.text(line, this.margin + 2, textY);
-                textY += 3; // Espacement entre les lignes
+                this.doc.text(line, this.margin + 0.5, textY);
+                textY += 3.4; // Espacement entre les lignes
             }
 
             // Cases à cocher - centrées verticalement dans la cellule
@@ -473,8 +487,12 @@ export class QuestionnaireGenerator {
         const rightWidth = 0.55 * (this.pageWidth - 2 * this.margin);
 
         // Contour principal
+        this.doc.setDrawColor(169, 169, 169); // couleur gris clair pour le contour
         this.doc.setLineWidth(0.5 * 0.35);
         this.doc.rect(this.margin, currentY, this.pageWidth - 2 * this.margin, blockHeight);
+
+        // Remettre la couleur par défaut
+        this.doc.setDrawColor(0, 0, 0)
 
         this.doc.setFont('helvetica', 'normal');
         this.doc.setFontSize(this.baseFont);
@@ -485,7 +503,7 @@ export class QuestionnaireGenerator {
 
         // LIGNE 1: Labels "Fait à:" (gauche) et "Le:" (droite)
         this.doc.setLineWidth(0.6);
-        this.doc.text("Fait à:", this.margin + 2, firstLineY);
+        this.doc.text("Fait à:", this.margin + 0.5, firstLineY);
         this.doc.text("Le:", this.margin + leftWidth * 0.55, firstLineY);
 
         // LIGNE 2: Champs de saisie rectangulaires
@@ -493,7 +511,7 @@ export class QuestionnaireGenerator {
         const fieldHeight = 6; // Hauteur des champs rectangulaires
 
         // Champ "Fait à" - Rectangle
-        this.doc.rect(this.margin + 2, secondLineY - 4, fieldWidth, fieldHeight);
+        this.doc.rect(this.margin + 2, secondLineY - 4, fieldWidth + 8, fieldHeight);
 
         // Champ "Le" - Rectangle avec icône calendrier
         const leFieldStart = this.margin + leftWidth * 0.55;
