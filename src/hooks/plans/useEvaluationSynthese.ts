@@ -296,7 +296,7 @@ async function generateSynthesePDFContent(
 
             // Gérer le retour à la ligne automatique
             const textLines = doc.splitTextToSize(criterion, criteriaColWidth - 2);
-            const lineHeight = textLines.length * 3.2 + 2.5;
+            const lineHeight = textLines.length * 3.2 + 4;
             const criteriaRowHeight = Math.max(5.5, lineHeight);
 
             // Dessiner la ligne du tableau
