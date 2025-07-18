@@ -301,6 +301,7 @@ export const NEED_TO_ADD_TO_PLAN_URLS = {
 export const GROUPE_INVOICE_URLS = {
     mutate: `${API_URL}/plan/groupeInvoice/get/all`,
     addGroupeInvoice: `${API_URL}/plan/groupeInvoice/add/groupeInvoice`,
+    editGroupeInvoice: `${API_URL}/plan/groupeInvoice/edit/groupeInvoice`,
     deleteGroupeInvoice: `${API_URL}/plan/groupeInvoice/delete/groupeInvoice`,
     updateStatus: `${API_URL}/plan/groupeInvoice/update-status`,
     getGroupeInvoiceDetails: `${API_URL}/plan/groupeInvoice/get/groupeInvoiceDetails`,

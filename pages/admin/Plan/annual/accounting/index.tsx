@@ -1,4 +1,4 @@
-// Modification du composant Accounting (pages/admin/Plan/annual/accounting/EvaluationListPage.tsx)
+// Modification du composant Accounting (pages/admin/Plan/annual/accounting/index.tsx)
 
 import Table from '@/components/Tables/Table/index'
 import React, {useMemo, useState} from 'react'
@@ -7,7 +7,7 @@ import StatusRenderer from '@/components/Tables/StatusRenderer'
 import SearchFilterAddBar from '@/components/SearchFilterAddBar'
 import ModalButton from '@/components/ModalButton'
 import AddFee from './addFee'
-import AccountingDetails from './details' // Import du nouveau composant
+import AccountingDetails from './details'
 import {handleSort} from '@/utils/sortUtils'
 import {statusConfig} from '@/config/tableConfig'
 import DynamicActionsRenderer from '@/components/Tables/DynamicActionsRenderer'
@@ -46,7 +46,7 @@ const Accounting = () => {
     const {groupId} = router.query;
 
     // États pour gérer les vues
-    const [currentView, setCurrentView] = useState<'list' | 'add' | 'details'>('list');
+    const [currentView, setCurrentView] = useState<'list' | 'add' | 'edit' | 'details'>('list');
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
     // Récupération des données via SWR
@@ -93,6 +93,12 @@ const Accounting = () => {
         );
     };
 
+    // Handler pour l'édition personnalisé
+    const handleEdit = (row: AccountingsProps) => {
+        setSelectedInvoiceId(row.id);
+        setCurrentView('edit');
+    };
+
     const renderers = {
         type: (value: string, row: AccountingsProps) => (
             <TypeRenderer value={value} row={row}/>
@@ -130,6 +136,7 @@ const Accounting = () => {
                 row={row}
                 mutateUrl={GROUPE_INVOICE_URLS.mutate + `/${groupId}`}
                 deleteUrl={GROUPE_INVOICE_URLS.deleteGroupeInvoice}
+                customEditHandler={handleEdit}
             />
     };
 
@@ -145,6 +152,7 @@ const Accounting = () => {
     const handleSubmitSuccess = async () => {
         await mutate();
         setCurrentView('list');
+        setSelectedInvoiceId(null);
     };
 
     // Rendu conditionnel basé sur la vue actuelle
@@ -157,6 +165,14 @@ const Accounting = () => {
                         onSuccess={handleSubmitSuccess}
                     />
                 );
+            case 'edit':
+                return selectedInvoiceId ? (
+                    <AddFee
+                        onCancel={handleBackToList}
+                        onSuccess={handleSubmitSuccess}
+                        invoiceId={selectedInvoiceId}
+                    />
+                ) : null;
             case 'details':
                 return selectedInvoiceId ? (
                     <AccountingDetails

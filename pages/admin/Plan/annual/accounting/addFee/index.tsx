@@ -2,11 +2,15 @@ import CustomSelect from '@/components/FormComponents/CustomSelect';
 import FileInputField from '@/components/FormComponents/FileInputField';
 import TextAreaField from '@/components/FormComponents/TextAreaField';
 import InputField from '@/components/FormComponents/InputField';
-import React, {useState} from 'react';
+import PDFField from '@/components/ui/PDFField';
+import PDFModal from '@/components/ui/PDFModalProps';
+import React, {useState, useEffect} from 'react';
 import {FiCornerUpLeft} from "react-icons/fi";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
 import {GROUPE_INVOICE_URLS} from "@/config/urls";
+import useSWR from "swr";
+import {fetcher} from "@/services/api";
 
 // État initial du formulaire
 const INITIAL_FORM_DATA = {
@@ -23,10 +27,19 @@ const INITIAL_FILES = {
     receiptFile: null,
 };
 
-const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
+interface AddGroupeInvoiceProps {
+    onCancel: () => void;
+    onSuccess: () => void;
+    invoiceId?: string; // 🆕 Prop pour l'ID de la facture à éditer
+}
+
+const AddGroupeInvoice: React.FC<AddGroupeInvoiceProps> = ({ onCancel, onSuccess, invoiceId }) => {
     const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
     const {trainingId, groupId} = router.query;
+
+    // Déterminer si on est en mode édition
+    const isEditMode = !!invoiceId;
 
     // État pour stocker les données du formulaire
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -34,9 +47,30 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
     // État pour stocker les fichiers
     const [files, setFiles] = useState(INITIAL_FILES);
 
+    // État pour les fichiers existants (en mode édition)
+    const [existingFiles, setExistingFiles] = useState({
+        invoiceFile: null as string | null,
+        bankRemiseFile: null as string | null,
+        receiptFile: null as string | null,
+    });
+
+    // États pour le modal PDF (comme dans AccountingDetails)
+    const [pdfModal, setPdfModal] = useState({
+        isOpen: false,
+        pdfUrl: null as string | null,
+        title: '',
+        isLoading: false
+    });
+
     // État pour les erreurs de validation
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Récupération des données en mode édition
+    const {data: invoiceData, error: invoiceError, isLoading} = useSWR(
+        isEditMode ? `${GROUPE_INVOICE_URLS.getGroupeInvoiceDetails}/${invoiceId}` : null,
+        fetcher
+    );
 
     // Options pour les selects
     const typeOptions = [
@@ -57,10 +91,34 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
         "Prélèvement automatique"
     ];
 
+    // Charger les données en mode édition
+    useEffect(() => {
+        if (isEditMode && invoiceData) {
+            setFormData({
+                type: invoiceData.type || "",
+                description: invoiceData.description || "",
+                amount: invoiceData.amount || "",
+                paymentDate: invoiceData.paymentDate || "",
+                paymentMethod: invoiceData.paymentMethod || "",
+            });
+
+            setExistingFiles({
+                invoiceFile: invoiceData.invoiceFile || null,
+                bankRemiseFile: invoiceData.bankRemiseFile || null,
+                receiptFile: invoiceData.receiptFile || null,
+            });
+        }
+    }, [isEditMode, invoiceData]);
+
     // Fonction pour réinitialiser le formulaire
     const resetForm = () => {
         setFormData(INITIAL_FORM_DATA);
         setFiles(INITIAL_FILES);
+        setExistingFiles({
+            invoiceFile: null,
+            bankRemiseFile: null,
+            receiptFile: null,
+        });
         setErrors({});
         setIsSubmitting(false);
     };
@@ -191,7 +249,7 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                 amount: parseFloat(formData.amount),
                 paymentDate: formData.paymentDate || null,
                 paymentMethod: formData.paymentMethod,
-                creationDate: new Date().toISOString().split('T')[0]
+                ...(isEditMode ? {} : { creationDate: new Date().toISOString().split('T')[0] })
             };
 
             // Le @RequestPart attend un objet JSON, pas une string
@@ -210,9 +268,15 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                 formDataToSend.append('receiptFile', files.receiptFile);
             }
 
+            // Déterminer l'URL et la méthode selon le mode
+            const url = isEditMode
+                ? `${GROUPE_INVOICE_URLS.editGroupeInvoice}/${invoiceId}`
+                : `${GROUPE_INVOICE_URLS.addGroupeInvoice}/${groupId}`;
+            const method = isEditMode ? 'PUT' : 'POST';
+
             // Envoyer la requête
-            const response = await fetch(`${GROUPE_INVOICE_URLS.addGroupeInvoice}/${groupId}`, {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 credentials: 'include',
                 body: formDataToSend,
             });
@@ -236,8 +300,8 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                 }
             } else {
                 const errorData = await response.json();
-                console.error('Erreur lors de la création:', errorData);
-                setErrors({submit: "Erreur lors de la création de la facture"});
+                console.error('Erreur lors de la sauvegarde:', errorData);
+                setErrors({submit: `Erreur lors de la ${isEditMode ? 'modification' : 'création'} de la facture`});
             }
         } catch (error) {
             console.error('Erreur réseau:', error);
@@ -265,6 +329,125 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
         }
     };
 
+    // Fonction pour voir un PDF existant avec modal (inspiré d'AccountingDetails)
+    const handleViewPDF = async (fileType: 'invoice' | 'bankRemise' | 'receipt') => {
+        if (!isEditMode || !invoiceId) return;
+
+        const fileNames = {
+            invoice: existingFiles.invoiceFile,
+            bankRemise: existingFiles.bankRemiseFile,
+            receipt: existingFiles.receiptFile
+        };
+
+        const titles = {
+            invoice: 'Fichier de facture',
+            bankRemise: 'Remise de la banque',
+            receipt: 'Reçu de paiement'
+        };
+
+        const fileName = fileNames[fileType];
+        if (!fileName) return;
+
+        setPdfModal({
+            isOpen: true,
+            pdfUrl: null,
+            title: titles[fileType],
+            isLoading: true
+        });
+
+        try {
+            // Appel API pour récupérer le PDF
+            const response = await fetch(`${GROUPE_INVOICE_URLS.getPdf}/${invoiceId}/${fileType}`, {
+                method: 'GET',
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+
+                // Vérifier que c'est bien un PDF
+                if (blob.type !== 'application/pdf') {
+                    // Si ce n'est pas un PDF, forcer le type
+                    const pdfBlob = new Blob([blob], {type: 'application/pdf'});
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                    setPdfModal(prev => ({
+                        ...prev,
+                        pdfUrl: pdfUrl + '#toolbar=0&navpanes=0&scrollbar=0',
+                        isLoading: false
+                    }));
+                } else {
+                    const pdfUrl = URL.createObjectURL(blob);
+
+                    setPdfModal(prev => ({
+                        ...prev,
+                        pdfUrl: pdfUrl + '#toolbar=0&navpanes=0&scrollbar=0',
+                        isLoading: false
+                    }));
+                }
+            } else {
+                throw new Error('Erreur lors du chargement du PDF');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement du PDF:', error);
+            setPdfModal(prev => ({
+                ...prev,
+                isLoading: false
+            }));
+        }
+    };
+
+    // Fonction pour fermer le modal et nettoyer l'URL
+    const closePDFModal = () => {
+        if (pdfModal.pdfUrl) {
+            URL.revokeObjectURL(pdfModal.pdfUrl);
+        }
+        setPdfModal({
+            isOpen: false,
+            pdfUrl: null,
+            title: '',
+            isLoading: false
+        });
+    };
+
+    // Nettoyage lors du démontage du composant
+    useEffect(() => {
+        return () => {
+            if (pdfModal.pdfUrl) {
+                URL.revokeObjectURL(pdfModal.pdfUrl);
+            }
+        };
+    }, [pdfModal.pdfUrl]);
+
+    // Affichage du loader pendant le chargement des données en mode édition
+    if (isEditMode && isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Chargement des données...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Affichage d'erreur si les données n'ont pas pu être chargées en mode édition
+    if (isEditMode && invoiceError) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <p className="text-red-600 mb-4">Erreur lors du chargement des données</p>
+                    <button
+                        onClick={handleBackToList}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+                    >
+                        Retour à la liste
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <form onSubmit={handleSubmit}>
             <section>
@@ -282,7 +465,7 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                     {/* Titre centré */}
                     <div className="absolute inset-x-0 flex justify-center items-center pointer-events-none">
                         <h1 className="text-2xl font-semibold text-gray-800 pointer-events-auto">
-                            Ajouter une facture
+                            {isEditMode ? 'Modifier une facture' : 'Ajouter une facture'}
                         </h1>
                     </div>
                 </div>
@@ -312,15 +495,26 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                         error={errors.amount}
                     />
 
-                    <FileInputField
-                        label="Fichier de facture (PDF)"
-                        name="invoiceFile"
-                        onChange={handleFileChange('invoiceFile')}
-                        accept="application/pdf,.pdf"
-                    />
-                    {errors.invoiceFile && (
-                        <p className="text-sm text-red mt-1 col-span-full">{errors.invoiceFile}</p>
-                    )}
+                    {/* Champ fichier avec gestion de l'existant */}
+                    <div className="space-y-2">
+                        {isEditMode && existingFiles.invoiceFile ? (
+                            <PDFField
+                                label="Fichier de facture actuel (PDF)"
+                                fileName={existingFiles.invoiceFile}
+                                onView={() => handleViewPDF('invoice')}
+                            />
+                        ) : null}
+
+                        <FileInputField
+                            label={isEditMode ? "Nouveau fichier de facture (PDF)" : "Fichier de facture (PDF)"}
+                            name="invoiceFile"
+                            onChange={handleFileChange('invoiceFile')}
+                            accept="application/pdf,.pdf"
+                        />
+                        {errors.invoiceFile && (
+                            <p className="text-sm text-red mt-1">{errors.invoiceFile}</p>
+                        )}
+                    </div>
 
                     <TextAreaField
                         label="Description"
@@ -358,25 +552,47 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                         onChange={handleChange}
                     />
 
-                    <FileInputField
-                        label="Reçu de paiement (PDF)"
-                        name="receiptFile"
-                        onChange={handleFileChange('receiptFile')}
-                        accept="application/pdf,.pdf"
-                    />
-                    {errors.receiptFile && (
-                        <p className="text-sm text-red mt-1 col-span-full">{errors.receiptFile}</p>
-                    )}
+                    {/* Reçu de paiement */}
+                    <div className="space-y-2">
+                        {isEditMode && existingFiles.receiptFile ? (
+                            <PDFField
+                                label="Reçu de paiement actuel (PDF)"
+                                fileName={existingFiles.receiptFile}
+                                onView={() => handleViewPDF('receipt')}
+                            />
+                        ) : null}
 
-                    <FileInputField
-                        label="Remise de la banque (PDF)"
-                        name="bankRemiseFile"
-                        onChange={handleFileChange('bankRemiseFile')}
-                        accept="application/pdf,.pdf"
-                    />
-                    {errors.bankRemiseFile && (
-                        <p className="text-sm text-red mt-1 col-span-full">{errors.bankRemiseFile}</p>
-                    )}
+                        <FileInputField
+                            label={isEditMode ? "Nouveau reçu de paiement (PDF)" : "Reçu de paiement (PDF)"}
+                            name="receiptFile"
+                            onChange={handleFileChange('receiptFile')}
+                            accept="application/pdf,.pdf"
+                        />
+                        {errors.receiptFile && (
+                            <p className="text-sm text-red mt-1">{errors.receiptFile}</p>
+                        )}
+                    </div>
+
+                    {/* Remise de la banque */}
+                    <div className="space-y-2">
+                        {isEditMode && existingFiles.bankRemiseFile ? (
+                            <PDFField
+                                label="Remise de la banque actuelle (PDF)"
+                                fileName={existingFiles.bankRemiseFile}
+                                onView={() => handleViewPDF('bankRemise')}
+                            />
+                        ) : null}
+
+                        <FileInputField
+                            label={isEditMode ? "Nouvelle remise de la banque (PDF)" : "Remise de la banque (PDF)"}
+                            name="bankRemiseFile"
+                            onChange={handleFileChange('bankRemiseFile')}
+                            accept="application/pdf,.pdf"
+                        />
+                        {errors.bankRemiseFile && (
+                            <p className="text-sm text-red mt-1">{errors.bankRemiseFile}</p>
+                        )}
+                    </div>
                 </div>
             </section>
 
@@ -405,9 +621,21 @@ const AddGroupeInvoice = ({ onCancel, onSuccess}) => {
                             : 'bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700'
                     } text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors`}
                 >
-                    {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                    {isSubmitting
+                        ? `${isEditMode ? 'Modification' : 'Enregistrement'}...`
+                        : `${isEditMode ? 'Modifier' : 'Enregistrer'}`
+                    }
                 </button>
             </div>
+
+            {/* Modal PDF */}
+            <PDFModal
+                isOpen={pdfModal.isOpen}
+                onClose={closePDFModal}
+                pdfUrl={pdfModal.pdfUrl}
+                title={pdfModal.title}
+                isLoading={pdfModal.isLoading}
+            />
         </form>
     );
 };
