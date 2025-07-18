@@ -6,6 +6,8 @@ interface EvaluationData {
     id: string;
     label: string;
     status: string;
+    theme: string;
+    dates: string[];
     questionnaire: any;
     qrTokens: Array<{
         id: string;
@@ -251,6 +253,8 @@ export const useQuestionnaireGenerator = () => {
                 id: evaluation.id,
                 label: evaluation.label,
                 status: evaluation.status,
+                theme: evaluation.theme,
+                dates: evaluation.dates,
                 questionnaire,
                 qrTokens: validTokens
             };

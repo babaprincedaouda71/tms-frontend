@@ -758,6 +758,10 @@ export interface GroupeEvaluationProps {
 export interface GroupeEvaluationDetailProps {
     id: number;
     name:string;
+    firstName:string;
+    lastName:string;
+    cin:string;
+    cnss:string;
     position:string;
     groupe:string;
     progress:number;

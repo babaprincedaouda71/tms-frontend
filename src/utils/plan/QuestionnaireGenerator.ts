@@ -1,3 +1,5 @@
+import {Participant} from "../../../pages/admin/Plan/annual/evaluation/detail";
+
 export interface BatchProgress {
     current: number;
     total: number;
@@ -9,7 +11,7 @@ export class QuestionnaireGenerator {
     private doc: any;
     private pageWidth = 210;
     private pageHeight = 297;
-    private margin = 15;
+    private margin = 16;
     private qrCodeCache: Map<string, string> = new Map();
     private calendarIconCache: string | null = null; // Cache pour l'icône calendrier
     private baseFont = 11; // Taille de base (variable S)
@@ -144,7 +146,7 @@ export class QuestionnaireGenerator {
     }
 
     private async generateF4FormPage(
-        participant: any,
+        participant: Participant,
         qrToken: any,
         evaluationData: any,
         options: any,
@@ -163,7 +165,7 @@ export class QuestionnaireGenerator {
         currentY = this.generateIntroSection(currentY);
 
         // Section 3: Bloc d'informations générales
-        currentY = this.generateInfoBlock(participant, options, currentY);
+        currentY = this.generateInfoBlock(participant, evaluationData, options, currentY);
 
         // Section 4: Zone d'évaluation avec en-têtes et questions
         currentY = this.generateEvaluationZone(currentY);
@@ -184,7 +186,7 @@ export class QuestionnaireGenerator {
         // Ligne 1: "Contrats Spéciaux de Formation" (aligné à gauche, gras, 1.4*S)
         // Laisser de l'espace pour le QR code à droite
         this.doc.setFont('helvetica', 'bold');
-        this.doc.setFontSize(this.baseFont * 1.4);
+        this.doc.setFontSize(this.baseFont * 1.2);
         this.doc.text('Contrats Spéciaux de Formation', this.margin, currentY);
         currentY += 8; // Espacement réduit
 
@@ -196,12 +198,12 @@ export class QuestionnaireGenerator {
         const f4Width = this.doc.getTextWidth(f4Text);
         const centeredX = this.margin + (availableWidth - f4Width) / 2;
         this.doc.text(f4Text, centeredX, currentY);
-        currentY += 8; // Espacement réduit
+        currentY += 6; // Espacement réduit
 
         // Séparateur épais
-        this.doc.setLineWidth(4 * 0.35); // 4pt converti en mm
+        this.doc.setLineWidth(5 * 0.35); // 4pt converti en mm
         this.doc.line(this.margin, currentY, this.pageWidth - this.margin, currentY);
-        currentY += 8; // Espacement réduit après le séparateur
+        currentY += 6; // Espacement réduit après le séparateur
 
         return currentY;
     }
@@ -215,55 +217,65 @@ export class QuestionnaireGenerator {
         const titleText = "Fiche d'évaluation de l'Action de Formation";
         const titleWidth = this.doc.getTextWidth(titleText);
         this.doc.text(titleText, (this.pageWidth - titleWidth) / 2, currentY);
-        currentY += 6; // Espacement réduit
+        currentY += 12;
 
-        // Premier paragraphe
-        this.doc.setFont('helvetica', 'normal');
-        this.doc.setFontSize(this.baseFont);
+        // MODIFICATION : Mettre tout le texte en gras et réduire la taille
+        this.doc.setFont('helvetica', 'bold'); // Tout en gras
+        this.doc.setFontSize(this.baseFont * 0.85); // Taille réduite (85% de la taille de base)
 
+        // Premier paragraphe - maintenant en gras
         const firstParagraph = "Cette fiche est remise par le formateur au bénéficiaire au terme de la dernière journée de formation. Ce dernier est prié de la remettre, dûment renseignée et signée, au formateur.";
         const firstLines = this.doc.splitTextToSize(firstParagraph, this.pageWidth - 2 * this.margin);
 
         for (const line of firstLines) {
             this.doc.text(line, this.margin, currentY);
-            currentY += 4; // Espacement encore plus compact
+            currentY += 3.5;
         }
 
-        currentY += 1.5; // Petit espacement entre paragraphes
+        currentY += 1;
 
-        // Deuxième paragraphe avec "NB:" en gras
-        const secondParagraph = "Les informations recueillies à travers cette fiche seront utilisées pour des fins statistiques uniquement et nullement pour porter un jugement quel qu'il soit sur la performance des parties prenantes.";
+        // Deuxième paragraphe - "NB:" souligné et en gras, reste en gras
+        const nbText = "NB:";
+        const secondParagraph = " Les informations recueillies à travers cette fiche seront utilisées pour des fins statistiques uniquement et nullement pour porter un jugement quel qu'il soit sur la performance des parties prenantes.";
 
-        // Afficher "NB:" en gras
+        // Afficher "NB:" en gras et souligné
         this.doc.setFont('helvetica', 'bold');
-        this.doc.text('NB:', this.margin, currentY);
-        const nbWidth = this.doc.getTextWidth('NB: ');
+        this.doc.text(nbText, this.margin, currentY);
 
-        // Afficher le reste en normal
-        this.doc.setFont('helvetica', 'normal');
-        const secondLines = this.doc.splitTextToSize(secondParagraph, this.pageWidth - 2 * this.margin - nbWidth);
+        // Calculer la largeur de "NB:" pour le soulignement
+        const nbWidth = this.doc.getTextWidth(nbText);
 
-        // Première ligne à côté de "NB:"
-        this.doc.text(secondLines[0], this.margin + nbWidth, currentY);
-        currentY += 4;
+        // Ajouter le soulignement pour "NB:"
+        this.doc.setLineWidth(0.3); // Épaisseur du trait de soulignement
+        this.doc.line(this.margin, currentY + 0.5, this.margin + nbWidth, currentY + 0.5);
 
-        // Lignes suivantes alignées normalement
-        for (let i = 1; i < secondLines.length; i++) {
-            this.doc.text(secondLines[i], this.margin, currentY);
-            currentY += 4;
+        // Diviser le reste du texte en lignes
+        const restLines = this.doc.splitTextToSize(secondParagraph, this.pageWidth - 2 * this.margin - nbWidth);
+
+        // Afficher la première ligne à côté de "NB:"
+        this.doc.text(restLines[0], this.margin + nbWidth, currentY);
+        currentY += 3.5;
+
+        // Afficher les lignes suivantes alignées normalement
+        for (let i = 1; i < restLines.length; i++) {
+            this.doc.text(restLines[i], this.margin, currentY);
+            currentY += 3.5;
         }
 
-        return currentY + 6; // Espacement réduit
+        // Remettre l'épaisseur de ligne par défaut
+        this.doc.setLineWidth(0.5);
+
+        return currentY + 5;
     }
 
-    private generateInfoBlock(participant: any, options: any, startY: number): number {
+    private generateInfoBlock(participant: Participant, evaluationData: any, options: any, startY: number): number {
         let currentY = startY;
-        const blockHeight = 36; // Hauteur réduite
+        const blockHeight = 37; // Hauteur réduite
         const cellHeight = blockHeight / 3;
         const halfWidth = (this.pageWidth - 2 * this.margin) / 2;
 
         // Dimensions des champs de saisie - largeur s'étend sur toute la partie
-        const fieldHeight = 5; // Hauteur des rectangles de saisie
+        const fieldHeight = 6; // Hauteur des rectangles de saisie
         const leftFieldWidth = halfWidth - 4; // Largeur partie gauche (-4mm pour marges)
         const rightFieldWidth = halfWidth - 4; // Largeur partie droite (-4mm pour marges)
 
@@ -280,6 +292,7 @@ export class QuestionnaireGenerator {
         // Rangée 1 - Labels et champs
         this.doc.text("Thème de l'Action de Formation:", this.margin + 2, currentY + 4);
         this.doc.rect(this.margin + 2, currentY + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(evaluationData.theme || '', this.margin + 4, currentY + 9);
 
         this.doc.text("Dates de la formation:", this.margin + halfWidth + 2, currentY + 4);
         this.doc.rect(this.margin + halfWidth + 2, currentY + 6, rightFieldWidth, fieldHeight);
@@ -287,23 +300,26 @@ export class QuestionnaireGenerator {
         // Rangée 2 - Labels et champs avec données
         this.doc.text("Nom du bénéficiaire:", this.margin + 2, currentY + cellHeight + 4);
         this.doc.rect(this.margin + 2, currentY + cellHeight + 6, leftFieldWidth, fieldHeight);
-        this.doc.text(participant.name.split(' ').slice(-1)[0] || '', this.margin + 4, currentY + cellHeight + 9);
+        this.doc.text(participant.lastName || '', this.margin + 4, currentY + 1 + cellHeight + 9);
 
         this.doc.text("Prénom du bénéficiaire:", this.margin + halfWidth + 2, currentY + cellHeight + 4);
         this.doc.rect(this.margin + halfWidth + 2, currentY + cellHeight + 6, rightFieldWidth, fieldHeight);
-        this.doc.text(participant.name.split(' ').slice(0, -1).join(' ') || '', this.margin + halfWidth + 4, currentY + cellHeight + 9);
+        this.doc.text(participant.firstName || '', this.margin + halfWidth + 4, currentY + 1 + cellHeight + 9);
 
         // Rangée 3 - Labels et champs
         this.doc.text("N° CIN:", this.margin + 2, currentY + 2 * cellHeight + 4);
         this.doc.rect(this.margin + 2, currentY + 2 * cellHeight + 6, leftFieldWidth, fieldHeight);
+        this.doc.text(participant.cin || '', this.margin + 4, currentY + 2 * cellHeight + 10);
 
         this.doc.text("N° CNSS:", this.margin + halfWidth + 2, currentY + 2 * cellHeight + 4);
         this.doc.rect(this.margin + halfWidth + 2, currentY + 2 * cellHeight + 6, rightFieldWidth, fieldHeight);
+        this.doc.text(participant.cnss || '', this.margin + halfWidth + 4, currentY + 2 * cellHeight + 10);
+
 
         // Remettre l'épaisseur par défaut pour les éléments suivants
         this.doc.setLineWidth(0.5 * 0.35);
 
-        return currentY + blockHeight + 8; // Espacement réduit
+        return currentY + blockHeight + 3; // Espacement réduit
     }
 
     private generateEvaluationZone(startY: number): number {
@@ -367,9 +383,23 @@ export class QuestionnaireGenerator {
     private generateQuestionBlock(startY: number, title: string, questions: string[]): number {
         const col1Width = 0.65 * (this.pageWidth - 2 * this.margin);
         const optionWidth = 0.0875 * (this.pageWidth - 2 * this.margin);
-        const headerHeight = 7; // Hauteur de la ligne titre + options
-        const questionHeight = 8;
-        const totalHeight = headerHeight + questions.length * questionHeight;
+        const headerHeight = 7;
+        const minQuestionHeight = 8; // Hauteur minimale par question
+        const textMargin = 2; // Marge pour le texte dans les cellules
+
+        // Calculer la hauteur nécessaire pour chaque question
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.setFontSize(8.5);
+
+        const questionHeights: number[] = [];
+        for (const question of questions) {
+            const questionLines = this.doc.splitTextToSize(question, col1Width - 4);
+            const textHeight = questionLines.length * 3; // 3mm par ligne de texte
+            const requiredHeight = Math.max(minQuestionHeight, textHeight + textMargin * 2);
+            questionHeights.push(requiredHeight);
+        }
+
+        const totalHeight = headerHeight + questionHeights.reduce((sum, height) => sum + height, 0);
 
         // Contour principal du bloc
         this.doc.setLineWidth(0.5 * 0.35);
@@ -399,27 +429,38 @@ export class QuestionnaireGenerator {
         // LIGNES SUIVANTES: Questions avec cases à cocher
         this.doc.setFont('helvetica', 'normal');
         this.doc.setFontSize(8.5);
+
+        let currentQuestionY = startY + headerHeight;
+
         for (let i = 0; i < questions.length; i++) {
-            const questionY = startY + headerHeight + (i + 1) * questionHeight;
+            const questionHeight = questionHeights[i];
+            const nextQuestionY = currentQuestionY + questionHeight;
 
             // Ligne horizontale entre questions (sauf pour la dernière)
             if (i < questions.length - 1) {
-                this.doc.line(this.margin, questionY, this.pageWidth - this.margin, questionY);
+                this.doc.line(this.margin, nextQuestionY, this.pageWidth - this.margin, nextQuestionY);
             }
 
-            // Texte de la question
+            // Texte de la question - positionné en haut de la cellule avec marge
             const questionLines = this.doc.splitTextToSize(questions[i], col1Width - 4);
-            const lineY = startY + headerHeight + i * questionHeight + 5.5;
-            this.doc.text(questionLines, this.margin + 2, lineY);
+            let textY = currentQuestionY + textMargin + 3; // Commencer en haut avec une petite marge
 
-            // Cases à cocher (4 options)
-            let xPos = this.margin + col1Width;
-            for (let j = 0; j < 4; j++) {
-                const checkboxX = xPos + (optionWidth - 3) / 2;
-                const checkboxY = lineY - 2.5;
-                this.doc.circle(checkboxX + 1.5, checkboxY + 1.5, 1.1);
-                xPos += optionWidth;
+            for (const line of questionLines) {
+                this.doc.text(line, this.margin + 2, textY);
+                textY += 3; // Espacement entre les lignes
             }
+
+            // Cases à cocher - centrées verticalement dans la cellule
+            const checkboxCenterY = currentQuestionY + (questionHeight / 2);
+            let checkboxX = this.margin + col1Width;
+
+            for (let j = 0; j < 4; j++) {
+                const checkboxXCenter = checkboxX + (optionWidth - 3) / 2;
+                this.doc.circle(checkboxXCenter + 1.5, checkboxCenterY, 1.1);
+                checkboxX += optionWidth;
+            }
+
+            currentQuestionY = nextQuestionY;
         }
 
         return startY + totalHeight;
@@ -439,8 +480,8 @@ export class QuestionnaireGenerator {
         this.doc.setFontSize(this.baseFont);
 
         // Partie gauche - Labels sur la première ligne
-        const firstLineY = currentY + 6;
-        const secondLineY = currentY + 14;
+        const firstLineY = currentY + 4;
+        const secondLineY = currentY + 10;
 
         // LIGNE 1: Labels "Fait à:" (gauche) et "Le:" (droite)
         this.doc.setLineWidth(0.6);
@@ -480,8 +521,8 @@ export class QuestionnaireGenerator {
 
         // Partie droite
         this.doc.setLineWidth(0.5 * 0.35);
-        this.doc.text("Signature du bénéficiaire:", this.margin + leftWidth + 5, currentY + 8);
-        this.doc.rect(this.margin + leftWidth + 5, currentY + 10, rightWidth - 10, 12);
+        this.doc.text("Signature du bénéficiaire:", this.margin + leftWidth + 5, currentY + 4);
+        this.doc.rect(this.margin + leftWidth + 5, currentY + 6, rightWidth - 10, 18);
 
         return currentY + blockHeight + 5;
     }

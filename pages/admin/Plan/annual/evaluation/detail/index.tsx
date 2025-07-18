@@ -20,9 +20,13 @@ interface DetailEvaluationProps {
     onBack?: () => void;
 }
 
-interface Participant {
+export interface Participant {
     id: number;
     name: string;
+    firstName: string;
+    lastName: string;
+    cin: string;
+    cnss: string;
 }
 
 const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
@@ -142,7 +146,11 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
     const handleIndividualPDF = (participant: GroupeEvaluationDetailProps) => {
         const participantData: Participant = {
             id: participant.id,
-            name: participant.name
+            name: participant.name,
+            firstName: participant.firstName,
+            lastName: participant.lastName,
+            cin: participant.cin,
+            cnss: participant.cnss,
         };
 
         setIndividualParticipant(participantData);
@@ -204,7 +212,11 @@ const DetailEvaluation: React.FC<DetailEvaluationProps> = ({
         .filter(item => selectedParticipants.has(item.id))
         .map(item => ({
             id: item.id,
-            name: item.name
+            name: item.name,
+            firstName: item.firstName,
+            lastName: item.lastName,
+            cin: item.cin,
+            cnss: item.cnss,
         }));
 
     // Renderers pour les en-têtes personnalisés
