@@ -11,6 +11,7 @@ export class QuestionnaireGenerator {
     private pageHeight = 297;
     private margin = 15;
     private qrCodeCache: Map<string, string> = new Map();
+    private calendarIconCache: string | null = null; // Cache pour l'icône calendrier
     private baseFont = 11; // Taille de base (variable S)
     private lineHeight = 1.2; // Hauteur de ligne de base (variable H)
 
@@ -38,6 +39,9 @@ export class QuestionnaireGenerator {
 
         // Import QRCode une seule fois
         const QRCode = await import('qrcode');
+
+        // Pré-charger l'icône calendrier
+        await this.preloadCalendarIcon();
 
         // Filtrer les participants avec tokens valides et pré-générer les QR codes
         for (const participant of participants) {
@@ -76,7 +80,51 @@ export class QuestionnaireGenerator {
         }
 
         this.qrCodeCache.clear();
+        this.calendarIconCache = null;
         return this.doc.output('blob');
+    }
+
+    private async preloadCalendarIcon(): Promise<void> {
+        try {
+            // Fonction pour convertir une image en base64
+            const loadImageAsBase64 = (src: string): Promise<string> => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Définir la taille du canvas
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+
+                        // Dessiner l'image sur le canvas
+                        ctx!.drawImage(img, 0, 0);
+
+                        // Convertir en base64
+                        const dataURL = canvas.toDataURL('image/png');
+                        resolve(dataURL);
+                    };
+
+                    img.onerror = () => {
+                        reject(new Error('Impossible de charger l\'image'));
+                    };
+
+                    // Corriger le chemin de l'image
+                    img.src = '/images/f4-calendar-icon.png'; // Supprimer '/public'
+                });
+            };
+
+            // Charger l'icône
+            this.calendarIconCache = await loadImageAsBase64('/images/f4-calendar-icon.png');
+            console.log('Icône calendrier chargée avec succès');
+
+        } catch (error) {
+            console.warn('Erreur lors du chargement de l\'icône calendrier:', error);
+            this.calendarIconCache = null;
+        }
     }
 
     private async preGenerateQRCode(token: string, getBaseUrl: () => string, QRCode: any): Promise<void> {
@@ -386,16 +434,35 @@ export class QuestionnaireGenerator {
         this.doc.text("Fait à:", this.margin + 2, firstLineY);
         this.doc.text("Le:", this.margin + leftWidth * 0.55, firstLineY);
 
-        // LIGNE 2: Champs de saisie de même taille
+        // LIGNE 2: Champs de saisie rectangulaires
         const fieldWidth = leftWidth * 0.4; // Largeur identique pour les deux champs
+        const fieldHeight = 6; // Hauteur des champs rectangulaires
 
-        // Champ "Fait à"
-        this.doc.line(this.margin + 2, secondLineY, this.margin + 2 + fieldWidth, secondLineY);
+        // Champ "Fait à" - Rectangle
+        this.doc.rect(this.margin + 2, secondLineY - 4, fieldWidth, fieldHeight);
 
-        // Champ "Le" avec icône calendrier
+        // Champ "Le" - Rectangle avec icône calendrier
         const leFieldStart = this.margin + leftWidth * 0.55;
-        this.doc.line(leFieldStart, secondLineY, leFieldStart + fieldWidth - 8, secondLineY);
-        this.doc.text("📅", leFieldStart + fieldWidth - 6, secondLineY);
+        this.doc.rect(leFieldStart, secondLineY - 4, fieldWidth, fieldHeight);
+        // Ajouter l'icône calendrier (image ou fallback)
+        if (this.calendarIconCache) {
+            try {
+                // Utiliser l'icône chargée depuis /images/f4-calendar-icon.png
+                const iconSize = 5; // Taille de l'icône en mm
+                const iconX = leFieldStart + fieldWidth;
+                const iconY = secondLineY - 2; // Centrer verticalement dans le rectangle
+                this.doc.addImage(this.calendarIconCache, 'PNG', iconX, iconY, iconSize, iconSize);
+            } catch (error) {
+                console.warn('Erreur lors de l\'ajout de l\'icône:', error);
+                // Fallback vers le texte
+                this.doc.setFontSize(8);
+                this.doc.text("CAL", leFieldStart + fieldWidth - 7, secondLineY);
+            }
+        } else {
+            // Fallback: utiliser un texte simple
+            this.doc.setFontSize(8);
+            this.doc.text("CAL", leFieldStart + fieldWidth - 7, secondLineY);
+        }
 
         // Partie droite
         this.doc.text("Signature du bénéficiaire:", this.margin + leftWidth + 5, currentY + 8);
