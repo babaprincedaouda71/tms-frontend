@@ -291,6 +291,23 @@ export class QuestionnaireGenerator {
         // Définir l'épaisseur pour les champs de saisie
         this.doc.setLineWidth(0.6); // Épaisseur plus importante pour les champs
 
+        // Fonction pour formater les dates de yyyy-MM-dd vers dd-MM-yyyy
+        const formatDates = (dates: string[]): string => {
+            if (!dates || dates.length === 0) return '';
+
+            const formattedDates = dates.map(dateStr => {
+                if (!dateStr) return '';
+                // Convertir yyyy-MM-dd vers dd-MM-yyyy
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+                return dateStr; // Retourner tel quel si format invalide
+            });
+
+            return formattedDates.join(', ');
+        };
+
         // Rangée 1 - Labels et champs
         this.doc.text("Thème de l'Action de Formation:", this.margin + 0.5, currentY + 4);
         this.doc.rect(this.margin + 1, currentY + 6, leftFieldWidth, fieldHeight);
@@ -298,6 +315,9 @@ export class QuestionnaireGenerator {
 
         this.doc.text("Dates de la formation:", this.margin + halfWidth + 0.5, currentY + 4);
         this.doc.rect(this.margin + halfWidth + 1, currentY + 6, rightFieldWidth, fieldHeight);
+        // Utiliser la fonction de formatage pour les dates
+        const formattedDates = formatDates(evaluationData.dates);
+        this.doc.text(formattedDates, this.margin + halfWidth + 3, currentY + 10);
 
         // Rangée 2 - Labels et champs avec données
         this.doc.text("Nom du bénéficiaire:", this.margin + 0.5, currentY + cellHeight + 4);
@@ -316,7 +336,6 @@ export class QuestionnaireGenerator {
         this.doc.text("N° CNSS:", this.margin + halfWidth + 0.5, currentY + 2 * cellHeight + 4);
         this.doc.rect(this.margin + halfWidth + 1, currentY + 2 * cellHeight + 6, rightFieldWidth, fieldHeight);
         this.doc.text(participant.cnss || '', this.margin + halfWidth + 3, currentY + 2 * cellHeight + 10);
-
 
         // Remettre l'épaisseur par défaut pour les éléments suivants
         this.doc.setLineWidth(0.5 * 0.35);
@@ -415,7 +434,7 @@ export class QuestionnaireGenerator {
 
         // LIGNE 1: Titre du bloc + En-tête des options (sur la même ligne)
         this.doc.setFont('helvetica', 'bold');
-        this.doc.setFontSize(9.5);
+        this.doc.setFontSize(12);
 
         // Titre du bloc à gauche
         this.doc.text(title, this.margin + 0.5, startY + 4.5);
