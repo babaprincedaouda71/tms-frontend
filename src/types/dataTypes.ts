@@ -731,6 +731,14 @@ export interface TrainingProps {
     budget: string;
     csf: boolean;
     status: string;
+    // Nouvelle propriété pour les dates des groupes
+    groupDates?: GroupDatesProps[];
+}
+
+export interface GroupDatesProps {
+    groupId: number;
+    groupName: string;
+    dates: string[];
 }
 
 export interface ValidatedNeedToAddToPlanProps {

@@ -1,12 +1,14 @@
 import {useRouter} from "next/router";
 import React, {useEffect, useState} from "react";
 import {F4_EVALUATION_URLS} from "@/config/urls";
-import {AlertCircle, CheckCircle, User, MapPin, Calendar} from "lucide-react";
+import {AlertCircle, Calendar, CheckCircle, MapPin, User} from "lucide-react";
 
 // Types pour les données
 interface ParticipantInfo {
     participantId: number;
     fullName: string;
+    cin: string;
+    cnss: string;
     email: string;
 }
 
@@ -194,13 +196,14 @@ export default function F4EvaluationResponsePage() {
         return (
             <div className="space-y-4">
                 {question.options?.map((option, index) => (
-                    <label key={option} className={`flex items-start space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        response?.singleChoiceResponse === option
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : hasError
-                                ? 'border-redShade-300 hover:border-redShade-400 bg-redShade-50'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
-                    }`}>
+                    <label key={option}
+                           className={`flex items-start space-x-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                               response?.singleChoiceResponse === option
+                                   ? 'border-blue-500 bg-blue-50 shadow-md'
+                                   : hasError
+                                       ? 'border-redShade-300 hover:border-redShade-400 bg-redShade-50'
+                                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 active:bg-gray-100'
+                           }`}>
                         <input
                             type="radio"
                             name={question.questionId}
@@ -212,7 +215,8 @@ export default function F4EvaluationResponsePage() {
                     </label>
                 ))}
                 {!question.options?.length && (
-                    <div className="text-gray-500 italic text-center py-8">Aucune option disponible pour cette question</div>
+                    <div className="text-gray-500 italic text-center py-8">Aucune option disponible pour cette
+                        question</div>
                 )}
             </div>
         );
@@ -295,25 +299,28 @@ export default function F4EvaluationResponsePage() {
                     <div className="space-y-6 border-t pt-6">
                         <div className="space-y-3">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                                <User className="w-5 h-5 mr-2 text-blue-600" />
+                                <User className="w-5 h-5 mr-2 text-blue-600"/>
                                 Participant
                             </h3>
                             <div className="bg-blue-50 p-4 rounded-xl space-y-2">
                                 <p className="text-sm"><strong>Nom:</strong> {evaluationForm.participant.fullName}</p>
+                                <p className="text-sm"><strong>CIN:</strong> {evaluationForm.participant.cin}</p>
+                                <p className="text-sm"><strong>CNSS:</strong> {evaluationForm.participant.cnss}</p>
                                 <p className="text-sm"><strong>Email:</strong> {evaluationForm.participant.email}</p>
                             </div>
                         </div>
 
                         <div className="space-y-3">
                             <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                                <Calendar className="w-5 h-5 mr-2 text-green-600" />
+                                <Calendar className="w-5 h-5 mr-2 text-green-600"/>
                                 Formation
                             </h3>
                             <div className="bg-green-50 p-4 rounded-xl space-y-2">
-                                <p className="text-sm"><strong>Thème:</strong> {evaluationForm.training.trainingTheme}</p>
+                                <p className="text-sm"><strong>Thème:</strong> {evaluationForm.training.trainingTheme}
+                                </p>
                                 <p className="text-sm"><strong>Groupe:</strong> {evaluationForm.training.groupName}</p>
                                 <p className="text-sm flex items-center">
-                                    <MapPin className="w-4 h-4 mr-1" />
+                                    <MapPin className="w-4 h-4 mr-1"/>
                                     {evaluationForm.training.location}, {evaluationForm.training.city}
                                 </p>
                             </div>
@@ -323,13 +330,18 @@ export default function F4EvaluationResponsePage() {
 
                 {/* Formulaire des questions - optimisé pour le touch */}
                 <div className="bg-white rounded-2xl shadow-lg p-6">
-                    <form onSubmit={(e) => { e.preventDefault(); submitForm(); }}>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        submitForm();
+                    }}>
                         <div className="space-y-8">
                             {evaluationForm.questionnaire.questions.map((question, index) => (
-                                <div key={question.questionId} className="border-b border-gray-100 pb-8 last:border-b-0">
+                                <div key={question.questionId}
+                                     className="border-b border-gray-100 pb-8 last:border-b-0">
                                     <div className="mb-6">
                                         <div className="flex items-start space-x-3 mb-4">
-                                            <span className="bg-blue-600 text-white text-sm font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
+                                            <span
+                                                className="bg-blue-600 text-white text-sm font-bold rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
                                                 {index + 1}
                                             </span>
                                             <h3 className="text-lg font-semibold text-gray-900 leading-relaxed">
@@ -366,7 +378,8 @@ export default function F4EvaluationResponsePage() {
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center justify-center">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                                        <div
+                                            className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                                         Envoi en cours...
                                     </span>
                                 ) : (

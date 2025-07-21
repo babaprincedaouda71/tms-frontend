@@ -7,6 +7,7 @@ import InputField from '@/components/FormComponents/InputField';
 import {GroupData} from '../add-group';
 import Alert from '@/components/Alert';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import CustomDatePicker from "@/components/FormComponents/CustomDatePicker";
 
 type UUID = string
 
@@ -223,6 +224,14 @@ const Planning: React.FC<PlanningProps> = ({
         }
     };
 
+    // Nouvelle fonction pour gérer les changements de dates
+    const handleDateChange = (index: number, newDate: string) => {
+        const newDates = [...formData.dates];
+        newDates[index] = newDate;
+        setFormData(prev => ({...prev, dates: newDates}));
+        setErrors(prevErrors => ({...prevErrors, fromDate: ""}));
+    };
+
     /* const validateForm = () => {
         let isValid = true;
         const newErrors: FormErrors = {}; // Utilise le type FormErrors ici
@@ -345,31 +354,33 @@ const Planning: React.FC<PlanningProps> = ({
                 />
                 {/* Champ pour la date */}
                 <div className="md:col-span-1">
-                    <div className="flex justify-between items-center mb-2">
-                        <label
-                            className="block break-words font-tHead text-formInputTextColor font-semibold text-xs md:text-sm lg:text-base">
-                            Date(s)
-                        </label>
-                        <button
-                            type="button"
-                            onClick={addDate}
-                            className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm focus:outline-none focus:shadow-outline"
-                        >
-                            +
-                        </button>
+                    <div className="mb-2">
+                        <div
+                            className="flex items-center text-formInputTextColor font-semibold text-xs md:text-sm lg:text-base w-full">
+                            <label className="flex-[1] block break-words font-tHead">
+                                Date(s)
+                            </label>
+                            <div className="flex-[4] flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={addDate}
+                                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm focus:outline-none focus:shadow-outline"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                         {formData.dates.map((date, index) => (
-                            <div key={index} className="flex items-center gap-2 mb-2">
-                                <InputField
-                                    label=""
-                                    name={`dates-${index}`}
-                                    type="date"
-                                    value={date}
-                                    onChange={handleInputChange}
-                                    className="flex-grow"
-                                    error={errors.fromDate?.[index]}
-                                />
+                            <div key={index} className="flex items-center gap-2">
+                                <div className="flex-grow">
+                                    <CustomDatePicker
+                                        value={date}
+                                        onChange={(newDate) => handleDateChange(index, newDate)}
+                                        error={errors.fromDate?.[index]}
+                                    />
+                                </div>
                                 {formData.dates.length > 1 && (
                                     <button
                                         type="button"
@@ -424,7 +435,7 @@ const Planning: React.FC<PlanningProps> = ({
             </div>
             {/* Affichage des erreurs générales */}
             {errors.general && (
-                <div className="text-red-500 mt-2">{errors.general}</div>
+                <div className="text-redShade-500 mt-2">{errors.general}</div>
             )}
             {/* Bouton Enregistrer */}
             <div className="flex justify-end mt-4">
