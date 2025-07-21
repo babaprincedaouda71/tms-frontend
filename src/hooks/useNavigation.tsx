@@ -1,5 +1,5 @@
-import { useCallback, useReducer, useEffect } from 'react';
-import { NavState } from '../types/dataTypes';
+import {useCallback, useEffect, useReducer} from 'react';
+import {NavState} from '@/types/dataTypes';
 
 type NavAction =
     | { type: 'TOGGLE_COLLAPSE' }
@@ -40,16 +40,16 @@ export const useNavigation = (isLargeScreen: boolean) => {
 
     // Mettre à jour l'état du collapse lors du changement de taille d'écran
     useEffect(() => {
-        dispatch({ type: 'SET_COLLAPSE', payload: !isLargeScreen });
+        dispatch({type: 'SET_COLLAPSE', payload: !isLargeScreen});
     }, [isLargeScreen]);
 
     const toggleCollapse = useCallback(() => {
-        dispatch({ type: 'TOGGLE_COLLAPSE' });
+        dispatch({type: 'TOGGLE_COLLAPSE'});
     }, []);
 
     const toggleSubmenu = useCallback((path: string) => {
-        dispatch({ type: 'TOGGLE_SUBMENU', payload: path });
+        dispatch({type: 'TOGGLE_SUBMENU', payload: path});
     }, []);
 
-    return { state, toggleCollapse, toggleSubmenu };
+    return {state, toggleCollapse, toggleSubmenu};
 };
