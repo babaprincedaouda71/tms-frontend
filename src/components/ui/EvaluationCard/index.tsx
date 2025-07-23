@@ -77,7 +77,6 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     };
 
     const fetchResponses = async () => {
-        console.log("Fetching responses...");
         if (status === "En cours" || status === "Terminée") {
             setLoadingResponses(true);
             setErrorLoadingResponses(null);

@@ -37,8 +37,6 @@ export const COMPANIES_URLS = {
 export const USERS_URLS = {
     add: `${API_URL}/users/add`,
     delete: `${API_URL}/users/delete`,
-    edit: `/User/editUser`,
-    view: `/User/user`,
     mutate: `${API_URL}/users/get/all`,
     updateStatus: `${API_URL}/users/update-status`,
     import: `${API_URL}/users/import`,

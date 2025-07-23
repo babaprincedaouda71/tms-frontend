@@ -9,7 +9,8 @@ import {USERS_URLS} from "@/config/urls";
 import {UserProps} from "@/types/dataTypes";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation"; // Si navigateTo est utilisé dans les renderers
 import {USERS_ACTIONS_TO_SHOW} from "@/config/users/usersTableConfig";
-import ManagerRenderer from "@/components/Tables/ManagerRenderer"; // Les actions spécifiques aux utilisateurs
+import ManagerRenderer from "@/components/Tables/ManagerRenderer";
+import {USERS_MODULE_URL} from "@/config/internal-url"; // Les actions spécifiques aux utilisateurs
 
 interface UseUserTableRenderersProps {
     isRowSelected: (rowId: number) => boolean;
@@ -114,8 +115,8 @@ export const useUserTableRenderers = ({
                 row={row}
                 isSelected={isRowSelected(row.id)}
                 deleteUrl={USERS_URLS.delete}
-                viewUrl={buildRoleBasedPath(`${USERS_URLS.view}`)}
-                editUrl={buildRoleBasedPath(`${USERS_URLS.edit}`)}
+                viewUrl={buildRoleBasedPath(`${USERS_MODULE_URL.user}`)}
+                editUrl={buildRoleBasedPath(`${USERS_MODULE_URL.edit}`)}
                 mutateUrl={USERS_URLS.mutate}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${row.firstName} ${row.lastName} ?`}
             />
