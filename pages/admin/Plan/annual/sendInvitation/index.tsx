@@ -84,7 +84,7 @@ const SendInvitationPage = () => {
     // Fonction pour générer le contenu dynamique pour participants
     const generateDynamicContent = useCallback((training: TrainingDto | null): string => {
         if (!training) {
-            return `Cher [Nom],
+            return `Cher Collaborateur,
 
 Vous êtes invité à participer à une session de formation sur : [Thème de la formation].
 
@@ -103,7 +103,7 @@ Cordialement,`;
             day: 'numeric'
         });
 
-        return `Cher [Nom],
+        return `Cher Collaborateur,
 
 Vous êtes invité à participer à une session de formation sur : ${training.theme}.
 
@@ -270,7 +270,7 @@ Cordialement,`,
         if (!trainingId) return;
 
         try {
-            const response = await fetch(`${TRAINING_URLS.getTrainingDetailForCancel}/${trainingId}`, {
+            const response = await fetch(`${TRAINING_URLS.getTrainingDetailForInvitation}/${trainingId}/${groupId}`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {

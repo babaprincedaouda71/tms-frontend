@@ -255,6 +255,7 @@ export const TRAINING_URLS = {
     getTrainingToEdit: `${API_URL}/plan/trainings/get/trainingToEdit`,
     editTraining: `${API_URL}/plan/trainings/edit/training`,
     getTrainingDetailForCancel: `${API_URL}/plan/trainings/get/trainingDetailForCancel`,
+    getTrainingDetailForInvitation: `${API_URL}/plan/trainings/get/trainingDetailForInvitation`,
     getParticipants: `${API_URL}/plan/trainings/get/getParticipants`,
     cancelTraining: `${API_URL}/plan/trainings/cancel/training`,
     sendInvitations: `${API_URL}/plan/trainings/sendInvitation/training`,
