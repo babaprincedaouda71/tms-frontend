@@ -16,14 +16,15 @@ import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {TRAINING_URLS} from "@/config/urls";
 import InputField from "@/components/FormComponents/InputField";
 
+// 🔧 FIX: Interface FormData corrigée
 interface FormData {
-    domain: number | null; // Pourrait être string | number | undefined selon InputField
+    domain: string; // Changé de "number | null" à "string"
     theme: string;
     objective: string;
     content: string;
     csf: boolean;
     csfPlanifie: string;
-    comment?: string; // Ajout du champ commentaire à l'interface
+    comment?: string;
 }
 
 interface GroupData {
@@ -67,11 +68,10 @@ const TrainingDetailsPage = () => {
     const router = useRouter();
     // Récupérer le thème depuis la navigation
     const {id, exercice, theme} = router.query;
-    console.log("ID : ", id, "Exercice : ", exercice, "Theme : ", theme);
 
-    // État pour stocker les données du formulaire
+    // 🔧 FIX: État initial avec valeurs cohérentes
     const [formData, setFormData] = useState<FormData>({
-        domain: null,
+        domain: "", // Changé de null à ""
         theme: "",
         objective: "",
         content: "",
@@ -84,6 +84,7 @@ const TrainingDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // 🔧 FIX: useEffect corrigé avec gestion des valeurs undefined/null
     useEffect(() => {
         if (id) {
             const fetchTrainingData = async () => {
@@ -100,24 +101,23 @@ const TrainingDetailsPage = () => {
                     }
 
                     const trainingData = await response.json();
-                    console.log(trainingData);
 
+                    // 🔧 FIX: Assurer des valeurs cohérentes pour tous les champs
                     setFormData({
-                        domain: trainingData.domain || null,
-                        theme: trainingData.theme || "",
-                        objective: trainingData.objective || "",
-                        content: trainingData.content || "",
-                        csf: trainingData.csf === true || trainingData.csf === 'true',
-                        csfPlanifie: trainingData.csfPlanifie || '',
-                        comment: trainingData.comment || '',
+                        domain: trainingData.domain?.toString() ?? "", // Conversion en string avec fallback
+                        theme: trainingData.theme ?? "",
+                        objective: trainingData.objective ?? "",
+                        content: trainingData.content ?? "",
+                        csf: Boolean(trainingData.csf), // Assurer un boolean strict
+                        csfPlanifie: trainingData.csfPlanifie ?? "",
+                        comment: trainingData.comment ?? "",
                     });
 
-                    // Extraction des données des groupes
+                    // Extraction des données des groupes avec fallback sécurisé
                     if (trainingData.groups && Array.isArray(trainingData.groups)) {
-                        console.log("groupes");
                         setGroupData(trainingData.groups);
                     } else {
-                        setGroupData([]); // S'assurer que l'état est un tableau même si l'API ne renvoie rien
+                        setGroupData([]);
                         console.warn("Les données des groupes sont absentes ou dans un format incorrect.");
                     }
 
@@ -163,9 +163,9 @@ const TrainingDetailsPage = () => {
         }));
     };
 
-    // Fonction pour gérer les changements dans les champs du formulaire
-    const handleChange = (event) => {
-        const {name, value} = event;
+    // 🔧 FIX: Fonction handleChange avec types corrects
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const {name, value} = event.target;
 
         // Mettre à jour l'état formData avec la nouvelle valeur
         setFormData((prevFormData) => ({
@@ -173,6 +173,7 @@ const TrainingDetailsPage = () => {
             [name]: value,
         }));
     };
+
     // Composant SelectField pour CSF Planifié
     const planifieSelect = formData.csf ? (
         <InputField
@@ -237,7 +238,7 @@ const TrainingDetailsPage = () => {
         )
     };
 
-    // Gestion de la modification du champ Commentaire (si vous souhaitez l'activer)
+    // Gestion de la modification du champ Commentaire
     const handleCommentChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         setFormData({...formData, comment: event.target.value});
     };
@@ -261,12 +262,14 @@ const TrainingDetailsPage = () => {
                         name={"domain"}
                         value={formData.domain}
                         disabled={true}
+                        onChange={handleChange}
                     />
                     <InputField
                         label={"Thème"}
                         value={formData.theme}
                         name={"theme"}
                         disabled={true}
+                        onChange={handleChange}
                     />
                     <TextAreaField
                         label={"Objectif"}

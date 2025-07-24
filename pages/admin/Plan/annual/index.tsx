@@ -29,7 +29,6 @@ const AnnualPlanPage = () => {
     const {data: plansData, mutate, error, isLoading} = useSWR<PlansProps[]>(PLANS_URLS.mutate, fetcher);
 
     const memorizedPlansData = useMemo(() => plansData || [], [plansData])
-    console.log(memorizedPlansData)
     const {navigateTo, isCurrentPath, getPathWithoutRolePrefix} = useRoleBasedNavigation();
     const {
         currentPage,
@@ -107,8 +106,6 @@ const AnnualPlanPage = () => {
             csf: csfValue, // Convertir en string boolean
             estimatedBudget: budgetValue,
         };
-
-        console.log("Données à envoyer :", dataToSend);
 
         try {
             const result = await fetch(PLANS_URLS.add, {
