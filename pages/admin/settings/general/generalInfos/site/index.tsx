@@ -1,8 +1,8 @@
 import React, {useCallback, useMemo, useState} from 'react'
 import ProtectedRoute from "@/components/ProtectedRoute";
 import useSWR from "swr";
-import {SiteProps} from "@/types/dataTypes";
-import {SITE_URLS} from "@/config/urls";
+import {DepartmentProps, SiteProps} from "@/types/dataTypes";
+import {DEPARTMENT_URLS, SITE_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import useTable from "@/hooks/useTable";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
@@ -13,6 +13,7 @@ import {handleSort} from "@/utils/sortUtils";
 import Modal from "@/components/Modal";
 import InputField from "@/components/FormComponents/InputField";
 import CustomSelect from '@/components/FormComponents/CustomSelect';
+import MultiSelectField from '@/components/FormComponents/MultiselectField';
 
 const TABLE_HEADERS = [
     "Code",
@@ -20,12 +21,9 @@ const TABLE_HEADERS = [
     "Adresse",
     "Ville",
     "Téléphone",
-    // "Manager",
-    // "Poste",
-    // "Email",
-    // "",
     "Salle de formation",
     "Taille",
+    "Départements",
     "Actions",
 ];
 const TABLE_KEYS = [
@@ -36,38 +34,54 @@ const TABLE_KEYS = [
     "phone",
     "trainingRoom",
     "size",
+    "departments",
     "actions",
 ];
 
 const ACTIONS_TO_SHOW = ["edit", "delete"];
-
 const RECORDS_PER_PAGE = 10;
 
 const Site = () => {
     const {data: siteData, mutate} = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
+    const {data: departmentData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [isModalOpen, setModalOpen] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isManagerModalOpen, setManagerModalOpen] = useState(false);
-    const [formData, setFormData] = useState(
-        {
-            id: null,
-            code: "",
-            label: "",
-            address: "",
-            city: "",
-            phone: "",
-            trainingRoom: "Non",
-            size: "",
-            // manager: {
-            //     firstName: "",
-            //     lastName: "",
-            //     job: "",
-            //     email: "",
-            //     phone: ""
-            // }
-        });
+    const [formData, setFormData] = useState({
+        id: null,
+        code: "",
+        label: "",
+        address: "",
+        city: "",
+        phone: "",
+        trainingRoom: "Non",
+        size: "",
+        departmentIds: [] as string[], // 🆕 Ajout des départements sélectionnés
+    });
+
+    // 🆕 Transformer les départements pour le MultiSelectField
+    const departmentOptions = useMemo(() => {
+        if (!departmentData) return [];
+        return departmentData.map(dept => dept.name);
+    }, [departmentData]);
+
+    // 🆕 Fonction pour convertir les noms en IDs et vice-versa
+    const getDepartmentIdsByNames = useCallback((names: string[]) => {
+        if (!departmentData) return [];
+        return names.map(name => {
+            const dept = departmentData.find(d => d.name === name);
+            return dept ? dept.id.toString() : null;
+        }).filter(Boolean) as string[];
+    }, [departmentData]);
+
+    const getDepartmentNamesByIds = useCallback((ids: string[]) => {
+        if (!departmentData) return [];
+        return ids.map(id => {
+            const dept = departmentData.find(d => d.id.toString() === id);
+            return dept ? dept.name : null;
+        }).filter(Boolean) as string[];
+    }, [departmentData]);
 
     const openModal = () => {
         setIsEditMode(false);
@@ -80,19 +94,12 @@ const Site = () => {
             phone: "",
             trainingRoom: "Non",
             size: "",
-            // manager: {
-            //     firstName: "",
-            //     lastName: "",
-            //     job: "",
-            //     email: "",
-            //     phone: ""
-            // }
+            departmentIds: [],
         });
         setModalOpen(true);
     };
 
     const closeModal = () => {
-        // Assurons-nous que cette fonction ne cause pas d'erreurs
         try {
             setErrors({});
             setModalOpen(false);
@@ -105,13 +112,7 @@ const Site = () => {
                 phone: "",
                 trainingRoom: "Non",
                 size: "",
-                // manager: {
-                //     firstName: "",
-                //     lastName: "",
-                //     job: "",
-                //     email: "",
-                //     phone: ""
-                // }
+                departmentIds: [],
             });
             setIsEditMode(false);
         } catch (error) {
@@ -146,26 +147,42 @@ const Site = () => {
 
     const handleSearchChange = useCallback((value: string) => {
         setSearchValue(value);
-        // Réinitialiser la pagination à la première page lorsque la recherche change
         setCurrentPage(1);
     }, [setCurrentPage]);
 
     const renderers = {
+        departments: (_: any, row: SiteProps) => (
+            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                {row.departmentIds && row.departmentIds.length > 0 ? (
+                    getDepartmentNamesByIds(row.departmentIds.map(id => id.toString())).map((name, index) => (
+                        <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                        >
+                            {name}
+                        </span>
+                    ))
+                ) : (
+                    <span className="text-gray-400 text-sm">Aucun département</span>
+                )}
+            </div>
+        ),
         actions: (_: any, row: SiteProps) => (
-            <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}
-                                    deleteUrl={SITE_URLS.delete} viewUrl={SITE_URLS.view}
-                                    mutateUrl={SITE_URLS.mutate}
-                                    confirmMessage={`Êtes-vous sûr de vouloir supprimer le site ${row.label}  ?`}
-                                    customEditHandler={() => handleEditSite(row)}
+            <DynamicActionsRenderer
+                actions={ACTIONS_TO_SHOW}
+                row={row}
+                deleteUrl={SITE_URLS.delete}
+                viewUrl={SITE_URLS.view}
+                mutateUrl={SITE_URLS.mutate}
+                confirmMessage={`Êtes-vous sûr de vouloir supprimer le site ${row.label} ?`}
+                customEditHandler={() => handleEditSite(row)}
             />
         ),
     };
 
-    /******* Start Add Site ******/
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
         setFormData((prevFormData) => ({...prevFormData, [name]: value}));
-        // Clear error when field is updated
         if (errors[name]) {
             setErrors(prev => ({...prev, [name]: undefined}));
         }
@@ -174,42 +191,29 @@ const Site = () => {
     const handleSelectChange = useCallback((e: { name: string; value: string }) => {
         const {name, value} = e;
         setFormData((prevFormData) => ({...prevFormData, [name]: value}));
-        // Clear error when field is updated
         if (errors[name]) {
             setErrors(prev => ({...prev, [name]: undefined}));
         }
 
-        // Si trainingRoom est mis à "Non", vider le champ size
         if (name === "trainingRoom" && value === "Non") {
             setFormData(prevFormData => ({...prevFormData, size: ""}));
         }
     }, [errors]);
 
-    // const handleManagerChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    //     const {name, value} = e.target;
-    //     setFormData((prevFormData) => ({
-    //         ...prevFormData,
-    //         manager: {
-    //             ...prevFormData.manager,
-    //             [name]: value
-    //         }
-    //     }));
-    //     // Clear error when field is updated
-    //     if (errors[`manager.${name}`]) {
-    //         setErrors(prev => ({...prev, [`manager.${name}`]: undefined}));
-    //     }
-    // }, [errors]);
+    // 🆕 Gestionnaire pour le MultiSelectField
+    const handleDepartmentChange = useCallback((selectedNames: string[]) => {
+        const selectedIds = getDepartmentIdsByNames(selectedNames);
+        setFormData(prevFormData => ({
+            ...prevFormData,
+            departmentIds: selectedIds
+        }));
 
-    const openManagerForm = () => {
-        setManagerModalOpen(true);
-    };
-
-    const closeManagerForm = () => {
-        setManagerModalOpen(false);
-    };
+        if (errors.departmentIds) {
+            setErrors(prev => ({...prev, departmentIds: undefined}));
+        }
+    }, [getDepartmentIdsByNames, errors]);
 
     const handleSubmit = async () => {
-        // Basic validation example
         const newErrors: Record<string, string> = {};
 
         if (!formData.label.trim()) {
@@ -224,8 +228,7 @@ const Site = () => {
             newErrors.city = "La ville est requise";
         }
 
-        // Validation pour size seulement si trainingRoom est "Oui"
-        if (formData.trainingRoom === "Oui" && !formData.size === undefined || formData.size === null) {
+        if (formData.trainingRoom === "Oui" && (!formData.size || formData.size === "")) {
             newErrors.size = "La taille est requise pour une salle de formation";
         }
 
@@ -234,11 +237,12 @@ const Site = () => {
             return;
         }
 
-        // Création d'une copie des données pour la soumission
-        const submissionData = {...formData};
+        // 🆕 Préparation des données avec les IDs de départements
+        const submissionData = {
+            ...formData,
+            departmentIds: formData.departmentIds.map(id => parseInt(id))
+        };
 
-
-        // Proceed with form submission
         try {
             const url = isEditMode
                 ? `${SITE_URLS.edit}/${formData.id}`
@@ -261,19 +265,15 @@ const Site = () => {
 
             const json = await result.json();
             console.log("Success : ", json);
-            await mutate(); // Rafraîchir les données après un ajout réussi
+            await mutate();
         } catch (error) {
             console.error("Erreur:", error);
         }
 
-        console.log(submissionData);
-
         closeModal();
     };
-    /******* End Add Site ******/
 
-    /***** Start Edit Site ******/
-    const handleEditSite = (row) => {
+    const handleEditSite = (row: SiteProps) => {
         setFormData({
             id: row.id,
             code: row.code,
@@ -282,21 +282,13 @@ const Site = () => {
             city: row.city,
             phone: row.phone,
             trainingRoom: row.trainingRoom,
-            size: row.size,
-            // manager: {
-            //     firstName: "",
-            //     lastName: "",
-            //     job: "",
-            //     email: "",
-            //     phone: ""
-            // }
+            size: row.size.toString(),
+            departmentIds: row.departmentIds ? row.departmentIds.map(id => id.toString()) : [],
         });
         setIsEditMode(true);
         setModalOpen(true);
     };
-    /***** End Edit Site ******/
 
-        // Déterminer si le champ Size doit être affiché
     const showSizeField = formData.trainingRoom === "Oui";
 
     return (
@@ -312,8 +304,9 @@ const Site = () => {
                         onRightButtonClick={openModal}
                         filters={[]}
                         placeholderText={"Recherche de sites"}
+                        searchValue={searchValue}
+                        onSearchChange={handleSearchChange}
                     />
-                    {/* Bouton pour afficher/masquer la fenêtre modale */}
                     <ModalButton
                         headers={TABLE_HEADERS}
                         visibleColumns={visibleColumns}
@@ -321,7 +314,6 @@ const Site = () => {
                     />
                 </div>
 
-                {/* Tableau */}
                 <Table
                     data={paginatedData}
                     keys={TABLE_KEYS}
@@ -341,7 +333,6 @@ const Site = () => {
                     renderers={renderers}
                 />
 
-                {/* Add Modal */}
                 <Modal
                     isOpen={isModalOpen}
                     onClose={closeModal}
@@ -358,7 +349,6 @@ const Site = () => {
                     icon={undefined}
                 >
                     <div className="space-y-6">
-                        {/* Section Site */}
                         <div className="border rounded p-4">
                             <div className="bg-gray-100 px-2 py-1 mb-4 font-medium">Site</div>
                             <div className="grid grid-cols-1 gap-4">
@@ -413,70 +403,16 @@ const Site = () => {
                                         error={errors.phone}
                                     />
                                 </div>
+                                {/* 🆕 Nouveau champ de sélection multiple pour les départements */}
+                                <MultiSelectField
+                                    label="Départements"
+                                    options={departmentOptions}
+                                    value={getDepartmentNamesByIds(formData.departmentIds)}
+                                    onChange={handleDepartmentChange}
+                                    error={errors.departmentIds}
+                                />
                             </div>
                         </div>
-
-                        {/*Section Manager*/}
-                        {/*<div className="border rounded p-4">*/}
-                        {/*    <div className="bg-gray-100 px-2 py-1 mb-4 font-medium">Manager</div>*/}
-                        {/*    <div className="grid grid-cols-1 gap-4">*/}
-                        {/*        <div className="grid grid-cols-2 gap-4">*/}
-                        {/*            <InputField*/}
-                        {/*                label="First Name"*/}
-                        {/*                name="firstName"*/}
-                        {/*                value={formData.manager.firstName}*/}
-                        {/*                onChange={handleManagerChange}*/}
-                        {/*                error={errors['manager.firstName']}*/}
-                        {/*            />*/}
-                        {/*            <InputField*/}
-                        {/*                label="Email"*/}
-                        {/*                name="email"*/}
-                        {/*                type="email"*/}
-                        {/*                value={formData.manager.email}*/}
-                        {/*                onChange={handleManagerChange}*/}
-                        {/*                error={errors['manager.email']}*/}
-                        {/*            />*/}
-                        {/*        </div>*/}
-                        {/*        <div className="grid grid-cols-2 gap-4">*/}
-                        {/*            <InputField*/}
-                        {/*                label="Last Name"*/}
-                        {/*                name="lastName"*/}
-                        {/*                value={formData.manager.lastName}*/}
-                        {/*                onChange={handleManagerChange}*/}
-                        {/*                error={errors['manager.lastName']}*/}
-                        {/*            />*/}
-                        {/*            <InputField*/}
-                        {/*                label="Phone"*/}
-                        {/*                name="phone"*/}
-                        {/*                value={formData.manager.phone}*/}
-                        {/*                onChange={handleManagerChange}*/}
-                        {/*                error={errors['manager.phone']}*/}
-                        {/*            />*/}
-                        {/*        </div>*/}
-                        {/*        <div className="grid grid-cols-2 gap-4">*/}
-                        {/*            <InputField*/}
-                        {/*                label="Job"*/}
-                        {/*                name="job"*/}
-                        {/*                value={formData.manager.job}*/}
-                        {/*                onChange={handleManagerChange}*/}
-                        {/*                error={errors['manager.job']}*/}
-                        {/*            />*/}
-                        {/*            <div className="flex justify-end items-center">*/}
-                        {/*                <button*/}
-                        {/*                    className="flex items-center text-blue-500 hover:text-blue-700"*/}
-                        {/*                    onClick={openManagerForm}*/}
-                        {/*                    type="button"*/}
-                        {/*                >*/}
-                        {/*                    <div*/}
-                        {/*                        className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">*/}
-                        {/*                        <span>+</span>*/}
-                        {/*                    </div>*/}
-                        {/*                    Add new Manager*/}
-                        {/*                </button>*/}
-                        {/*            </div>*/}
-                        {/*        </div>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
                     </div>
                 </Modal>
             </div>

@@ -19,7 +19,7 @@ const ModalInformation: React.FC<ModalInformationProps> = ({ isOpen, onClose, me
                 <div className="flex justify-end">
                     <button
                         onClick={onClose}
-                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        className="bg-grayz-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                     >
                         Fermer
                     </button>

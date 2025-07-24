@@ -24,13 +24,21 @@ export interface GroupsProps {
 
 export interface SiteProps {
     id: number;
+    companyId: number;
     code: string;
     label: string;
     address: string;
     city: string;
     phone: string;
-    trainingRoom: boolean;
-    // size: number;
+    trainingRoom: "Oui" | "Non";
+    size: number;
+    departmentIds?: number[]; // 🆕 Ajout des IDs de départements
+    departments?: DepartmentProps[]; // 🆕 Optionnel pour l'affichage enrichi
+}
+
+// 🆕 Nouveau type pour les sites avec départements complets
+export interface SiteWithDepartmentsProps extends Omit<SiteProps, 'departments'> {
+    departments: DepartmentProps[];
 }
 
 export interface DepartmentProps {
