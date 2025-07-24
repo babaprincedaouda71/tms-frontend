@@ -22,6 +22,7 @@ import SearchFilterAddBar from "@/components/SearchFilterAddBar";
 import ModalButton from "@/components/ModalButton";
 import Table from "@/components/Tables/Table/index";
 import {handleSort} from "@/utils/sortUtils";
+import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
 const TABLE_HEADERS = ["Code", "Nom", "Prénoms", "Poste", "Niveau", "Manager", "Département", "Sélection"];
 const TABLE_KEYS = ["code", "firstName", "lastName", "poste", "level", "manager", "department", "selection"];
@@ -32,8 +33,8 @@ interface FormData {
     instructions: string;
     site: number[];
     department: number[];
-    questionnaire: string[]; // Toujours les IDs des questionnaires
-    selectedTypes: string[]; // NOUVEAU : Types sélectionnés par l'utilisateur
+    questionnaire: string[];
+    selectedTypes: string[];
     participantIds: number[];
 }
 
@@ -50,7 +51,7 @@ const Index = () => {
         site: [],
         department: [],
         questionnaire: [],
-        selectedTypes: [], // NOUVEAU
+        selectedTypes: [],
         participantIds: [],
     });
     const [errors, setErrors] = useState({});
@@ -61,8 +62,6 @@ const Index = () => {
 
     const {data: sitesData} = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
     const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
-
-    // MODIFICATION : Utiliser fetchAllByType au lieu de mutate
     const {data: questionnairesData} = useSWR<EvaluationsByTypeProps[]>(QUESTIONNAIRE_URLS.fetchAllByType, fetcher);
 
     const {data: campaignData} = useSWR<UpdateCampaignProps>(
@@ -70,7 +69,33 @@ const Index = () => {
         fetcher
     );
 
-    // NOUVEAU : Fonction pour convertir les IDs de questionnaires en types
+    // 🆕 Utilisation du hook pour le filtrage intelligent des départements
+    const {
+        departmentOptions,
+        getDisplayNamesByIds,
+        getIdsByDisplayNames,
+        cleanSelectedDepartments,
+        hasAvailableDepartments
+    } = useSiteDepartmentFilter({
+        sitesData,
+        departmentsData,
+        selectedSiteIds: formData.site
+    });
+
+    // 🆕 Nettoyage automatique des départements quand les sites changent
+    useEffect(() => {
+        if (formData.site.length > 0 && formData.department.length > 0) {
+            const cleanedDepartments = cleanSelectedDepartments(formData.department);
+            if (cleanedDepartments.length !== formData.department.length) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: cleanedDepartments
+                }));
+            }
+        }
+    }, [formData.site, cleanSelectedDepartments, formData.department]);
+
+    // Fonction pour convertir les IDs de questionnaires en types
     const getTypesFromQuestionnaireIds = useMemo(() => {
         return (questionnaireIds: string[]): string[] => {
             if (!questionnairesData || !questionnaireIds.length) return [];
@@ -89,7 +114,7 @@ const Index = () => {
         };
     }, [questionnairesData]);
 
-    // NOUVEAU : Fonction pour convertir les types en IDs de questionnaires par défaut
+    // Fonction pour convertir les types en IDs de questionnaires par défaut
     const getDefaultQuestionnaireIdsFromTypes = useMemo(() => {
         return (types: string[]): string[] => {
             if (!questionnairesData || !types.length) return [];
@@ -119,7 +144,7 @@ const Index = () => {
                 site: campaignData.siteIds || [],
                 department: campaignData.departmentIds || [],
                 questionnaire: campaignData.questionnaireIds || [],
-                selectedTypes: types, // NOUVEAU : Pré-remplir les types
+                selectedTypes: types,
                 participantIds: campaignData.participantIds || [],
             });
         } else if (!isEditMode) {
@@ -129,7 +154,7 @@ const Index = () => {
                 site: [],
                 department: [],
                 questionnaire: [],
-                selectedTypes: [], // NOUVEAU
+                selectedTypes: [],
                 participantIds: [],
             });
         }
@@ -140,15 +165,10 @@ const Index = () => {
         return sitesData ? sitesData.map(site => ({label: site.label, id: site.id})) : [];
     }, [sitesData]);
 
-    const departmentsOptionsFormatted = useMemo(() => {
-        return departmentsData ? departmentsData.map(dept => ({label: dept.name, id: dept.id})) : [];
-    }, [departmentsData]);
-
-    // MODIFICATION : Options des types au lieu des questionnaires individuels
+    // Options des types au lieu des questionnaires individuels
     const typeOptionsFormatted = useMemo(() => {
         if (!questionnairesData) return [];
 
-        // Filtrer pour ne garder que les types qui ont au moins un questionnaire par défaut
         return questionnairesData
             .filter(typeData =>
                 typeData.questionnaires &&
@@ -211,7 +231,7 @@ const Index = () => {
             instructions: formData.instructions,
             siteIds: formData.site,
             departmentIds: formData.department,
-            questionnaireIds: formData.questionnaire, // Toujours envoyer les IDs des questionnaires
+            questionnaireIds: formData.questionnaire,
             participantIds: formData.participantIds,
         };
 
@@ -270,9 +290,8 @@ const Index = () => {
         },
     };
 
-    // MODIFICATION : Gestion spéciale pour la sélection de types
+    // Gestion spéciale pour la sélection de types
     const handleTypeMultiSelectChange = (selectedTypes: string[]) => {
-        // Convertir les types sélectionnés en IDs de questionnaires par défaut
         const questionnaireIds = getDefaultQuestionnaireIdsFromTypes(selectedTypes);
 
         setFormData(prev => ({
@@ -284,9 +303,10 @@ const Index = () => {
         setErrors(prevErrors => ({...prevErrors, questionnaire: ""}));
     };
 
-    // Gestion des changements dans les autres MultiSelect
+    // 🆕 Gestion modifiée des changements dans les MultiSelect
     const handleMultiSelectChange = (name: keyof FormData, selectedLabels: string[]) => {
         let selectedIds: number[] = [];
+
         switch (name) {
             case "site":
                 selectedIds = selectedLabels
@@ -294,13 +314,13 @@ const Index = () => {
                     .filter((id): id is number => id !== undefined);
                 break;
             case "department":
-                selectedIds = selectedLabels
-                    .map(label => departmentsData?.find(dept => dept.name === label)?.id)
-                    .filter((id): id is number => id !== undefined);
+                // 🆕 Utilisation du hook pour convertir les noms d'affichage en IDs
+                selectedIds = getIdsByDisplayNames(selectedLabels);
                 break;
             default:
                 break;
         }
+
         setFormData(prev => ({
             ...prev,
             [name]: selectedIds,
@@ -348,18 +368,28 @@ const Index = () => {
                         value={formData.site.map(id => sitesData?.find(s => s.id === id)?.label || '')}
                         onChange={(values) => handleMultiSelectChange("site", values)}
                     />
-                    <MultiSelectField
-                        options={departmentsOptionsFormatted.map(opt => opt.label)}
-                        label="Département"
-                        value={formData.department.map(id => departmentsData?.find(d => d.id === id)?.name || '')}
-                        onChange={(values) => handleMultiSelectChange("department", values)}
-                    />
-                    {/* MODIFICATION : MultiSelect des types au lieu des questionnaires individuels */}
+
+                    {/* 🆕 Champ Département avec filtrage intelligent */}
+                    <div className="relative">
+                        <MultiSelectField
+                            options={departmentOptions}
+                            label="Département"
+                            value={getDisplayNamesByIds(formData.department)}
+                            onChange={(values) => handleMultiSelectChange("department", values)}
+                        />
+                        {/* 🆕 Indicateur visuel optionnel si aucun département disponible */}
+                        {formData.site.length > 0 && !hasAvailableDepartments && (
+                            <p className="text-sm text-gray-500 mt-1">
+                                Aucun département disponible pour les sites sélectionnés
+                            </p>
+                        )}
+                    </div>
+
                     <MultiSelectField
                         options={typeOptionsFormatted}
                         label="Type de questionnaire"
-                        value={formData.selectedTypes} // Afficher les types sélectionnés
-                        onChange={handleTypeMultiSelectChange} // Utiliser la fonction spéciale
+                        value={formData.selectedTypes}
+                        onChange={handleTypeMultiSelectChange}
                     />
                 </div>
 

@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useMemo, useState} from "react";
+import React, {ChangeEvent, useEffect, useMemo, useState} from "react";
 import useSWR from "swr";
 import {DepartmentProps, DomainProps, SiteProps} from "@/types/dataTypes";
 import {DEPARTMENT_URLS, DOMAIN_URLS, MY_REQUESTS_URLS, SITE_URLS} from "@/config/urls";
@@ -9,6 +9,7 @@ import TextAreaField from "@/components/FormComponents/TextAreaField";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useAuth, UserRole} from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
 interface FormData {
     theme: string;
@@ -43,6 +44,34 @@ const AddRequestComponent: React.FC = () => {
     const {data: domainsData} = useSWR<DomainProps[]>(DOMAIN_URLS.mutate, fetcher);
     const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
 
+    // 🆕 Utilisation du hook pour le filtrage intelligent des départements
+    // Note: Conversion du site unique en tableau pour la compatibilité avec le hook
+    const selectedSiteIds = formData.site ? [formData.site] : [];
+
+    const {
+        filteredDepartments,
+        hasAvailableDepartments
+    } = useSiteDepartmentFilter({
+        sitesData,
+        departmentsData,
+        selectedSiteIds
+    });
+
+    // 🆕 Nettoyage automatique du département quand le site change
+    useEffect(() => {
+        if (formData.site && formData.department) {
+            // Vérifier si le département sélectionné est encore valide pour le site choisi
+            const isDepartmentValid = filteredDepartments.some(dept => dept.id === formData.department);
+
+            if (!isDepartmentValid) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: null
+                }));
+            }
+        }
+    }, [formData.site, filteredDepartments, formData.department]);
+
     const sitesOptionsFormatted = useMemo(() => {
         if (sitesData) {
             return sitesData.map(site => ({label: site.label, id: site.id}));
@@ -57,40 +86,46 @@ const AddRequestComponent: React.FC = () => {
         return [];
     }, [domainsData]);
 
+    // 🆕 Options des départements filtrées selon le site sélectionné
     const departmentsOptionsFormatted = useMemo(() => {
-        if (departmentsData) {
-            return departmentsData.map(dept => ({label: dept.name, id: dept.id}));
-        }
-        return [];
-    }, [departmentsData]);
+        return filteredDepartments.map(dept => ({
+            label: dept.displayName, // Format: "Département (Site)"
+            id: dept.id
+        }));
+    }, [filteredDepartments]);
 
     const handleChangeCustomSelect = (event: { name: string; value: string }) => {
         const {name, value} = event;
         let selectedId: number | null = null;
+
         switch (name) {
             case "domain":
                 selectedId = domainsData?.find(domain => domain.name === value)?.id || null;
                 break;
             case "department":
-                selectedId = departmentsData?.find(department => department.name === value)?.id || null;
+                // 🆕 Recherche par displayName au lieu de name
+                selectedId = filteredDepartments?.find(dept => dept.displayName === value)?.id || null;
                 break;
             case "site":
-                selectedId = sitesData.find(site => site.label === value)?.id || null;
+                selectedId = sitesData?.find(site => site.label === value)?.id || null;
                 break;
             case "learningMethod":
                 setFormData((prevFormData) => ({
                     ...prevFormData,
                     learningMode: value,
                 }));
-                return; // Exit the function early since we've handled the update
+                setErrors(prevErrors => ({...prevErrors, learningMode: ""}));
+                return;
             default:
                 selectedId = parseInt(value, 10) || null;
                 break;
         }
+
         setFormData((prevFormData) => ({
             ...prevFormData,
             [name]: selectedId,
         }));
+        setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -105,10 +140,38 @@ const AddRequestComponent: React.FC = () => {
     }
 
     const handleSubmit = async () => {
+        // 🆕 Validation basique
+        let isValid = true;
+        const newErrors: Partial<Record<keyof FormData | 'destination', string>> = {};
+
+        if (!formData.theme.trim()) {
+            newErrors.theme = "Le titre de la formation est obligatoire";
+            isValid = false;
+        }
+
+        if (!formData.domain) {
+            newErrors.domain = "Le domaine est obligatoire";
+            isValid = false;
+        }
+
+        if (!formData.wishDate) {
+            newErrors.wishDate = "La date souhaitée est obligatoire";
+            isValid = false;
+        }
+
+        setErrors(newErrors);
+
+        if (!isValid) {
+            return;
+        }
+
         const siteToSend = formData.site ? sitesData?.find(site => site.id === formData.site) : null;
         const formattedSite = siteToSend ? siteToSend.label : null;
 
-        const departmentToSend = formData.department ? departmentsData?.find(dpt => dpt.id === formData.department) : null;
+        // 🆕 Récupération du département depuis filteredDepartments pour avoir le nom correct
+        const departmentToSend = formData.department
+            ? filteredDepartments?.find(dpt => dpt.id === formData.department)
+            : null;
         const formattedDepartment = departmentToSend ? departmentToSend.name : null;
 
         const domainToSend = formData.domain ? domainsData?.find(domain => domain.id === formData.domain) : null;
@@ -121,6 +184,7 @@ const AddRequestComponent: React.FC = () => {
                 managerId: user.managerId
             }
             : null;
+
         const dataToSend = {
             year: formData.year,
             domain: formattedDomain,
@@ -142,7 +206,7 @@ const AddRequestComponent: React.FC = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(dataToSend), // <---- ENVOIE L'OBJET FORMATÉ
+                body: JSON.stringify(dataToSend),
             });
 
             if (!result.ok) {
@@ -158,6 +222,13 @@ const AddRequestComponent: React.FC = () => {
         } catch (error) {
             console.error("Erreur:", error);
         }
+    };
+
+    // 🆕 Fonction pour obtenir la valeur affichée du département
+    const getDepartmentDisplayValue = (): string => {
+        if (!formData.department) return '';
+        const dept = filteredDepartments?.find(d => d.id === formData.department);
+        return dept ? dept.displayName : '';
     };
 
     return (
@@ -207,15 +278,31 @@ const AddRequestComponent: React.FC = () => {
                         className="lg:flex-1"
                         error={errors.site}
                     />
-                    <CustomSelect
-                        label={"Département"}
-                        options={departmentsOptionsFormatted.map(opt => opt.label)}
-                        name="department"
-                        value={departmentsData?.find(d => d.id === formData.department)?.name || ''}
-                        onChange={handleChangeCustomSelect}
-                        className="lg:flex-1"
-                        error={errors.department}
-                    />
+
+                    {/* 🆕 Département avec filtrage intelligent et indicateur visuel */}
+                    <div className="relative">
+                        <CustomSelect
+                            label={"Département"}
+                            options={departmentsOptionsFormatted.map(opt => opt.label)}
+                            name="department"
+                            value={getDepartmentDisplayValue()}
+                            onChange={handleChangeCustomSelect}
+                            className="lg:flex-1"
+                            error={errors.department}
+                        />
+                        {/* 🆕 Indicateurs visuels */}
+                        {formData.site && !hasAvailableDepartments && (
+                            <p className="text-sm text-gray-500 mt-1">
+                                Aucun département disponible pour le site sélectionné
+                            </p>
+                        )}
+                        {!formData.site && (
+                            <p className="text-sm text-gray-400 mt-1">
+                                Sélectionnez d'abord un site pour voir les départements disponibles
+                            </p>
+                        )}
+                    </div>
+
                     <CustomSelect
                         label={"Mode de formation"}
                         options={["Présentiel", "A distance", "Hybride"]}
