@@ -8,6 +8,7 @@ import {GroupData} from '../add-group';
 import Alert from '@/components/Alert';
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import CustomDatePicker from "@/components/FormComponents/CustomDatePicker";
+import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
 type UUID = string
 
@@ -16,12 +17,11 @@ interface PlanningProps {
     trainingId: string | UUID | string[] | undefined;
     siteData: SiteProps[] | undefined;
     departmentData: DepartmentProps[] | undefined;
-    groupData?: GroupData; // Remplacez par le type approprié si nécessaire
+    groupData?: GroupData;
     isEditMode?: boolean;
-    onGroupDataUpdated: (newGroupData: GroupData) => void; // Updated prop
+    onGroupDataUpdated: (newGroupData: GroupData) => void;
 }
 
-// Définis un type ou une interface pour l'objet errors
 interface FormErrors {
     fromDate?: string;
     toDate?: string;
@@ -30,7 +30,6 @@ interface FormErrors {
     fromAfternoon?: string;
     toAfternoon?: string;
     general?: string;
-    // Ajoute ici les autres champs pour lesquels tu pourrais avoir des erreurs
 }
 
 interface FormData {
@@ -38,7 +37,7 @@ interface FormData {
     department: number[];
     location: string;
     city: string;
-    dates: string[]; // Liste de dates
+    dates: string[];
 }
 
 const Planning: React.FC<PlanningProps> = ({
@@ -51,10 +50,11 @@ const Planning: React.FC<PlanningProps> = ({
                                                onGroupDataUpdated
                                            }) => {
     const {navigateTo} = useRoleBasedNavigation();
-    // état pour gérer les alertes
+
+    // État pour gérer les alertes
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
-    const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success'); // Type de l'alerte
+    const [alertType, setAlertType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
 
     const handleCloseAlert = () => {
         setShowAlert(false);
@@ -62,7 +62,6 @@ const Planning: React.FC<PlanningProps> = ({
     };
 
     const [formData, setFormData] = useState<FormData>(() => {
-        // Initialiser avec les données du groupe si en mode édition
         return {
             site: [],
             department: [],
@@ -71,19 +70,39 @@ const Planning: React.FC<PlanningProps> = ({
             dates: [],
         };
     });
+
+    // 🆕 Utilisation du hook pour le filtrage intelligent
+    const {
+        departmentOptions,
+        getDisplayNamesByIds,
+        getIdsByDisplayNames,
+        cleanSelectedDepartments,
+        hasAvailableDepartments
+    } = useSiteDepartmentFilter({
+        sitesData: siteData,
+        departmentsData: departmentData,
+        selectedSiteIds: formData.site
+    });
+
+    // 🆕 Nettoyage automatique des départements quand les sites changent
+    useEffect(() => {
+        if (formData.site.length > 0 && formData.department.length > 0) {
+            const cleanedDepartments = cleanSelectedDepartments(formData.department);
+            if (cleanedDepartments.length !== formData.department.length) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: cleanedDepartments
+                }));
+            }
+        }
+    }, [formData.site, cleanSelectedDepartments, formData.department]);
+
     const sitesOptionsFormatted = useMemo(() => {
         if (siteData) {
             return siteData.map(site => ({label: site.label, id: site.id}));
         }
         return [];
     }, [siteData]);
-    const departmentsOptionsFormatted = useMemo(() => {
-        if (departmentData) {
-            return departmentData.map(dept => ({label: dept.name, id: dept.id}));
-        }
-        return [];
-    }, [departmentData]);
-
 
     useEffect(() => {
         if (trainingId) {
@@ -99,7 +118,6 @@ const Planning: React.FC<PlanningProps> = ({
                     }
 
                     const trainingData = await response.json();
-
                     console.log("trainingData : ", trainingData)
 
                     if (isEditMode || groupData) {
@@ -112,61 +130,58 @@ const Planning: React.FC<PlanningProps> = ({
                         });
 
                         setFormValues({
-                            fromDate: "", // tu peux le laisser vide ou l'initialiser selon besoin
-                            toDate: "",   // idem
+                            fromDate: "",
+                            toDate: "",
                             fromMorning: groupData?.morningStartTime || "",
                             toMorning: groupData?.morningEndTime || "",
                             fromAfternoon: groupData?.afternoonStartTime || "",
                             toAfternoon: groupData?.afternoonEndTime || "",
                         });
-                    }
-                    // Sinon, initialiser avec des valeurs par défaut
-                    else {
+                    } else {
                         setFormData({
                             site: trainingData.site?.map(site => site.id) || [],
                             department: trainingData.department?.map(dept => dept.id) || [],
                             location: "",
                             city: "",
-                            dates: [], // Assurez-vous que c'est un tableau de chaînes
-
+                            dates: [],
                         });
                     }
 
                 } catch (error) {
                     console.error("Erreur lors de la récupération des données de la formation :", error);
-                    // Gérer l'erreur ici, par exemple afficher un message à l'utilisateur
                 }
             };
 
             fetchtrainingData();
         }
     }, [trainingId]);
+
     const [formValues, setFormValues] = useState({
-        fromDate: "", // Ajout pour la date unique ou la date de début
-        toDate: "",   // Ajout pour la date de fin (si applicable)
+        fromDate: "",
+        toDate: "",
         fromMorning: "",
         fromAfternoon: "",
         toMorning: "",
         toAfternoon: "",
     });
 
-    const [errors, setErrors] = useState<FormErrors>({}); // Utilise le type FormErrors ici
+    const [errors, setErrors] = useState<FormErrors>({});
 
     const handleChange = (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormValues({...formValues, [name]: e.target.value});
-        // Effacer l'erreur pour ce champ si elle existe
         setErrors(prevErrors => ({...prevErrors, [name]: ''}));
     };
 
     const handleChangeSelect = (event) => {
         const {name, value} = event;
         setFormValues(prevFormData => ({...prevFormData, [name]: value}));
-        // Effacer l'erreur pour ce champ si elle existe
         setErrors(prevErrors => ({...prevErrors, [name]: ''}));
     };
 
+    // 🆕 Gestionnaire modifié pour les MultiSelectField
     const handleMultiSelectChange = (name: keyof FormData, selectedLabels: string[]) => {
         let selectedIds: number[] = [];
+
         switch (name) {
             case "site":
                 selectedIds = selectedLabels
@@ -174,13 +189,13 @@ const Planning: React.FC<PlanningProps> = ({
                     .filter((id): id is number => id !== undefined);
                 break;
             case "department":
-                selectedIds = selectedLabels
-                    .map(name => departmentData?.find(dept => dept.name === name)?.id)
-                    .filter((id): id is number => id !== undefined);
+                // 🆕 Utilisation du hook pour convertir les noms d'affichage en IDs
+                selectedIds = getIdsByDisplayNames(selectedLabels);
                 break;
             default:
                 break;
         }
+
         setFormData(prev => ({...prev, [name]: selectedIds}));
         setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
@@ -188,6 +203,7 @@ const Planning: React.FC<PlanningProps> = ({
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const {name, value} = e.target;
         let newValue = value;
+
         if (name === "nbrGroup") {
             if (value === "0") {
                 return;
@@ -203,16 +219,15 @@ const Planning: React.FC<PlanningProps> = ({
             const newDates = [...formData.dates];
             newDates[index] = value;
             setFormData(prev => ({...prev, dates: newDates}));
-            // Gérer les erreurs spécifiques aux dates si nécessaire
             return;
         }
+
         setFormData(prev => ({...prev, [name]: newValue}));
         setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const addDate = () => {
         setFormData(prev => ({...prev, dates: [...prev.dates, '']}));
-        // Réinitialiser les erreurs de date lors de l'ajout
         setErrors(prevErrors => ({...prevErrors, fromDate: undefined}));
     };
 
@@ -231,29 +246,6 @@ const Planning: React.FC<PlanningProps> = ({
         setFormData(prev => ({...prev, dates: newDates}));
         setErrors(prevErrors => ({...prevErrors, fromDate: ""}));
     };
-
-    /* const validateForm = () => {
-        let isValid = true;
-        const newErrors: FormErrors = {}; // Utilise le type FormErrors ici
-
-        if (!formData.type) {
-            newErrors.type = 'Le type de formation est obligatoire.';
-            isValid = false;
-        }
-        if (!formValues.fromDate) {
-            newErrors.fromDate = 'La date de début est obligatoire.';
-            isValid = false;
-        }
-        if (!formValues.fromMorning || !formValues.toMorning) {
-            newErrors.fromMorning = 'Les horaires du matin sont obligatoires.';
-            newErrors.toMorning = 'Les horaires du matin sont obligatoires.';
-            isValid = false;
-        }
-        // ... autres validations
-
-        setErrors(newErrors);
-        return isValid;
-    }; */
 
     const handleSubmit = async () => {
         const sitesToSend = formData.site.map(id => {
@@ -277,6 +269,7 @@ const Planning: React.FC<PlanningProps> = ({
             afternoonStartTime: formValues.fromAfternoon,
             afternoonEndTime: formValues.toAfternoon,
         }
+
         console.log("Payload à envoyer :", payload);
 
         try {
@@ -284,7 +277,8 @@ const Planning: React.FC<PlanningProps> = ({
             const url = groupData
                 ? `${TRAINING_GROUPE_URLS.editGroupPlanning}/${groupData.id}`
                 : `${TRAINING_GROUPE_URLS.addGroupPlanning}/${trainingId}`;
-            const response = await fetch(url, { // Remplace '/api/groupes' par l'URL de ton API
+
+            const response = await fetch(url, {
                 method: groupData ? 'PUT' : 'POST',
                 credentials: 'include',
                 headers: {
@@ -294,10 +288,9 @@ const Planning: React.FC<PlanningProps> = ({
             });
 
             if (response.ok) {
-                // Gérer le succès (redirection, message, etc.)
-                const responseData: GroupData = await response.json(); // Type assertion
-                onGroupDataUpdated(responseData); // Calling the prop function with the response data
-                // Afficher l'alerte de succès
+                const responseData: GroupData = await response.json();
+                onGroupDataUpdated(responseData);
+
                 setAlertMessage('Mise à jour effectuée avec succès !');
                 setAlertType('success');
                 setShowAlert(true);
@@ -306,20 +299,18 @@ const Planning: React.FC<PlanningProps> = ({
                     query: {trainingId: trainingId, groupId: responseData.id},
                 });
             } else {
-                // Gérer les erreurs de l'API
                 const errorData = await response.json();
                 console.error('Erreur lors de l\'enregistrement du groupe:', errorData);
-                setErrors(errorData.errors || {general: 'Une erreur est survenue lors de l\'enregistrement.'}); // Adapter en fonction de la structure de l'erreur de l'API
+                setErrors(errorData.errors || {general: 'Une erreur est survenue lors de l\'enregistrement.'});
             }
         } catch (error) {
             console.error('Erreur lors de l\'envoi de la requête:', error);
             setErrors({general: 'Erreur de connexion au serveur.'});
         }
-
     };
 
     return (
-        <form onSubmit={(e) => e.preventDefault()}> {/* Empêcher la soumission par défaut du formulaire */}
+        <div onSubmit={(e) => e.preventDefault()}>
             {showAlert && (
                 <Alert
                     message={alertMessage}
@@ -334,12 +325,30 @@ const Planning: React.FC<PlanningProps> = ({
                     value={formData.site.map(id => siteData?.find(s => s.id === id)?.label || '')}
                     onChange={(values) => handleMultiSelectChange("site", values)}
                 />
-                <MultiSelectField
-                    options={departmentsOptionsFormatted.map(opt => opt.label)}
-                    label="Département"
-                    value={formData.department.map(id => departmentData?.find(d => d.id === id)?.name || '')}
-                    onChange={(values) => handleMultiSelectChange("department", values)}
-                />
+
+                {/* 🆕 Champ Département avec filtrage intelligent */}
+                <div className="relative">
+                    <MultiSelectField
+                        options={departmentOptions}
+                        label="Département"
+                        value={getDisplayNamesByIds(formData.department)}
+                        onChange={(values) => handleMultiSelectChange("department", values)}
+                    />
+
+                    {/* 🆕 Messages informatifs */}
+                    {formData.site.length === 0 && (
+                        <div className="absolute -bottom-6 left-0 text-xs text-gray-500 italic">
+                            💡 Sélectionnez d'abord un ou plusieurs sites pour filtrer les départements
+                        </div>
+                    )}
+
+                    {formData.site.length > 0 && !hasAvailableDepartments && (
+                        <div className="absolute -bottom-6 left-0 text-xs text-amber-600 italic">
+                            ⚠️ Aucun département disponible pour les sites sélectionnés
+                        </div>
+                    )}
+                </div>
+
                 <InputField
                     label="Lieu"
                     name="location"
@@ -352,11 +361,11 @@ const Planning: React.FC<PlanningProps> = ({
                     value={formData.city}
                     onChange={handleInputChange}
                 />
+
                 {/* Champ pour la date */}
                 <div className="md:col-span-1">
                     <div className="mb-2">
-                        <div
-                            className="flex items-center text-formInputTextColor font-semibold text-xs md:text-sm lg:text-base w-full">
+                        <div className="flex items-center text-formInputTextColor font-semibold text-xs md:text-sm lg:text-base w-full">
                             <label className="flex-[1] block break-words font-tHead">
                                 Date(s)
                             </label>
@@ -433,21 +442,23 @@ const Planning: React.FC<PlanningProps> = ({
                     errorTo={errors.toMorning}
                 />
             </div>
+
             {/* Affichage des erreurs générales */}
             {errors.general && (
                 <div className="text-redShade-500 mt-2">{errors.general}</div>
             )}
+
             {/* Bouton Enregistrer */}
             <div className="flex justify-end mt-4">
                 <button
-                    type='submit' // Changer le type en 'submit' pour utiliser l'événement onSubmit du formulaire
+                    type='button'
                     className="px-6 py-2 bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd text-white rounded-md hover:bg-violet-700 transition-colors"
-                    onClick={handleSubmit} // Appeler la fonction handleSubmit au clic
+                    onClick={handleSubmit}
                 >
                     Enregistrer
                 </button>
             </div>
-        </form>
+        </div>
     )
 }
 

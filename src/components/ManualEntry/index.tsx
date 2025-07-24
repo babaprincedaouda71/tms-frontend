@@ -1,11 +1,11 @@
-import React, { ChangeEvent, useMemo, useState } from "react";
+import React, {ChangeEvent, useEffect, useMemo, useState} from "react";
 import InputField from "../FormComponents/InputField";
 import TextAreaField from "../FormComponents/TextAreaField";
 import MultiSelectField from "../FormComponents/MultiselectField";
 import Modal from "../Modal";
 import RadioButton from "../FormComponents/RadioButton";
 import CustomSelect from "../FormComponents/CustomSelect";
-import { DepartmentProps, DomainProps, QualificationProps, SiteProps, StrategicAxes } from "@/types/dataTypes";
+import {DepartmentProps, DomainProps, QualificationProps, SiteProps, StrategicAxes} from "@/types/dataTypes";
 import {
     DEPARTMENT_URLS,
     DOMAIN_URLS,
@@ -15,10 +15,10 @@ import {
     STRATEGIC_AXES_URLS
 } from "@/config/urls";
 import useSWR from "swr";
-import { fetcher } from "@/services/api";
-import router from "next/router";
+import {fetcher} from "@/services/api";
 import Switch from "@/components/FormComponents/Switch";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
 interface FormData {
     axe: number | null;
@@ -59,64 +59,82 @@ const ManualEntry = () => {
     const [selectedOptionDestination, setSelectedOptionDestination] = useState("");
     const [errors, setErrors] = useState<Partial<Record<keyof FormData | 'destination', string>>>({});
 
-    const { data: axesData } = useSWR<StrategicAxes[]>(STRATEGIC_AXES_URLS.fetchAll, fetcher);
-    const { data: sitesData } = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
-    const { data: domainsData } = useSWR<DomainProps[]>(DOMAIN_URLS.mutate, fetcher);
-    const { data: departmentsData } = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
-    const { data: qualificationsData } = useSWR<QualificationProps[]>(QUALIFICATION_URLS.mutate, fetcher);
+    const {data: axesData} = useSWR<StrategicAxes[]>(STRATEGIC_AXES_URLS.fetchAll, fetcher);
+    const {data: sitesData} = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
+    const {data: domainsData} = useSWR<DomainProps[]>(DOMAIN_URLS.mutate, fetcher);
+    const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
+    const {data: qualificationsData} = useSWR<QualificationProps[]>(QUALIFICATION_URLS.mutate, fetcher);
+
+    // 🆕 Utilisation du hook pour le filtrage intelligent
+    const {
+        departmentOptions,
+        getDisplayNamesByIds,
+        getIdsByDisplayNames,
+        cleanSelectedDepartments,
+        hasAvailableDepartments
+    } = useSiteDepartmentFilter({
+        sitesData,
+        departmentsData,
+        selectedSiteIds: formData.site
+    });
+
+    // 🆕 Nettoyage automatique des départements quand les sites changent
+    useEffect(() => {
+        if (formData.site.length > 0 && formData.department.length > 0) {
+            const cleanedDepartments = cleanSelectedDepartments(formData.department);
+            if (cleanedDepartments.length !== formData.department.length) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: cleanedDepartments
+                }));
+            }
+        }
+    }, [formData.site, cleanSelectedDepartments, formData.department]);
 
     const axesOptionsFormatted = useMemo(() => {
         if (axesData) {
-            return axesData.map(axe => ({ label: axe.title, id: axe.id }));
+            return axesData.map(axe => ({label: axe.title, id: axe.id}));
         }
         return [];
     }, [axesData]);
 
     const sitesOptionsFormatted = useMemo(() => {
         if (sitesData) {
-            return sitesData.map(site => ({ label: site.label, id: site.id }));
+            return sitesData.map(site => ({label: site.label, id: site.id}));
         }
         return [];
     }, [sitesData]);
 
     const domainsOptionsFormatted = useMemo(() => {
         if (domainsData) {
-            return domainsData.map(domain => ({ label: domain.name, id: domain.id }));
+            return domainsData.map(domain => ({label: domain.name, id: domain.id}));
         }
         return [];
     }, [domainsData]);
 
     const qualificationsOptionsFormatted = useMemo(() => {
         if (qualificationsData) {
-            return qualificationsData.map(qual => ({ label: qual.type, id: qual.id }));
+            return qualificationsData.map(qual => ({label: qual.type, id: qual.id}));
         }
         return [];
     }, [qualificationsData]);
 
-    const departmentsOptionsFormatted = useMemo(() => {
-        if (departmentsData) {
-            return departmentsData.map(dept => ({ label: dept.name, id: dept.id }));
-        }
-        return [];
-    }, [departmentsData]);
-
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         let newValue = value;
         if (name === "nbrGroup") {
             if (value === "0") {
-                return; // Empêche la mise à jour de l'état si la valeur est "0"
+                return;
             }
-            // Assurez-vous que la valeur est un nombre entier positif
             const parsedValue = parseInt(value, 10);
             if (isNaN(parsedValue) || parsedValue < 1) {
-                newValue = "1"; // Réinitialise à "1" si ce n'est pas un nombre positif
+                newValue = "1";
             } else {
                 newValue = String(parsedValue);
             }
         }
-        setFormData(prev => ({ ...prev, [name]: newValue }));
-        setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+        setFormData(prev => ({...prev, [name]: newValue}));
+        setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const handleSwitchChange = (checked: boolean) => {
@@ -125,14 +143,16 @@ const ManualEntry = () => {
             csf: checked,
             csfPlanifie: checked ? prev.csfPlanifie : ''
         }));
-        setErrors(prevErrors => ({ ...prevErrors, csf: "" }));
+        setErrors(prevErrors => ({...prevErrors, csf: ""}));
         if (!checked) {
-            setErrors(prevErrors => ({ ...prevErrors, csfPlanifie: "" }));
+            setErrors(prevErrors => ({...prevErrors, csfPlanifie: ""}));
         }
     };
 
+    // 🆕 Gestionnaire modifié pour les MultiSelectField
     const handleMultiSelectChange = (name: keyof FormData, selectedLabels: string[]) => {
         let selectedIds: number[] = [];
+
         switch (name) {
             case "site":
                 selectedIds = selectedLabels
@@ -140,43 +160,43 @@ const ManualEntry = () => {
                     .filter((id): id is number => id !== undefined);
                 break;
             case "department":
-                selectedIds = selectedLabels
-                    .map(name => departmentsData?.find(dept => dept.name === name)?.id)
-                    .filter((id): id is number => id !== undefined);
+                // 🆕 Utilisation du hook pour convertir les noms d'affichage en IDs
+                selectedIds = getIdsByDisplayNames(selectedLabels);
                 break;
             default:
                 break;
         }
-        setFormData(prev => ({ ...prev, [name]: selectedIds }));
-        setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+
+        setFormData(prev => ({...prev, [name]: selectedIds}));
+        setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const handleChangeCustomSelect = (event: { name: string; value: string }) => {
-        const { name, value } = event;
+        const {name, value} = event;
         let selectedId: number | null = null;
+
         switch (name) {
             case "axe":
                 selectedId = axesData?.find(axe => axe.title === value)?.id || null;
-                setShowRestOfForm(selectedId !== null); // Afficher le reste du formulaire si un axe est sélectionné
+                setShowRestOfForm(selectedId !== null);
                 break;
             case "domain":
                 selectedId = domainsData?.find(domain => domain.name === value)?.id || null;
-                setShowRestOfForm(selectedId !== null); // Afficher le reste du formulaire si un axe est sélectionné
                 break;
             case "qualification":
                 selectedId = qualificationsData?.find(qual => qual.type === value)?.id || null;
                 break;
             case "type":
-                // Directly store the selected label for the "type" field
                 setFormData((prevFormData) => ({
                     ...prevFormData,
                     type: value,
                 }));
-                return; // Exit the function early since we've handled the update
+                return;
             default:
                 selectedId = parseInt(value, 10) || null;
                 break;
         }
+
         setFormData((prevFormData) => ({
             ...prevFormData,
             [name]: selectedId,
@@ -184,20 +204,12 @@ const ManualEntry = () => {
     };
 
     const handleSubmit = (e: React.FormEvent) => {
+        console.log("🚀 handleSubmit déclenché !");
         e.preventDefault();
         let isValid = true;
         const newErrors: Partial<Record<keyof FormData | 'destination', string>> = {};
 
-        const requiredFields: (keyof FormData)[] = [
-            "axe",
-            // "site",
-            // "domain",
-            // "nbrDay",
-            // "nbrGroup",
-            // "qualification",
-            // "department",
-            "theme",
-        ];
+        const requiredFields: (keyof FormData)[] = ["axe", "theme"];
 
         requiredFields.forEach(field => {
             if (!formData[field] || (Array.isArray(formData[field]) && formData[field].length === 0)) {
@@ -211,13 +223,16 @@ const ManualEntry = () => {
             isValid = false;
         }
 
+        console.log("📊 Validation :", {isValid, newErrors, formData});
         setErrors(newErrors);
 
         if (isValid) {
+            console.log("✅ Validation réussie, appel de handleSave");
             setSelectedOptionDestination("");
-            setErrors(prevErrors => ({ ...prevErrors, destination: "" }));
-            // openModal();
+            setErrors(prevErrors => ({...prevErrors, destination: ""}));
             handleSave();
+        } else {
+            console.log("❌ Validation échouée :", newErrors);
         }
     };
 
@@ -226,25 +241,22 @@ const ManualEntry = () => {
 
     const handleDestinationChange = (value: string) => {
         setSelectedOptionDestination(value);
-        setErrors(prevErrors => ({ ...prevErrors, destination: "" }));
+        setErrors(prevErrors => ({...prevErrors, destination: ""}));
     };
 
     const handleSave = async () => {
-        // if (!selectedOptionDestination) {
-        //     setErrors(prevErrors => ({...prevErrors, destination: "Veuillez choisir une destination"}));
-        // } else {
-        //     closeModal();
+        console.log("💾 handleSave démarré");
         const sitesToSend = formData.site.map(id => {
             const site = sitesData?.find(s => s.id === id);
-            return site ? { id: site.id, label: site.label } : null;
+            return site ? {id: site.id, label: site.label} : null;
         }).filter((site): site is { id: number; label: string } => site !== null);
 
         const domainToSend = formData.domain ? domainsData?.find(domain => domain.id === formData.domain) : null;
-        const formattedDomain = domainToSend ? { id: domainToSend.id, name: domainToSend.name } : null;
+        const formattedDomain = domainToSend ? {id: domainToSend.id, name: domainToSend.name} : null;
 
         const departmentsToSend = formData.department.map(id => {
             const dept = departmentsData?.find(d => d.id === id);
-            return dept ? { id: dept.id, name: dept.name } : null;
+            return dept ? {id: dept.id, name: dept.name} : null;
         }).filter((dept): dept is { id: number; name: string } => dept !== null);
 
         const qualificationToSend = formData.qualification ? qualificationsData?.find(qual => qual.id === formData.qualification) : null;
@@ -254,7 +266,7 @@ const ManualEntry = () => {
         } : null;
 
         const axeToSend = formData.axe ? axesData?.find(axe => axe.id === formData.axe) : null;
-        const formattedAxe = axeToSend ? { id: axeToSend.id, title: axeToSend.title } : null;
+        const formattedAxe = axeToSend ? {id: axeToSend.id, title: axeToSend.title} : null;
 
         const dataToSend = {
             axe: formattedAxe,
@@ -263,52 +275,53 @@ const ManualEntry = () => {
             domain: formattedDomain,
             qualification: formattedQualification,
             theme: formData.theme,
-            nbrDay: parseInt(formData.nbrDay, 10), // Assure-toi que c'est un nombre
+            nbrDay: parseInt(formData.nbrDay, 10),
             type: formData.type,
             nbrGroup: formData.nbrGroup,
             objective: formData.objective,
             content: formData.content,
-            csf: formData.csf ? "true" : "false", // Convertit le boolean en String attendu par le DTO (à vérifier côté backend si c'est bien un String)
+            csf: formData.csf ? "true" : "false",
             csfPlanifie: formData.csf ? formData.csfPlanifie : null,
         };
 
-        console.log("Données à envoyer : ", dataToSend);
+        console.log("📤 Données à envoyer :", dataToSend);
 
         try {
+            console.log("🌐 Envoi de la requête...");
             const result = await fetch(NEEDS_STRATEGIC_AXES_URLS.add, {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(dataToSend), // <---- ENVOIE L'OBJET FORMATÉ
+                body: JSON.stringify(dataToSend),
             });
+
+            console.log("📥 Réponse reçue :", result.status, result.statusText);
 
             if (!result.ok) {
                 const errorData = await result.json();
-                console.error("Erreur lors de l'envoi :", errorData);
+                console.error("❌ Erreur lors de l'envoi :", errorData);
                 return;
             }
 
             const json = await result.json();
-            console.log("Success : ", json);
+            console.log("✅ Success :", json);
 
+            console.log("🔄 Navigation vers /Needs/strategic-axes");
             await navigateTo("/Needs/strategic-axes");
         } catch (error) {
-            console.error("Erreur:", error);
+            console.error("💥 Erreur catch:", error);
         }
-        // }
     };
 
     const optionsDestination = [
-        { id: "option1", value: "catalogue", label: "Enregistrer dans le catalogue interne et le plan de formation" },
-        { id: "option2", value: "plan", label: "Enregistrer uniquement dans le plan de formation" },
+        {id: "option1", value: "catalogue", label: "Enregistrer dans le catalogue interne et le plan de formation"},
+        {id: "option2", value: "plan", label: "Enregistrer uniquement dans le plan de formation"},
     ];
 
     const handleChange = (event) => {
-        const { name, value } = event;
-
-        // Mettre à jour l'état formData avec la nouvelle valeur
+        const {name, value} = event;
         setFormData((prevFormData) => ({
             ...prevFormData,
             [name]: value,
@@ -326,10 +339,10 @@ const ManualEntry = () => {
         />
     ) : null;
 
-    const customIcon = <img src="/images/folder.svg" className="h-7 w-7" alt="Icône de dossier" />;
+    const customIcon = <img src="/images/folder.svg" className="h-7 w-7" alt="Icône de dossier"/>;
 
     return (
-        <form className="mx-auto bg-white font-title rounded-lg px-6 pb-14" onSubmit={handleSubmit}>
+        <div className="mx-auto bg-white font-title rounded-lg px-6 pb-14">
             <div className="flex flex-col lg:flex-row lg:space-x-44 justify-between items-center mb-4">
                 <h2 className="flex-[1] text-base md-custom:text-lg lg:text-xl font-bold text-center md:text-start">
                     Veuillez choisir l'axe à partir duquel vous souhaitez ajouter le thème
@@ -353,13 +366,18 @@ const ManualEntry = () => {
                         onChange={(values) => handleMultiSelectChange("site", values)}
                         error={errors.site}
                     />
-                    <MultiSelectField
-                        options={departmentsOptionsFormatted.map(opt => opt.label)}
-                        label="Département"
-                        value={formData.department.map(id => departmentsData?.find(d => d.id === id)?.name || '')}
-                        onChange={(values) => handleMultiSelectChange("department", values)}
-                        error={errors.department}
-                    />
+
+                    {/* 🆕 Champ Département avec filtrage intelligent */}
+                    <div className="relative">
+                        <MultiSelectField
+                            options={departmentOptions}
+                            label="Département"
+                            value={getDisplayNamesByIds(formData.department)}
+                            onChange={(values) => handleMultiSelectChange("department", values)}
+                            error={errors.department}
+                        />
+                    </div>
+
                     <CustomSelect
                         label={"Domaine"}
                         options={domainsOptionsFormatted.map(opt => opt.label)}
@@ -384,7 +402,6 @@ const ManualEntry = () => {
                         onChange={handleInputChange}
                         error={errors.nbrDay}
                     />
-
                     <CustomSelect
                         label={"Type"}
                         options={["Intra-entreprise", "Inter-entreprise"]}
@@ -446,20 +463,22 @@ const ManualEntry = () => {
             {showRestOfForm && (
                 <div className="mt-5 text-right text-xs md:text-sm lg:text-base">
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={handleSubmit}
                         className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl"
                     >
                         Enregistrer
                     </button>
                 </div>
             )}
+
             <Modal
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 title={"Sélection de la destination"}
                 subtitle={"Veuillez choisir la destination de ce nouveau besoin"}
                 actions={[
-                    { label: "Annuler", onClick: closeModal, className: "border" },
+                    {label: "Annuler", onClick: closeModal, className: "border"},
                     {
                         label: "Valider",
                         onClick: handleSave,
@@ -484,7 +503,7 @@ const ManualEntry = () => {
                     {errors.destination && <p className="text-red text-xs italic">{errors.destination}</p>}
                 </div>
             </Modal>
-        </form>
+        </div>
     );
 };
 

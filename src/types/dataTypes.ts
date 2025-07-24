@@ -22,6 +22,13 @@ export interface GroupsProps {
     }[] | null;
 }
 
+export interface DepartmentProps {
+    id: number;
+    companyId: number;
+    code: string;
+    name: string;
+}
+
 export interface SiteProps {
     id: number;
     companyId: number;
@@ -32,19 +39,13 @@ export interface SiteProps {
     phone: string;
     trainingRoom: "Oui" | "Non";
     size: number;
-    departmentIds?: number[]; // 🆕 Ajout des IDs de départements
+    departmentIds?: number[]; // 🆕 IDs des départements liés au site
     departments?: DepartmentProps[]; // 🆕 Optionnel pour l'affichage enrichi
 }
 
 // 🆕 Nouveau type pour les sites avec départements complets
 export interface SiteWithDepartmentsProps extends Omit<SiteProps, 'departments'> {
     departments: DepartmentProps[];
-}
-
-export interface DepartmentProps {
-    id: number;
-    code: string;
-    name: string;
 }
 
 export interface DomainProps {
@@ -766,24 +767,24 @@ export interface TrainingInvitationProps {
 export interface GroupeEvaluationProps {
     id: string;
     label: string;
-    description:string;
-    creationDate:string;
-    status:string;
+    description: string;
+    creationDate: string;
+    status: string;
 }
 
 export interface GroupeEvaluationDetailProps {
     id: number;
-    name:string;
-    firstName:string;
-    lastName:string;
-    cin:string;
-    cnss:string;
-    position:string;
-    groupe:string;
-    progress:number;
-    status:string;
-    isSentToManager:boolean;
-    isSentToAdmin:boolean;
+    name: string;
+    firstName: string;
+    lastName: string;
+    cin: string;
+    cnss: string;
+    position: string;
+    groupe: string;
+    progress: number;
+    status: string;
+    isSentToManager: boolean;
+    isSentToAdmin: boolean;
 }
 
 // 🆕 Interface pour les détails d'édition (correspondant au DTO backend)

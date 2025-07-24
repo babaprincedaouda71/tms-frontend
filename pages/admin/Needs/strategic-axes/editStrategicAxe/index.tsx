@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { DepartmentProps, DomainProps, QualificationProps, SiteProps, StrategicAxes } from "@/types/dataTypes";
+import React, {ChangeEvent, useEffect, useMemo, useState} from "react";
+import {DepartmentProps, DomainProps, QualificationProps, SiteProps, StrategicAxes} from "@/types/dataTypes";
 import {
     DEPARTMENT_URLS,
     DOMAIN_URLS,
@@ -9,14 +9,15 @@ import {
     STRATEGIC_AXES_URLS
 } from "@/config/urls";
 import useSWR from "swr";
-import { fetcher } from "@/services/api";
-import { useRouter } from "next/router";
+import {fetcher} from "@/services/api";
+import {useRouter} from "next/router";
 import Switch from "@/components/FormComponents/Switch";
 import CustomSelect from "@/components/FormComponents/CustomSelect";
 import TextAreaField from "@/components/FormComponents/TextAreaField";
 import InputField from "@/components/FormComponents/InputField";
 import MultiSelectField from "@/components/FormComponents/MultiselectField";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
 interface FormData {
     axe: number | null;
@@ -33,7 +34,6 @@ interface FormData {
     csf: boolean;
     csfPlanifie: string;
 }
-
 
 const EditStrategicAxe = () => {
     const {navigateTo, isCurrentPath, getPathWithoutRolePrefix} = useRoleBasedNavigation();
@@ -57,49 +57,68 @@ const EditStrategicAxe = () => {
     const [errors, setErrors] = useState<Partial<Record<keyof FormData | 'destination', string>>>({});
     const [isEditMode, setIsEditMode] = useState(false);
 
-    const { data: axesData } = useSWR<StrategicAxes[]>(STRATEGIC_AXES_URLS.fetchAll, fetcher);
-    const { data: sitesData } = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
-    const { data: domainsData } = useSWR<DomainProps[]>(DOMAIN_URLS.mutate, fetcher);
-    const { data: qualificationsData } = useSWR<QualificationProps[]>(QUALIFICATION_URLS.mutate, fetcher);
-    const { data: departmentsData } = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
+    const {data: axesData} = useSWR<StrategicAxes[]>(STRATEGIC_AXES_URLS.fetchAll, fetcher);
+    const {data: sitesData} = useSWR<SiteProps[]>(SITE_URLS.mutate, fetcher);
+    const {data: domainsData} = useSWR<DomainProps[]>(DOMAIN_URLS.mutate, fetcher);
+    const {data: qualificationsData} = useSWR<QualificationProps[]>(QUALIFICATION_URLS.mutate, fetcher);
+    const {data: departmentsData} = useSWR<DepartmentProps[]>(DEPARTMENT_URLS.mutate, fetcher);
 
     const router = useRouter();
-    const { id } = router.query; // Récupérer l'ID depuis les paramètres de l'URL
+    const {id} = router.query;
+
+    // 🆕 Utilisation du hook pour le filtrage intelligent
+    const {
+        departmentOptions,
+        getDisplayNamesByIds,
+        getIdsByDisplayNames,
+        cleanSelectedDepartments,
+        hasAvailableDepartments
+    } = useSiteDepartmentFilter({
+        sitesData,
+        departmentsData,
+        selectedSiteIds: formData.site
+    });
+
+    // 🆕 Nettoyage automatique des départements quand les sites changent
+    useEffect(() => {
+        if (formData.site.length > 0 && formData.department.length > 0) {
+            const cleanedDepartments = cleanSelectedDepartments(formData.department);
+            if (cleanedDepartments.length !== formData.department.length) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: cleanedDepartments
+                }));
+            }
+        }
+    }, [formData.site, cleanSelectedDepartments, formData.department]);
 
     const axesOptionsFormatted = useMemo(() => {
         if (axesData) {
-            return axesData.map(axe => ({ label: axe.title, id: axe.id }));
+            return axesData.map(axe => ({label: axe.title, id: axe.id}));
         }
         return [];
     }, [axesData]);
 
     const sitesOptionsFormatted = useMemo(() => {
         if (sitesData) {
-            return sitesData.map(site => ({ label: site.label, id: site.id }));
+            return sitesData.map(site => ({label: site.label, id: site.id}));
         }
         return [];
     }, [sitesData]);
 
     const domainsOptionsFormatted = useMemo(() => {
         if (domainsData) {
-            return domainsData.map(domain => ({ label: domain.name, id: domain.id }));
+            return domainsData.map(domain => ({label: domain.name, id: domain.id}));
         }
         return [];
     }, [domainsData]);
 
     const qualificationsOptionsFormatted = useMemo(() => {
         if (qualificationsData) {
-            return qualificationsData.map(qual => ({ label: qual.type, id: qual.id }));
+            return qualificationsData.map(qual => ({label: qual.type, id: qual.id}));
         }
         return [];
     }, [qualificationsData]);
-
-    const departmentsOptionsFormatted = useMemo(() => {
-        if (departmentsData) {
-            return departmentsData.map(dept => ({ label: dept.name, id: dept.id }));
-        }
-        return [];
-    }, [departmentsData]);
 
     useEffect(() => {
         if (id) {
@@ -117,7 +136,6 @@ const EditStrategicAxe = () => {
                     const needData = await response.json();
                     console.log(needData);
 
-                    // Adapter la structure des données pour correspondre à formData
                     setFormData({
                         axe: needData.axe?.id || null,
                         site: needData.site?.map(site => site.id) || [],
@@ -136,7 +154,6 @@ const EditStrategicAxe = () => {
 
                 } catch (error) {
                     console.error("Erreur lors de la récupération des données du besoin :", error);
-                    // Gérer l'erreur ici, par exemple afficher un message à l'utilisateur
                 }
             };
 
@@ -145,11 +162,11 @@ const EditStrategicAxe = () => {
     }, [id]);
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         let newValue = value;
         if (name === "nbrGroup") {
             if (value === "0") {
-                return; // Empêche la mise à jour de l'état si la valeur est "0"
+                return;
             }
             const parsedValue = parseInt(value, 10);
             if (isNaN(parsedValue) || parsedValue < 1) {
@@ -158,8 +175,8 @@ const EditStrategicAxe = () => {
                 newValue = String(parsedValue);
             }
         }
-        setFormData(prev => ({ ...prev, [name]: newValue }));
-        setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+        setFormData(prev => ({...prev, [name]: newValue}));
+        setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const handleSwitchChange = (checked: boolean) => {
@@ -168,14 +185,16 @@ const EditStrategicAxe = () => {
             csf: checked,
             csfPlanifie: checked ? prev.csfPlanifie : ''
         }));
-        setErrors(prevErrors => ({ ...prevErrors, csf: "" }));
+        setErrors(prevErrors => ({...prevErrors, csf: ""}));
         if (!checked) {
-            setErrors(prevErrors => ({ ...prevErrors, csfPlanifie: "" }));
+            setErrors(prevErrors => ({...prevErrors, csfPlanifie: ""}));
         }
     };
 
+    // 🆕 Gestionnaire modifié pour les MultiSelectField
     const handleMultiSelectChange = (name: keyof FormData, selectedLabels: string[]) => {
         let selectedIds: number[] = [];
+
         switch (name) {
             case "site":
                 selectedIds = selectedLabels
@@ -183,20 +202,21 @@ const EditStrategicAxe = () => {
                     .filter((id): id is number => id !== undefined);
                 break;
             case "department":
-                selectedIds = selectedLabels
-                    .map(name => departmentsData?.find(dept => dept.name === name)?.id)
-                    .filter((id): id is number => id !== undefined);
+                // 🆕 Utilisation du hook pour convertir les noms d'affichage en IDs
+                selectedIds = getIdsByDisplayNames(selectedLabels);
                 break;
             default:
                 break;
         }
-        setFormData(prev => ({ ...prev, [name]: selectedIds }));
-        setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+
+        setFormData(prev => ({...prev, [name]: selectedIds}));
+        setErrors(prevErrors => ({...prevErrors, [name]: ""}));
     };
 
     const handleChangeCustomSelect = (event: { name: string; value: string }) => {
-        const { name, value } = event;
+        const {name, value} = event;
         let selectedId: number | null = null;
+
         switch (name) {
             case "axe":
                 selectedId = axesData?.find(axe => axe.title === value)?.id || null;
@@ -211,6 +231,7 @@ const EditStrategicAxe = () => {
                 selectedId = parseInt(value, 10) || null;
                 break;
         }
+
         setFormData((prevFormData) => ({
             ...prevFormData,
             [name]: selectedId,
@@ -222,10 +243,7 @@ const EditStrategicAxe = () => {
         let isValid = true;
         const newErrors: Partial<Record<keyof FormData | 'destination', string>> = {};
 
-        const requiredFields: (keyof FormData)[] = [
-            "axe",
-            "theme",
-        ];
+        const requiredFields: (keyof FormData)[] = ["axe", "theme"];
 
         requiredFields.forEach(field => {
             if (!formData[field] || (Array.isArray(formData[field]) && formData[field].length === 0)) {
@@ -243,7 +261,7 @@ const EditStrategicAxe = () => {
 
         if (isValid) {
             setSelectedOptionDestination("");
-            setErrors(prevErrors => ({ ...prevErrors, destination: "" }));
+            setErrors(prevErrors => ({...prevErrors, destination: ""}));
             handleSave();
         }
     };
@@ -251,15 +269,15 @@ const EditStrategicAxe = () => {
     const handleSave = async () => {
         const sitesToSend = formData.site.map(id => {
             const site = sitesData?.find(s => s.id === id);
-            return site ? { id: site.id, label: site.label } : null;
+            return site ? {id: site.id, label: site.label} : null;
         }).filter((site): site is { id: number; label: string } => site !== null);
 
         const domainToSend = formData.domain ? domainsData?.find(domain => domain.id === formData.domain) : null;
-        const formattedDomain = domainToSend ? { id: domainToSend.id, name: domainToSend.name } : null;
+        const formattedDomain = domainToSend ? {id: domainToSend.id, name: domainToSend.name} : null;
 
         const departmentsToSend = formData.department.map(id => {
             const dept = departmentsData?.find(d => d.id === id);
-            return dept ? { id: dept.id, name: dept.name } : null;
+            return dept ? {id: dept.id, name: dept.name} : null;
         }).filter((dept): dept is { id: number; name: string } => dept !== null);
 
         const qualificationToSend = formData.qualification ? qualificationsData?.find(qual => qual.id === formData.qualification) : null;
@@ -269,7 +287,7 @@ const EditStrategicAxe = () => {
         } : null;
 
         const axeToSend = formData.axe ? axesData?.find(axe => axe.id === formData.axe) : null;
-        const formattedAxe = axeToSend ? { id: axeToSend.id, title: axeToSend.title } : null;
+        const formattedAxe = axeToSend ? {id: axeToSend.id, title: axeToSend.title} : null;
 
         const dataToSend = {
             axe: formattedAxe,
@@ -315,7 +333,7 @@ const EditStrategicAxe = () => {
     };
 
     const handleChange = (event) => {
-        const { name, value } = event;
+        const {name, value} = event;
         setFormData((prevFormData) => ({
             ...prevFormData,
             [name]: value,
@@ -334,7 +352,7 @@ const EditStrategicAxe = () => {
     ) : null;
 
     return (
-        <form className="mx-auto bg-white font-title rounded-lg py-4 px-6 pb-14" onSubmit={handleSubmit}>
+        <div className="mx-auto bg-white font-title rounded-lg py-4 px-6 pb-14" onSubmit={handleSubmit}>
             <div className="flex flex-col lg:flex-row lg:space-x-44 justify-between items-center mb-4">
                 <h2 className="flex-[1] text-base md-custom:text-lg lg:text-xl font-bold text-center md:text-start">
                     Veuillez choisir l'axe à partir duquel vous souhaitez ajouter le thème
@@ -357,13 +375,32 @@ const EditStrategicAxe = () => {
                     onChange={(values) => handleMultiSelectChange("site", values)}
                     error={errors.site}
                 />
-                <MultiSelectField
-                    options={departmentsOptionsFormatted.map(opt => opt.label)}
-                    label="Département"
-                    value={formData.department.map(id => departmentsData?.find(d => d.id === id)?.name || '')}
-                    onChange={(values) => handleMultiSelectChange("department", values)}
-                    error={errors.department}
-                />
+
+                {/* 🆕 Champ Département avec filtrage intelligent */}
+                <div className="relative">
+                    <MultiSelectField
+                        options={departmentOptions}
+                        label="Département"
+                        value={getDisplayNamesByIds(formData.department)}
+                        onChange={(values) => handleMultiSelectChange("department", values)}
+                        error={errors.department}
+                    />
+
+                    {/* 🆕 Message informatif quand aucun site n'est sélectionné */}
+                    {formData.site.length === 0 && (
+                        <div className="absolute -bottom-6 left-0 text-xs text-gray-500 italic">
+                            💡 Sélectionnez d'abord un ou plusieurs sites pour filtrer les départements
+                        </div>
+                    )}
+
+                    {/* 🆕 Message quand aucun département n'est disponible pour les sites sélectionnés */}
+                    {formData.site.length > 0 && !hasAvailableDepartments && (
+                        <div className="absolute -bottom-6 left-0 text-xs text-amber-600 italic">
+                            ⚠️ Aucun département disponible pour les sites sélectionnés
+                        </div>
+                    )}
+                </div>
+
                 <CustomSelect
                     label={"Domaine"}
                     options={domainsOptionsFormatted.map(opt => opt.label)}
@@ -406,7 +443,8 @@ const EditStrategicAxe = () => {
                 />
                 <Switch
                     label="CSF"
-                    name="csf" checked={formData.csf}
+                    name="csf"
+                    checked={formData.csf}
                     onChange={handleSwitchChange}
                     planifieField={planifieSelect}
                 />
@@ -443,13 +481,14 @@ const EditStrategicAxe = () => {
             <div className="mt-5 text-right text-xs md:text-sm lg:text-base">
                 <button
                     type="submit"
+                    onClick={handleSubmit}
                     className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl"
                 >
                     {isEditMode ? "Enregistrer les modifications" : "Enregistrer"}
                 </button>
             </div>
-        </form>
+        </div>
     );
-};
+}
 
 export default EditStrategicAxe;
