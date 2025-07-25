@@ -10,7 +10,7 @@ import {handleSort} from "@/utils/sortUtils";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
 import useTable from "@/hooks/useTable";
 import useSWR from "swr";
-import {NEED_EVALUATION_URLS} from "@/config/urls";
+import {NEED_EVALUATION_URLS, NEEDS_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 
 const TABLE_HEADERS = [
@@ -56,11 +56,25 @@ const NeedsEvaluationDashboard = () => {
         RECORDS_PER_PAGE)
 
     const renderers = {
-        status: (value: string) => (
-            <StatusRenderer value={value} groupeConfig={statusConfig}/>
+        status: (value: string, row: any) => (
+            <StatusRenderer
+                value={value}
+                groupeConfig={statusConfig}
+                row={row}
+                statusOptions={['Brouillon', 'Validé']}
+                apiUrl={NEEDS_URLS.updateStatus}
+                mutateUrl={NEED_EVALUATION_URLS.mutate}
+            />
         ),
-        actions: (value: any, row: any) => (
-            <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}/>
+        actions: (_: any, row: any) => (
+            <DynamicActionsRenderer
+                actions={ACTIONS_TO_SHOW}
+                row={row}
+                deleteUrl={NEEDS_URLS.delete}
+                mutateUrl={NEED_EVALUATION_URLS.mutate}
+                editUrl={NEED_EVALUATION_URLS.editPage}
+                confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
+            />
         )
     };
 

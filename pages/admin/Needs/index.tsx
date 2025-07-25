@@ -94,7 +94,9 @@ const Needs = () => {
                         value === "Internal_Catalog" ?
                             "Catalogue interne" :
                             value === "External_Catalog" ?
-                                "Catalogue Externe" : "Aucune source"}
+                                "Catalogue Externe" :
+                                value === "Evaluation" ?
+                                    "Évaluation" : "Aucune source"}
             </div>
         ),
         actions: (_: any, row: NeedsProps) => (

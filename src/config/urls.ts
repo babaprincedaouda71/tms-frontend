@@ -190,6 +190,7 @@ export const NEED_INDIVIDUAL_REQUESTS_URLS = {
 export const NEED_EVALUATION_URLS = {
     mutate: `${API_URL}/needs/get/all/evaluationNeed`,
     updateStatus: `${API_URL}/nedd/evaluation/update-status`,
+    editPage: `/Needs/edit`,
 }
 
 export const TEAM_EVALUATIONS_URLS = {
