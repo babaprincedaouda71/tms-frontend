@@ -498,11 +498,13 @@ const EditNeedPage = () => {
                     onChange={handleInputChange}
                     error={errors.nbrDay}
                 />
-                <InputField
-                    label="Type"
+                <CustomSelect
+                    label={"Type"}
+                    options={["Intra-entreprise", "Inter-entreprise"]}
                     name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
+                    value={formData.type || ''}
+                    onChange={handleChangeCustomSelect}
+                    className="lg:flex-1"
                     error={errors.type}
                 />
                 <InputField
