@@ -106,10 +106,8 @@ const NeedsEvaluationCampaign = () => {
                     // 🆕 Nouvelle prop pour désactiver les actions selon les conditions
                     getActionDisabledState={(actionKey: string, row: NeedsEvaluationCampaignProps) => {
                         // Désactiver le bouton 'delete' si le statut est 'Publiée'
-                        if (actionKey === 'delete' && row.status === 'Publiée') {
-                            return true;
-                        }
-                        return false;
+                        return actionKey === 'delete' && row.status === 'Publiée';
+
                     }}
                 />
             );
