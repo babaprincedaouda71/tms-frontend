@@ -50,8 +50,12 @@ const Needs = () => {
     const {
         data: needsData,
     } = useSWR<NeedsProps[]>(NEEDS_URLS.mutate, fetcher);
-    const memorizeNeedsData = useMemo(() => needsData || [], [needsData]);
-
+// Dans pages/admin/Needs/index.tsx, ligne ~25 environ
+    const memorizeNeedsData = useMemo(() => {
+        const data = needsData || [];
+        console.log("Sample need data:", data[1]); // 🆕 Debug
+        return data;
+    }, [needsData]);
     const defaultVisibleColumns = [
         "Domaine",
         "Thème",
@@ -99,7 +103,7 @@ const Needs = () => {
                 row={row}
                 deleteUrl={NEEDS_URLS.delete}
                 mutateUrl={NEEDS_URLS.mutate}
-                editUrl={NEEDS_STRATEGIC_AXES_URLS.editPage}
+                editUrl={NEEDS_URLS.editPage}
                 isEditDisabled={(item) => item.status === "Validé"}
                 viewUrl={buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`)}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}

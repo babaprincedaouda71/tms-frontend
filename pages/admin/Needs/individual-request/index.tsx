@@ -76,6 +76,8 @@ const NeedsIndividualRequest = () => {
                 actions={ACTIONS_TO_SHOW}
                 row={row}
                 deleteUrl={NEEDS_URLS.delete}
+                mutateUrl={NEED_INDIVIDUAL_REQUESTS_URLS.mutate}
+                editUrl={NEED_INDIVIDUAL_REQUESTS_URLS.editPage}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
             />
         )

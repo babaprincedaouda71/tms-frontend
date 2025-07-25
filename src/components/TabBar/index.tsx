@@ -6,6 +6,8 @@ import React, { useMemo } from "react";
  *  - id : Identifiant unique pour l'onglet
  *  - label : Le texte affiché dans l'onglet
  *  - content : Le contenu à afficher lorsque l'onglet est actif
+ * @param onTabChange
+ * @param activeTab
  */
 
 const TabBar = ({ tabs, onTabChange, activeTab }) => {

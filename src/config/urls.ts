@@ -116,21 +116,24 @@ export const NEEDS_STRATEGIC_AXES_URLS = {
     mutate: `${API_URL}/needs/get/all/strategicAxesNeed`,
     view: `/Needs/needDetails`,
     delete: `${API_URL}/needs/delete/strategicAxesNeed`,
-    editPage: `/Needs/strategic-axes/editStrategicAxe`,
-    getNeed: `${API_URL}/needs/get/strategicAxesNeed`,
-    update: `${API_URL}/needs/edit/strategicAxesNeed`,
+    editPage: `/Needs/edit`,
+    getNeed: `${API_URL}/needs/get/needToEdit`,
+    update: `${API_URL}/needs/edit/need`,
     getDetails: `${API_URL}/needs/get/details/strategicAxesNeed`,
 }
 
 export const NEEDS_URLS = {
     add: `${API_URL}/needs/add`,
+    editPage: `/Needs/edit`,
     mutate: `${API_URL}/needs/get/all`,
     view: `/User/user`,
+    getNeed: `${API_URL}/needs/get/needToEdit`,
     delete: `${API_URL}/needs/delete`,
     edit: `${API_URL}/needs/edit`,
     updateStatus: `${API_URL}/needs/update-status`,
     duplicateGroup: `${API_URL}/needs/groups/duplicate/group`,
     getNeedForAddGroup: `${API_URL}/needs/get/needForAddGroup`,
+    update: `${API_URL}/needs/edit/need`,
 }
 
 export const NEEDS_GROUP_URLS = {
@@ -181,6 +184,7 @@ export const TEAM_REQUESTS_URLS = {
 export const NEED_INDIVIDUAL_REQUESTS_URLS = {
     mutate: `${API_URL}/needs/get/all/individualRequestNeed`,
     updateStatus: `${API_URL}/trainings/training-requests/update-status`,
+    editPage: `/Needs/edit`,
 }
 
 export const NEED_EVALUATION_URLS = {

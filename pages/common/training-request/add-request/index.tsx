@@ -165,17 +165,27 @@ const AddRequestComponent: React.FC = () => {
             return;
         }
 
-        const siteToSend = formData.site ? sitesData?.find(site => site.id === formData.site) : null;
-        const formattedSite = siteToSend ? siteToSend.label : null;
+        // 🆕 Construction des objets complets au lieu d'envoyer uniquement les noms
+        const siteToSend = formData.site
+            ? sitesData?.find(site => site.id === formData.site)
+            : null;
+        const formattedSite = siteToSend
+            ? { id: siteToSend.id, label: siteToSend.label }
+            : null;
 
-        // 🆕 Récupération du département depuis filteredDepartments pour avoir le nom correct
         const departmentToSend = formData.department
             ? filteredDepartments?.find(dpt => dpt.id === formData.department)
             : null;
-        const formattedDepartment = departmentToSend ? departmentToSend.name : null;
+        const formattedDepartment = departmentToSend
+            ? { id: departmentToSend.id, name: departmentToSend.name }
+            : null;
 
-        const domainToSend = formData.domain ? domainsData?.find(domain => domain.id === formData.domain) : null;
-        const formattedDomain = domainToSend ? domainToSend.name : null;
+        const domainToSend = formData.domain
+            ? domainsData?.find(domain => domain.id === formData.domain)
+            : null;
+        const formattedDomain = domainToSend
+            ? { id: domainToSend.id, name: domainToSend.name }
+            : null;
 
         const requesterToSend = user
             ? {
@@ -187,10 +197,10 @@ const AddRequestComponent: React.FC = () => {
 
         const dataToSend = {
             year: formData.year,
-            domain: formattedDomain,
+            domain: formattedDomain,        // 🆕 Objet complet au lieu du nom seul
             theme: formData.theme,
-            site: formattedSite,
-            department: formattedDepartment,
+            site: formattedSite,            // 🆕 Objet complet au lieu du nom seul
+            department: formattedDepartment, // 🆕 Objet complet au lieu du nom seul
             wishDate: formData.wishDate,
             requester: requesterToSend,
             objective: formData.objective,
