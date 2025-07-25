@@ -85,8 +85,6 @@ const NeedsEvaluationCampaign = () => {
             </div>
         ),
         actions: (_: any, row: NeedsEvaluationCampaignProps) => {
-            // >>> DÉBUT DE LA MODIFICATION <<<
-
             let actionsToRender: string[];
 
             // Si le statut est 'Publiée', remplacer 'edit' par 'view'
@@ -99,12 +97,20 @@ const NeedsEvaluationCampaign = () => {
 
             return (
                 <DynamicActionsRenderer
-                    actions={actionsToRender} // Passer la liste d'actions dynamique
+                    actions={actionsToRender}
                     row={row}
                     editUrl={CAMPAIGN_URLS.editPage}
                     deleteUrl={CAMPAIGN_URLS.delete}
                     viewUrl={buildRoleBasedPath(`${CAMPAIGN_URLS.view}`)}
                     mutateUrl={CAMPAIGN_URLS.mutate}
+                    // 🆕 Nouvelle prop pour désactiver les actions selon les conditions
+                    getActionDisabledState={(actionKey: string, row: NeedsEvaluationCampaignProps) => {
+                        // Désactiver le bouton 'delete' si le statut est 'Publiée'
+                        if (actionKey === 'delete' && row.status === 'Publiée') {
+                            return true;
+                        }
+                        return false;
+                    }}
                 />
             );
         }
