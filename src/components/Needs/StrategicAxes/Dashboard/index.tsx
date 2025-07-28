@@ -99,6 +99,12 @@ const StrategicAxesDashboard = ({
                 viewUrl={buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`)}
                 isEditDisabled={(item) => item.status === "Validé"}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
+                // 🆕 Fonction unifiée pour désactiver les actions selon le statut
+                getActionDisabledState={(actionKey: string, row: StrategicAxesNeedsProps) => {
+                    // Désactiver l'édition ET la suppression si le statut est "Validé"
+                    return (actionKey === 'edit' || actionKey === 'delete') && row.status === "Validé";
+
+                }}
             />
         ),
         status: (value: string, row: StrategicAxesNeedsProps) => (

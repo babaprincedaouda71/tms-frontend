@@ -106,9 +106,14 @@ const Needs = () => {
                 deleteUrl={NEEDS_URLS.delete}
                 mutateUrl={NEEDS_URLS.mutate}
                 editUrl={NEEDS_URLS.editPage}
-                isEditDisabled={(item) => item.status === "Validé"}
                 viewUrl={buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`)}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
+                // 🆕 Fonction unifiée pour désactiver les actions selon le statut
+                getActionDisabledState={(actionKey: string, row: NeedsProps) => {
+                    // Désactiver l'édition ET la suppression si le statut est "Validé"
+                    return (actionKey === 'edit' || actionKey === 'delete') && row.status === "Validé";
+
+                }}
             />
         ),
         status: (value: string, row: NeedsProps) => (

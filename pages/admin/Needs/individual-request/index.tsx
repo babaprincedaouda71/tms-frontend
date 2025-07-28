@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react'
-import {NeedsIndividualRequestProps} from '@/types/dataTypes';
+import {NeedsIndividualRequestProps, StrategicAxesNeedsProps} from '@/types/dataTypes';
 import DashboardBar from '@/components/DashbordBar';
 import ModalButton from '@/components/ModalButton';
 import SearchFilterAddBar from '@/components/SearchFilterAddBar';
@@ -79,6 +79,12 @@ const NeedsIndividualRequest = () => {
                 mutateUrl={NEED_INDIVIDUAL_REQUESTS_URLS.mutate}
                 editUrl={NEED_INDIVIDUAL_REQUESTS_URLS.editPage}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
+                // 🆕 Fonction unifiée pour désactiver les actions selon le statut
+                getActionDisabledState={(actionKey: string, row: any) => {
+                    // Désactiver l'édition ET la suppression si le statut est "Validé"
+                    return (actionKey === 'edit' || actionKey === 'delete') && row.status === "Validé";
+
+                }}
             />
         )
     };

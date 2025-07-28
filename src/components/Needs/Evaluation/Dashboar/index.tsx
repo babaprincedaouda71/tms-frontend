@@ -76,6 +76,12 @@ const NeedsEvaluationDashboard = () => {
                 mutateUrl={NEED_EVALUATION_URLS.mutate}
                 editUrl={NEED_EVALUATION_URLS.editPage}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
+                // 🆕 Fonction unifiée pour désactiver les actions selon le statut
+                getActionDisabledState={(actionKey: string, row: any) => {
+                    // Désactiver l'édition ET la suppression si le statut est "Validé"
+                    return (actionKey === 'edit' || actionKey === 'delete') && row.status === "Validé";
+
+                }}
             />
         )
     };
