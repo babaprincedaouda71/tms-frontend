@@ -151,6 +151,22 @@ const NeedDetails = () => {
 
     // Renderers
     const renderers = {
+        name: (value: string, row: GroupData) => (
+            <button
+                className="text-left hover:text-blue-600 hover:underline transition-colors duration-200 font-medium"
+                onClick={() => {
+                    navigateTo(buildRoleBasedPath(`/Needs/group/add-group`), {
+                        query: {
+                            needId: id,
+                            groupId: row.id
+                        },
+                    })
+                }}
+                title="Cliquer pour modifier ce groupe"
+            >
+                {value}
+            </button>
+        ),
         status: (value: string, row: GroupData) => (
             <StatusRenderer
                 value={value}
