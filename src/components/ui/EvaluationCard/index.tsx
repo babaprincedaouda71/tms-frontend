@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Check, Edit, Eye} from "lucide-react"; // Changed import to include Edit icon
+import {Check, Edit, Eye} from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
 import {QuestionsProps} from "@/types/dataTypes";
 import {useAuth} from "@/contexts/AuthContext";
@@ -17,8 +17,8 @@ interface EvaluationCardProps {
     startDate: string;
     progress: number;
     questions?: QuestionsProps[];
-    onResponsesSaved?: () => void; // Nouvelle prop pour la fonction de mise à jour
-    isSentToManager?: boolean; // Ajouter cette propriété
+    onResponsesSaved?: () => void;
+    isSentToManager?: boolean;
 }
 
 interface UserResponse {
@@ -54,16 +54,15 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                                                            progress,
                                                            questions,
                                                            onResponsesSaved,
-                                                           isSentToManager: initialIsSentToManager = false, // Nouvelle prop
+                                                           isSentToManager: initialIsSentToManager = false,
                                                        }) => {
     const {user} = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalResponses, setModalResponses] = useState<UserResponse[]>([]);
-    const questionCardRef = useRef<any>(null); // Cette ref sera passée à QuestionResponseCard
+    const questionCardRef = useRef<any>(null);
     const [loadingResponses, setLoadingResponses] = useState(false);
     const [errorLoadingResponses, setErrorLoadingResponses] = useState<string | null>(null);
     const [modalMode, setModalMode] = useState<'view' | 'respond' | null>(null);
-    // Initialiser avec la valeur reçue des props
     const [isSentToManager, setIsSentToManager] = useState(initialIsSentToManager);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
@@ -72,15 +71,41 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
         setIsSentToManager(initialIsSentToManager);
     }, [initialIsSentToManager]);
 
-    // ... (getVerticalBarColorClass, fetchResponses, prepareResponsesToSend, sendResponsesToBackend, openConfirmModal, handleCloseConfirmModal, handleConfirmSendEvaluation restent inchangées)
-    const getVerticalBarColorClass = () => {
+    // Fonction unifiée pour déterminer les couleurs basées sur le statut réel
+    const getStatusColors = () => {
+        // Si l'évaluation est envoyée au manager, elle est considérée comme terminée
+        if (isSentToManager) {
+            return {
+                barColor: 'bg-green-500',
+                badgeColor: 'bg-green-50 text-green-700 border-green-200',
+                statusText: 'Terminée',
+                statusIcon: <Check className="h-3 w-3 inline-block mr-1"/>
+            };
+        }
+
+        // Sinon, on se base sur le statut de progression
         switch (status) {
             case "Terminée":
-                return 'bg-green-500';
+                return {
+                    barColor: 'bg-blue-500', // Terminée mais pas encore envoyée
+                    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+                    statusText: 'Prête à envoyer',
+                    statusIcon: null
+                };
             case "En cours":
-                return 'bg-yellow-500';
+                return {
+                    barColor: 'bg-yellow-500',
+                    badgeColor: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    statusText: 'En cours',
+                    statusIcon: null
+                };
             default:
-                return 'bg-gray-500';
+                return {
+                    barColor: 'bg-gray-500',
+                    badgeColor: 'bg-gray-50 text-gray-700 border-gray-200',
+                    statusText: 'Brouillon',
+                    statusIcon: null
+                };
         }
     };
 
@@ -123,8 +148,8 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setModalMode(null);
-        setModalResponses([]); // Réinitialiser les réponses lors de la fermeture
-        setErrorLoadingResponses(null); // Réinitialiser les erreurs
+        setModalResponses([]);
+        setErrorLoadingResponses(null);
     };
 
     const prepareResponsesToSend = (): Omit<UserResponse, 'id'>[] | null => {
@@ -172,7 +197,6 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                     }
                     break;
                 case "Score":
-                // Assurez-vous que "MyEvaluationsComponent" est un type de question valide ou adaptez
                 case "MyEvaluationsComponent":
                     if (responses.selectedScores[question.id] !== undefined && responses.selectedScores[question.id] !== null) {
                         userResponsesToSend.push({
@@ -240,12 +264,11 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
         }
     };
 
-    // Cette fonction est maintenant appelée par la prop onSaveDraft de QuestionResponseCard
     const handleSaveResponses = async () => {
         const responsesToSend = prepareResponsesToSend();
         if (!responsesToSend || responsesToSend.length === 0) {
             console.log("Pas de réponses à enregistrer.");
-            handleCloseModal(); // Fermer la modale même s'il n'y a rien à envoyer
+            handleCloseModal();
             if (onResponsesSaved) {
                 onResponsesSaved();
             }
@@ -255,24 +278,24 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
         const success = await sendResponsesToBackend(responsesToSend);
 
         if (success) {
-            handleCloseModal(); // Fermer la modale après la sauvegarde
+            handleCloseModal();
             if (onResponsesSaved) {
-                onResponsesSaved(); // Appeler la fonction de callback pour rafraîchir les données si nécessaire
+                onResponsesSaved();
             }
         }
-        // Vous pourriez vouloir ajouter une gestion d'erreur ici si success est false
     };
 
     const openConfirmModal = () => {
         setIsConfirmModalOpen(true);
     };
+
     const handleCloseConfirmModal = () => {
         setIsConfirmModalOpen(false);
     };
 
     const handleConfirmSendEvaluation = async () => {
         setIsConfirmModalOpen(false);
-        const responsesToSend = { // Données pour l'envoi final
+        const responsesToSend = {
             questionnaireId: id,
             userId: user?.id,
         }
@@ -301,14 +324,13 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
         }
     };
 
-
-    const verticalBarColorClass = getVerticalBarColorClass();
+    const statusColors = getStatusColors();
 
     return (
         <div>
-            {/* ... (JSX de la carte EvaluationCard reste le même jusqu'à la modale) ... */}
             <div className="relative rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white shadow-md">
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${verticalBarColorClass}`}></div>
+                {/* Barre verticale avec couleur synchronisée */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${statusColors.barColor}`}></div>
 
                 <div className="p-5 pl-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-2">
@@ -318,19 +340,11 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                         </div>
 
                         <div className="flex items-center mt-2 md:mt-0">
+                            {/* Badge avec couleur synchronisée */}
                             <span
-                                className={`${isSentToManager ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'} 
-                                    rounded-full border px-2.5 py-0.5 text-xs font-semibold flex items-center`}
-                            >
-                                {isSentToManager ? (
-                                    <>
-                                        <Check className="h-3 w-3 inline-block mr-1"/> Terminée
-                                    </>
-                                ) : (
-                                    <>
-                                        Brouillon
-                                    </>
-                                )}
+                                className={`${statusColors.badgeColor} rounded-full border px-2.5 py-0.5 text-xs font-semibold flex items-center`}>
+                                {statusColors.statusIcon}
+                                {statusColors.statusText}
                             </span>
                         </div>
                     </div>
@@ -352,8 +366,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                         </div>
                         <ProgressBar progress={progress}/>
 
-                        <div
-                            className="flex justify-end items-center mt-4">
+                        <div className="flex justify-end items-center mt-4">
                             <button
                                 onClick={() => handleOpenModal('respond')}
                                 disabled={isSentToManager}
@@ -392,7 +405,6 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                 </div>
             </div>
 
-            {/* Utilisation du nouveau composant QuestionResponseCard */}
             <QuestionResponseCard
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
@@ -405,11 +417,10 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                 questions={questions}
                 initialResponses={modalResponses}
                 mode={modalMode}
-                onSaveDraft={handleSaveResponses} // handleSaveResponses est maintenant passée ici
-                questionCardRef={questionCardRef} // Passer la ref
+                onSaveDraft={handleSaveResponses}
+                questionCardRef={questionCardRef}
             />
 
-            {/* Modal de confirmation d'envoi reste ici */}
             <ConfirmModal
                 isOpen={isConfirmModalOpen}
                 onClose={handleCloseConfirmModal}

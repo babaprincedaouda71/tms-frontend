@@ -2,8 +2,8 @@ import React, {ChangeEvent, useEffect, useMemo, useState} from 'react';
 import {
     DepartmentProps,
     EvaluationCampaignParticipantProps,
-    NeedsEvaluationAddProps,
     EvaluationsByTypeProps,
+    NeedsEvaluationAddProps,
     SiteProps,
     UpdateCampaignProps
 } from '@/types/dataTypes';
@@ -24,8 +24,8 @@ import Table from "@/components/Tables/Table/index";
 import {handleSort} from "@/utils/sortUtils";
 import {useSiteDepartmentFilter} from "@/hooks/settings/useSiteDepartmentFilter";
 
-const TABLE_HEADERS = ["Code", "Nom", "Prénoms", "Poste", "Niveau", "Manager", "Département", "Sélection"];
-const TABLE_KEYS = ["code", "firstName", "lastName", "poste", "level", "manager", "department", "selection"];
+const TABLE_HEADERS = ["Nom", "Prénoms", "Poste", "Manager", "Département", "Sélection"];
+const TABLE_KEYS = ["firstName", "lastName", "position", "manager", "department", "selection"];
 const RECORDS_PER_PAGE = 10;
 
 interface FormData {
