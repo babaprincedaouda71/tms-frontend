@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Check, Edit, Eye} from "lucide-react"; // Changed import to include Edit icon
 import ProgressBar from "@/components/ProgressBar";
 import {QuestionsProps} from "@/types/dataTypes";
@@ -18,6 +18,7 @@ interface EvaluationCardProps {
     progress: number;
     questions?: QuestionsProps[];
     onResponsesSaved?: () => void; // Nouvelle prop pour la fonction de mise à jour
+    isSentToManager?: boolean; // Ajouter cette propriété
 }
 
 interface UserResponse {
@@ -53,6 +54,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                                                            progress,
                                                            questions,
                                                            onResponsesSaved,
+                                                           isSentToManager: initialIsSentToManager = false, // Nouvelle prop
                                                        }) => {
     const {user} = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,8 +63,14 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     const [loadingResponses, setLoadingResponses] = useState(false);
     const [errorLoadingResponses, setErrorLoadingResponses] = useState<string | null>(null);
     const [modalMode, setModalMode] = useState<'view' | 'respond' | null>(null);
-    const [isSentToManager, setIsSentToManager] = useState(false); // Supposons que ceci soit initialisé correctement ailleurs ou via fetch
+    // Initialiser avec la valeur reçue des props
+    const [isSentToManager, setIsSentToManager] = useState(initialIsSentToManager);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+    // Mettre à jour l'état local si la prop change
+    useEffect(() => {
+        setIsSentToManager(initialIsSentToManager);
+    }, [initialIsSentToManager]);
 
     // ... (getVerticalBarColorClass, fetchResponses, prepareResponsesToSend, sendResponsesToBackend, openConfirmModal, handleCloseConfirmModal, handleConfirmSendEvaluation restent inchangées)
     const getVerticalBarColorClass = () => {

@@ -36,6 +36,7 @@ const MyEvaluationsComponent: React.FC = () => {
                             startDate={course.startDate}
                             progress={course.progress}
                             questions={course.questions}
+                            isSentToManager={course.isSentToManager} // Ajouter cette ligne
                             onResponsesSaved={revalidateEvaluations}
                         />
                     ))}
