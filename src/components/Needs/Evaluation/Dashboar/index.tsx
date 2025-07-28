@@ -10,8 +10,9 @@ import {handleSort} from "@/utils/sortUtils";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
 import useTable from "@/hooks/useTable";
 import useSWR from "swr";
-import {NEED_EVALUATION_URLS, NEEDS_URLS} from "@/config/urls";
+import {NEED_EVALUATION_URLS, NEEDS_STRATEGIC_AXES_URLS, NEEDS_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
+import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 
 const TABLE_HEADERS = [
     "Domaine",
@@ -32,10 +33,11 @@ const TABLE_KEYS = [
     "actions",
 ];
 
-const ACTIONS_TO_SHOW = ["edit", "delete"];
+const ACTIONS_TO_SHOW = ["view", "edit", "delete"];
 const RECORDS_PER_PAGE = 4;
 
 const NeedsEvaluationDashboard = () => {
+    const {navigateTo, buildRoleBasedPath} = useRoleBasedNavigation()
     const {data: needEvaluationData} = useSWR<NeedsEvaluationProps[]>(NEED_EVALUATION_URLS.mutate, fetcher);
 
     const memorizedNeedEvaluationData = useMemo(() => needEvaluationData || [], [needEvaluationData]);
@@ -58,6 +60,17 @@ const NeedsEvaluationDashboard = () => {
         RECORDS_PER_PAGE)
 
     const renderers = {
+        theme: (value: string, row: NeedsEvaluationProps) => (
+            <span
+                className="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                onClick={() => {
+                    const viewUrl = buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`);
+                    navigateTo(viewUrl, {query: {id: row.id}});
+                }}
+            >
+            {value}
+        </span>
+        ),
         status: (value: string, row: any) => (
             <StatusRenderer
                 value={value}
@@ -75,6 +88,7 @@ const NeedsEvaluationDashboard = () => {
                 deleteUrl={NEEDS_URLS.delete}
                 mutateUrl={NEED_EVALUATION_URLS.mutate}
                 editUrl={NEED_EVALUATION_URLS.editPage}
+                viewUrl={buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`)}
                 confirmMessage={`Êtes-vous sûr de vouloir supprimer le besoin ${row.theme}`}
                 // 🆕 Fonction unifiée pour désactiver les actions selon le statut
                 getActionDisabledState={(actionKey: string, row: any) => {

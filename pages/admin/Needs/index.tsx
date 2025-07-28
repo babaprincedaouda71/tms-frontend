@@ -85,6 +85,17 @@ const Needs = () => {
     )
 
     const renderers = {
+        theme: (value: string, row: NeedsProps) => (
+            <span
+                className="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                onClick={() => {
+                    const viewUrl = buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`);
+                    navigateTo(viewUrl, { query: { id: row.id } });
+                }}
+            >
+            {value}
+        </span>
+        ),
         source: (value: string) => (
             <div className="flex items-center gap-2">
                 {value === "Strategic_Axes" ?

@@ -89,6 +89,17 @@ const StrategicAxesDashboard = ({
     )
 
     const renderers = {
+        theme: (value: string, row: StrategicAxesNeedsProps) => (
+            <span
+                className="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                onClick={() => {
+                    const viewUrl = buildRoleBasedPath(`${NEEDS_STRATEGIC_AXES_URLS.view}`);
+                    navigateTo(viewUrl, { query: { id: row.id } });
+                }}
+            >
+            {value}
+        </span>
+        ),
         actions: (_: any, row: StrategicAxesNeedsProps) => (
             <DynamicActionsRenderer
                 actions={ACTIONS_TO_SHOW}
