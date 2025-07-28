@@ -23,7 +23,7 @@ const TABLE_HEADERS = [
     "Actions",
 ];
 const TABLE_KEYS = [
-    "domaine",
+    "domain",
     "theme",
     "questionnaire",
     "priority",
@@ -39,6 +39,8 @@ const NeedsEvaluationDashboard = () => {
     const {data: needEvaluationData} = useSWR<NeedsEvaluationProps[]>(NEED_EVALUATION_URLS.mutate, fetcher);
 
     const memorizedNeedEvaluationData = useMemo(() => needEvaluationData || [], [needEvaluationData]);
+
+    console.log(memorizedNeedEvaluationData)
     const {
         currentPage,
         visibleColumns,
