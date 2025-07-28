@@ -157,8 +157,6 @@ const NeedDetails = () => {
                 groupeConfig={statusConfig}
                 row={row}
                 statusOptions={["Brouillon", "Validé"]}
-                // apiUrl={USERS_URLS.updateStatus}
-                // mutateUrl={USERS_URLS.mutate}
             />
         ),
         actions: (_: any, row: GroupData) => (
@@ -167,7 +165,6 @@ const NeedDetails = () => {
                 row={row}
                 deleteUrl={NEEDS_GROUP_URLS.delete}
                 onDeleteSuccess={handleGroupDelete}
-                // viewUrl={USERS_URLS.view}
                 editUrl={NEEDS_GROUP_URLS.addPage}
                 customEditHandler={(row) => {
                     navigateTo(buildRoleBasedPath(`/Needs/group/add-group`), {
@@ -177,8 +174,14 @@ const NeedDetails = () => {
                         },
                     })
                 }}
-                // mutateUrl={USERS_URLS.mutate}
-                // confirmMessage={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${row.firstName} ${row.lastName} ?`}
+                // 🆕 Nouvelle prop pour désactiver la suppression conditionnellement
+                getActionDisabledState={(actionKey: string, row: any) => {
+                    // Désactiver la suppression s'il n'y a qu'un seul groupe
+                    return actionKey === 'delete' && memoizedGroupData.length <= 1;
+
+                }}
+                // 🔧 Message simple pour la confirmation de suppression
+                confirmMessage="Êtes-vous sûr de vouloir supprimer ce groupe ?"
             />
         ),
     };
