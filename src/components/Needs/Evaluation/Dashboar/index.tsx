@@ -3,7 +3,7 @@ import DashboardBar from "../../../DashbordBar";
 import SearchFilterAddBar from "../../../SearchFilterAddBar";
 import ModalButton from "../../../ModalButton";
 import Table from "../../../Tables/Table/index";
-import {NeedsEvaluationProps} from "../../../../types/dataTypes";
+import {NeedsEvaluationProps} from "@/types/dataTypes";
 import StatusRenderer from "@/components/Tables/StatusRenderer";
 import {statusConfig} from "@/config/tableConfig";
 import {handleSort} from "@/utils/sortUtils";

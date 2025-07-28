@@ -14,8 +14,8 @@ import {TEAM_REQUESTS_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 import {useAuth, UserRole} from "@/contexts/AuthContext";
 
-const TABLE_HEADERS = ["Exercice", "Domaine", "Thème", "Site", "Département", "Date", "Demandeur", "Validé par", "Statut", "Actions",];
-const TABLE_KEYS = ["year", "domain", "theme", "site", "department", "creationDate", "requester", "approver", "status", "actions",];
+const TABLE_HEADERS = ["Exercice", "Domaine", "Thème", "Site", "Département", "Date", "Demandeur", "Validé par", "Statut"];
+const TABLE_KEYS = ["year", "domain", "theme", "site", "department", "creationDate", "requester", "approver", "status"];
 
 const ACTIONS_TO_SHOW = ["edit", "delete"];
 const RECORDS_PER_PAGE = 4;
@@ -43,7 +43,7 @@ const TeamRequests: React.FC = () => {
                 value={value === "Waiting" ? "En attente" : value === "Approved" ? "Approuvée" : value === "Rejected" ? "Rejetée" : value}
                 groupeConfig={statusConfig}
                 row={row}
-                statusOptions={[]} // Ne pas afficher le menu déroulant car on utilise le modal
+                statusOptions={[]} // Ne pas afficher le menu déroulant car on use le modal
                 apiUrl={`${TEAM_REQUESTS_URLS.updateStatus}/${user?.id}`}
                 mutateUrl={`${TEAM_REQUESTS_URLS.mutate}/${user?.id}`}
                 isTeamRequest={true} // Activer le comportement spécifique pour TeamRequests
