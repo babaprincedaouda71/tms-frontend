@@ -5,7 +5,7 @@ import SearchFilterAddBar from "@/components/SearchFilterAddBar";
 import useTable from "@/hooks/useTable";
 import {handleSort} from "@/utils/sortUtils";
 import useSWR from "swr";
-import {TRAINING_GROUPE_URLS, TRAINING_URLS} from "@/config/urls";
+import {TRAINING_GROUPE_URLS} from "@/config/urls";
 import {fetcher} from "@/services/api";
 
 const TABLE_HEADERS = ["Thème", "Dates de formation"];
@@ -14,11 +14,13 @@ const TABLE_KEYS = ["theme", "dates"];
 const RECORDS_PER_PAGE = 4;
 
 const Planning = ({userId}) => {
-    console.log(userId)
-    const {data: planningData, error, mutate} = useSWR<PlaningDataProps[]>(`${TRAINING_GROUPE_URLS.getUserPlanning}/${userId}`, fetcher)
+    const {
+        data: planningData,
+        error,
+        mutate
+    } = useSWR<PlaningDataProps[]>(`${TRAINING_GROUPE_URLS.getUserPlanning}/${userId}`, fetcher)
 
     const memoizedUserData = useMemo(() => planningData || [], [planningData]);
-    console.log(memoizedUserData)
     const {
         currentPage,
         visibleColumns,
