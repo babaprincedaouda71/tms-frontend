@@ -51,9 +51,9 @@ const CollaboratorIndex = () => {
 
     const content = useMemo(() => ({
         profile: <Profile userData={userData || {}}/>,
-        planning: <Planning planingData={planingData}/>,
+        planning: <Planning userId={id}/>,
         'training-history': <TrainingHistory trainingHistoryData={trainingHistoryData}/>,
-    }), [userData]);
+    }), [userData, id]);
 
     if (error) return <div>Failed to load user data</div>;
     if (!userData && id) return <div>Loading...</div>;
