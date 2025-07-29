@@ -288,6 +288,7 @@ export const TRAINING_GROUPE_URLS = {
     getGroupDetailsForSendInvitationToTrainer: `${API_URL}/plan/trainings/training-groups/get/getGroupDetailsForSendInvitationToTrainer`,
     getGroupDates: `${API_URL}/plan/trainings/training-groups/get/getGroupDates`,
     getUserPlanning: `${API_URL}/plan/trainings/training-groups/get/planning`,
+    getUserTrainingHistory: `${API_URL}/plan/trainings/training-groups/get/trainingHistory`,
 }
 
 export const PDF_URLS = {

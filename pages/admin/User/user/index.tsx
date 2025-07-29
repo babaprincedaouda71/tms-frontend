@@ -3,8 +3,6 @@ import TabBar from "@/components/TabBar";
 import Profile from "../profile";
 import Planning from "../planning";
 import TrainingHistory from "../training-history";
-import {planingData} from "@/data/planingData";
-import {trainingHistoryData} from "@/data/trainingHistoryData";
 import useSWR from "swr";
 import {CollaboratorProps} from "@/types/dataTypes";
 import {useRouter} from "next/router";
@@ -52,7 +50,7 @@ const CollaboratorIndex = () => {
     const content = useMemo(() => ({
         profile: <Profile userData={userData || {}}/>,
         planning: <Planning userId={id}/>,
-        'training-history': <TrainingHistory trainingHistoryData={trainingHistoryData}/>,
+        'training-history': <TrainingHistory userId={id}/>,
     }), [userData, id]);
 
     if (error) return <div>Failed to load user data</div>;

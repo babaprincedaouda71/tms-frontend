@@ -1,10 +1,13 @@
 import React, {useMemo} from "react";
 import Table from "@/components/Tables/Table/index";
-import {TrainingHistoricProps} from "@/types/dataTypes";
+import {PlaningDataProps, TrainingHistoricProps} from "@/types/dataTypes";
 import SearchFilterAddBar from "@/components/SearchFilterAddBar";
 import useTable from "@/hooks/useTable";
 import PDFIcon from "@/components/Svgs/PDFIcon";
 import {handleSort} from "@/utils/sortUtils";
+import useSWR from "swr";
+import {TRAINING_GROUPE_URLS} from "@/config/urls";
+import {fetcher} from "@/services/api";
 
 const TABLE_HEADERS = [
     "Exercice",
@@ -15,30 +18,25 @@ const TABLE_HEADERS = [
 const TABLE_KEYS = ["year", "theme", "dates", "certificateAndLicence"];
 const RECORDS_PER_PAGE = 5;
 
-const TrainingHistoric = ({trainingHistoryData}) => {
+const TrainingHistoric = ({userId}) => {
     const {
-        data: allData,
+        data: trainingHistoryData,
+        error,
+        mutate
+    } = useSWR<TrainingHistoricProps[]>(`${TRAINING_GROUPE_URLS.getUserTrainingHistory}/${userId}`, fetcher)
+
+    const memoizedUserData = useMemo(() => trainingHistoryData || [], [trainingHistoryData]);
+    const {
         currentPage,
         visibleColumns,
         setCurrentPage,
         handleSortData,
-    } = useTable<TrainingHistoricProps>(trainingHistoryData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE)
-
-    const totalRecords = allData.length;
-    const totalPages = useMemo(() => Math.ceil(totalRecords / RECORDS_PER_PAGE), [totalRecords]);
-
-    // Sortable Columns
-    const sortableColumns = useMemo(
-        () => TABLE_HEADERS.filter((TABLE_HEADERS) => !["Actions", "Sélection"].includes(TABLE_HEADERS)),
-        []
-    );
-
-    // Pagination des données
-    const paginatedData = useMemo(
-        () => allData.slice((currentPage - 1) * RECORDS_PER_PAGE, currentPage * RECORDS_PER_PAGE),
-        [allData, currentPage]
-    );
-
+        toggleColumnVisibility,
+        totalRecords,
+        paginatedData,
+        sortableColumns,
+        totalPages
+    } = useTable(memoizedUserData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE)
 
     const renderers = {
         certificateAndLicence: (_: string) => (
