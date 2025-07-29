@@ -79,7 +79,7 @@ const DynamicActionsRenderer: React.FC<dynamicActionsRendererProps> = ({
     const handleDelete = async () => {
         if (isSelected === undefined || (isSelected && rowToDelete)) {
             try {
-                console.log("Suppression en cours...");
+                console.log("Suppression En Cours...");
                 const response = await fetch(`${deleteUrl}/${rowToDelete.id}`, {
                     method: 'DELETE',
                     credentials: 'include',

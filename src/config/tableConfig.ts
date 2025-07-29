@@ -83,8 +83,8 @@ export const statusConfig: Record<string, StatusConfig> = {
         ...STATUS_STYLES.SUCCESS,
         showDot: true,
     },
-    "En cours": {
-        label: "En cours",
+    "En Cours": {
+        label: "En Cours",
         ...STATUS_STYLES.WARNING,
         showDot: true,
     },

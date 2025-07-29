@@ -92,11 +92,11 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                     statusText: 'Prête à envoyer',
                     statusIcon: null
                 };
-            case "En cours":
+            case "En Cours":
                 return {
                     barColor: 'bg-yellow-500',
                     badgeColor: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                    statusText: 'En cours',
+                    statusText: 'En Cours',
                     statusIcon: null
                 };
             default:
@@ -110,7 +110,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     };
 
     const fetchResponses = async () => {
-        if (status === "En cours" || status === "Terminée") {
+        if (status === "En Cours" || status === "Terminée") {
             setLoadingResponses(true);
             setErrorLoadingResponses(null);
             try {
@@ -140,7 +140,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     const handleOpenModal = (mode: 'view' | 'respond') => {
         setIsModalOpen(true);
         setModalMode(mode);
-        if ((mode === 'view' || mode === 'respond') && (status === "En cours" || status === "Terminée")) {
+        if ((mode === 'view' || mode === 'respond') && (status === "En Cours" || status === "Terminée")) {
             fetchResponses();
         }
     };
@@ -380,10 +380,10 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                             </button>
                             <button
                                 onClick={() => handleOpenModal('view')}
-                                disabled={status !== "En cours" && status !== "Terminée"}
-                                aria-disabled={status !== "En cours" && status !== "Terminée"}
+                                disabled={status !== "En Cours" && status !== "Terminée"}
+                                aria-disabled={status !== "En Cours" && status !== "Terminée"}
                                 className={`text-gray-700 flex items-center p-2 gap-1 transition-colors duration-300 ease-in-out mr-2
-                                        ${status !== "En cours" && status !== "Terminée"
+                                        ${status !== "En Cours" && status !== "Terminée"
                                     ? "opacity-50 cursor-not-allowed"
                                     : "cursor-pointer hover:text-gray-900"}`}
                             >

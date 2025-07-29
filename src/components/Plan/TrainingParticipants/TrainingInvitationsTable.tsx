@@ -64,7 +64,7 @@ const TrainingInvitationsTable: React.FC<TrainingInvitationsTableProps> = ({
                     onClick={onSendInvitations}
                     disabled={invitations.length === 0 || isSubmitting}
                 >
-                    {isSubmitting ? 'Envoi en cours...' : 'Envoyer une invitation aux participants'}
+                    {isSubmitting ? 'Envoi En Cours...' : 'Envoyer une invitation aux participants'}
                 </button>
             </div>
         </div>

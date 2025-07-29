@@ -133,7 +133,7 @@ const QuestionnaireModal: React.FC<QuestionnaireModalOptimizedProps> = ({
                                 {progress ? (
                                     <div className="space-y-2">
                                         <p className="text-gray-600">
-                                            Génération en cours... {progress.current}/{progress.total}
+                                            Génération En Cours... {progress.current}/{progress.total}
                                         </p>
                                         {progress.currentParticipant && (
                                             <p className="text-sm text-gray-500">

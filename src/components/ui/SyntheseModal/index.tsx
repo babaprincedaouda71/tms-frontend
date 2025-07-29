@@ -127,7 +127,7 @@ const SyntheseModal: React.FC<SyntheseModalProps> = ({
                                 {progress ? (
                                     <div className="space-y-2">
                                         <p className="text-gray-600">
-                                            Génération en cours... {progress.current}/{progress.total}
+                                            Génération En Cours... {progress.current}/{progress.total}
                                         </p>
                                         <div className="w-64 bg-gray-200 rounded-full h-2 mx-auto">
                                             <div

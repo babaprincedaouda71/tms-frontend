@@ -9,9 +9,9 @@ export const planRefundData = [
   {
     exercice: "2021",
     title: "Projet Beta",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2020",
@@ -23,9 +23,9 @@ export const planRefundData = [
   {
     exercice: "2019",
     title: "Projet Delta",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2018",
@@ -37,9 +37,9 @@ export const planRefundData = [
   {
     exercice: "2017",
     title: "Projet Zeta",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2016",
@@ -51,9 +51,9 @@ export const planRefundData = [
   {
     exercice: "2015",
     title: "Projet Theta",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2024",
@@ -65,9 +65,9 @@ export const planRefundData = [
   {
     exercice: "2023",
     title: "Projet Kappa",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2022",
@@ -79,9 +79,9 @@ export const planRefundData = [
   {
     exercice: "2021",
     title: "Projet Mu",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2020",
@@ -93,9 +93,9 @@ export const planRefundData = [
   {
     exercice: "2019",
     title: "Projet Xi",
-    fundingRequest: "En cours",
-    refundRequest: "En cours",
-    status: "En cours",
+    fundingRequest: "En Cours",
+    refundRequest: "En Cours",
+    status: "En Cours",
   },
   {
     exercice: "2018",

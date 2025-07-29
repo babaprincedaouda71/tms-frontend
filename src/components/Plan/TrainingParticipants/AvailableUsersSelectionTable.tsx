@@ -59,7 +59,7 @@ const AvailableUsersSelectionTable: React.FC<AvailableUsersSelectionTableProps> 
                     onClick={onAddSelected}
                     disabled={selectedUsers.size === 0 || isSubmitting}
                 >
-                    {isSubmitting ? 'Ajout en cours...' : `Ajouter à la liste (${selectedUsers.size})`}
+                    {isSubmitting ? 'Ajout En Cours...' : `Ajouter à la liste (${selectedUsers.size})`}
                 </button>
             </div>
         </div>

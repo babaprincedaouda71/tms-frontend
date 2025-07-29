@@ -75,7 +75,7 @@ const DynamicActionsRenderer: React.FC<dynamicActionsRendererProps> = ({
         // Si isSelected n'est pas défini ou si la ligne est sélectionnée
         if (isSelected === undefined || (isSelected && rowToDelete)) {
             try {
-                console.log("Suppression en cours...");
+                console.log("Suppression En Cours...");
                 const response = await fetch(`${deleteUrl}/${rowToDelete.id}`, {
                     method: 'DELETE',
                     credentials: 'include',

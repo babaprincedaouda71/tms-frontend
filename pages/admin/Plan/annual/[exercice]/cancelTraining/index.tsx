@@ -594,7 +594,7 @@ Cordialement,`,
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Envoi en cours...' : 'Envoyer'}
+                                {isSubmitting ? 'Envoi En Cours...' : 'Envoyer'}
                             </button>
                         </div>
                     </form>

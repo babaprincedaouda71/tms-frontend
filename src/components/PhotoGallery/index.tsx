@@ -81,7 +81,7 @@ const PhotoGallery = () => {
                 <div className=''></div>
                 {isUploading && (
                     <div className="mt-2 text-sm text-gray-600">
-                        Chargement des images en cours...
+                        Chargement des images En Cours...
                     </div>
                 )}
             </section>

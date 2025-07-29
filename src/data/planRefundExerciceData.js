@@ -6,7 +6,7 @@ export const planRefundExerciceData = [
     staff: 5,
     cost: "10000",
     ocf: "1000",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 1",
   },
   {
@@ -26,7 +26,7 @@ export const planRefundExerciceData = [
     staff: 3,
     cost: "8000",
     ocf: "800",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 3",
   },
   {
@@ -36,7 +36,7 @@ export const planRefundExerciceData = [
     staff: 4,
     cost: "12000",
     ocf: "1200",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 4",
   },
   {
@@ -66,7 +66,7 @@ export const planRefundExerciceData = [
     staff: 3,
     cost: "9000",
     ocf: "900",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 7",
   },
   {
@@ -76,7 +76,7 @@ export const planRefundExerciceData = [
     staff: 2,
     cost: "4000",
     ocf: "400",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 8",
   },
   {
@@ -86,7 +86,7 @@ export const planRefundExerciceData = [
     staff: 1,
     cost: "2000",
     ocf: "200",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 9",
   },
   {
@@ -96,7 +96,7 @@ export const planRefundExerciceData = [
     staff: 4,
     cost: "11000",
     ocf: "1100",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 10",
   },
   {
@@ -106,7 +106,7 @@ export const planRefundExerciceData = [
     staff: 2,
     cost: "5500",
     ocf: "550",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 11",
   },
   {
@@ -136,7 +136,7 @@ export const planRefundExerciceData = [
     staff: 2,
     cost: "6000",
     ocf: "600",
-    status: "En cours",
+    status: "En Cours",
     document: "DocumentPage 14",
   },
   {

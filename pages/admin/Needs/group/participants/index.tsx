@@ -509,9 +509,9 @@ const Participants = ({needId, groupData, onGroupDataUpdated}: ParticipantsProps
                         type="button" // Utiliser type="button" pour ne pas soumettre le formulaire ici
                         className="bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed" // Styles pour désactiver le bouton
                         onClick={handleAddToSelected}
-                        disabled={tempSelectedUsers.size === 0 || isSubmitting} // Désactiver si rien n'est sélectionné temporairement ou en cours de soumission
+                        disabled={tempSelectedUsers.size === 0 || isSubmitting} // Désactiver si rien n'est sélectionné temporairement ou En Cours de soumission
                     >
-                        {isSubmitting ? 'Ajout en cours...' : `Ajouter à la liste (${tempSelectedUsers.size})`}
+                        {isSubmitting ? 'Ajout En Cours...' : `Ajouter à la liste (${tempSelectedUsers.size})`}
                     </button>
                 </div>
             </div>

@@ -68,7 +68,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
         switch (status) {
             case "Terminée":
                 return 'bg-green-500';
-            case "En cours":
+            case "En Cours":
                 return 'bg-yellow-500';
             default:
                 return 'bg-gray-500';
@@ -77,7 +77,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
 
     const fetchResponses = async () => {
         console.log("Fetching responses...");
-        if (status === "En cours" || status === "Terminée") {
+        if (status === "En Cours" || status === "Terminée") {
             setLoadingResponses(true);
             setErrorLoadingResponses(null);
             try {
@@ -107,10 +107,10 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
     const handleOpenModal = (mode: 'view' | 'respond') => {
         setIsModalOpen(true);
         setModalMode(mode);
-        if ((mode === 'view' || mode === 'respond') && (status === "En cours" || status === "Terminée")) {
+        if ((mode === 'view' || mode === 'respond') && (status === "En Cours" || status === "Terminée")) {
             fetchResponses();
         }
-        // Si le mode est 'respond' et le statut n'est pas "En cours" ou "Terminée",
+        // Si le mode est 'respond' et le statut n'est pas "En Cours" ou "Terminée",
         // alors modalResponses restera vide, ce qui est correct pour une nouvelle réponse.
     };
 
@@ -350,7 +350,7 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
 
                         <div
                             className="flex justify-end items-center mt-4"> {/* Ajout items-center pour aligner les boutons */}
-                            {/* Bouton "Répondre" : Affiché pour En attente, En cours, et Terminée */}
+                            {/* Bouton "Répondre" : Affiché pour En attente, En Cours, et Terminée */}
                             <button
                                 onClick={() => handleOpenModal('respond')}
                                 disabled={isSentToManager}  // Désactivé si isSentToManager === true
@@ -365,10 +365,10 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
                             {/* Bouton "Voir détails" */}
                             <button
                                 onClick={() => handleOpenModal('view')}
-                                disabled={status !== "En cours" && status !== "Terminée"} // Désactivé si NI "En cours" NI "Terminée"
-                                aria-disabled={status !== "En cours" && status !== "Terminée"}
+                                disabled={status !== "En Cours" && status !== "Terminée"} // Désactivé si NI "En Cours" NI "Terminée"
+                                aria-disabled={status !== "En Cours" && status !== "Terminée"}
                                 className={`text-gray-700 flex items-center p-2 gap-1 transition-colors duration-300 ease-in-out mr-2
-                                        ${status !== "En cours" && status !== "Terminée"
+                                        ${status !== "En Cours" && status !== "Terminée"
                                     ? "opacity-50 cursor-not-allowed"
                                     : "cursor-pointer hover:text-gray-900"}`}
                             >

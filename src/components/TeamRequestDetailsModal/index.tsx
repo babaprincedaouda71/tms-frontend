@@ -31,13 +31,13 @@ const TeamRequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
     const currentRequest = requestToProcess || request;
 
     const handleReject = () => {
-        setRequestToProcess(request); // Mémoriser la demande en cours
+        setRequestToProcess(request); // Mémoriser la demande En Cours
         setIsRejectModalOpen(true); // Préparer l'ouverture du modal de rejet
         onClose(); // Fermer le modal de détails
     };
 
     const handleApprove = () => {
-        setRequestToProcess(request); // Mémoriser la demande en cours
+        setRequestToProcess(request); // Mémoriser la demande En Cours
         setIsApproveModalOpen(true); // Préparer l'ouverture du modal d'approbation
         onClose(); // Fermer le modal de détails
     };

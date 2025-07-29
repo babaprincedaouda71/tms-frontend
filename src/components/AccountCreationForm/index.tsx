@@ -258,7 +258,7 @@ const AccountCreationForm = ({handleSigning, onSubmitSuccess}) => {
                 disabled={isSubmitting}
                 className="w-full h-14 flex justify-center items-center py-2 px-4 border border-transparent rounded-xl shadow-sm text-base font-medium text-white bg-primary hover:bg-primary_hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70"
             >
-                {isSubmitting ? "Inscription en cours..." : "Inscription"}
+                {isSubmitting ? "Inscription En Cours..." : "Inscription"}
             </button>
 
             <div className="text-center text-base md:text-lg font-medium text-gray-700">

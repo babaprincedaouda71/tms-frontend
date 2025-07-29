@@ -110,7 +110,7 @@ export const useQuestionnaireGenerator = () => {
                 current: 0,
                 total: participantsWithTokens.length,
                 percentage: 0,
-                currentParticipant: 'Génération en cours...'
+                currentParticipant: 'Génération En Cours...'
             });
 
             // Générer le PDF avec suivi de progression optimisé

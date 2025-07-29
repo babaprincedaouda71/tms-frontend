@@ -380,7 +380,7 @@ export default function F4EvaluationResponsePage() {
                                     <span className="flex items-center justify-center">
                                         <div
                                             className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                        Envoi en cours...
+                                        Envoi En Cours...
                                     </span>
                                 ) : (
                                     'Soumettre l\'évaluation'

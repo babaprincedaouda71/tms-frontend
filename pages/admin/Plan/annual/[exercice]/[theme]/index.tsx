@@ -212,12 +212,10 @@ const TrainingDetailsPage = () => {
                 {value}
             </div>
         ),
-        status: (value: string, row: GroupData) => (
+        status: (value: string) => (
             <StatusRenderer
                 value={value}
                 groupeConfig={statusConfig}
-                row={row}
-                statusOptions={["Brouillon", "Validé"]}
             />
         ),
         actions: (_: any, row: GroupData) => (
