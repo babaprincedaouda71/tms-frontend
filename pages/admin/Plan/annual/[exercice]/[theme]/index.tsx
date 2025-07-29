@@ -61,7 +61,7 @@ const TABLE_KEYS = [
 ];
 
 const ACTIONS_TO_SHOW = ["edit", "delete"];
-const RECORDS_PER_PAGE = 4;
+const RECORDS_PER_PAGE = 10;
 
 const TrainingDetailsPage = () => {
     const {navigateTo, isCurrentPath, getPathWithoutRolePrefix, buildRoleBasedPath} = useRoleBasedNavigation();
