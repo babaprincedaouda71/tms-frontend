@@ -15,6 +15,8 @@ import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {TRAINING_URLS} from "@/config/urls";
 import InputField from "@/components/FormComponents/InputField";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 // 🔧 FIX: Interface FormData corrigée
 interface FormData {
@@ -250,112 +252,114 @@ const TrainingDetailsPage = () => {
     }
 
     return (
-        <div className="bg-white rounded-xl">
-            {/* Barre de navigation */}
-            <BreadcrumbNav/>
-            <div className="mx-auto bg-white font-title rounded-lg px-6 pb-14 pt-16">
-                <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
-                    <InputField
-                        label={"Domaine"}
-                        name={"domain"}
-                        value={formData.domain}
-                        disabled={true}
-                        onChange={handleChange}
-                    />
-                    <InputField
-                        label={"Thème"}
-                        value={formData.theme}
-                        name={"theme"}
-                        disabled={true}
-                        onChange={handleChange}
-                    />
-                    <TextAreaField
-                        label={"Objectif"}
-                        value={formData.objective}
-                        name={"objective"}
-                        onChange={(e) => setFormData({...formData, objective: e.target.value})}
-
-                    />
-                    <TextAreaField
-                        label={"Commentaire"}
-                        value={formData.comment}
-                        name={"comment"}
-                        onChange={handleCommentChange}
-                    />
-                    <TextAreaField
-                        label={"Contenu"}
-                        value={formData.content}
-                        name={"content"}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                    />
-                    <Switch
-                        label="CSF"
-                        name="csf"
-                        checked={formData.csf}
-                        planifieField={planifieSelect}
-                        onChange={() => {
-                            // Empêche le changement d'état, donc le switch ne se togglera pas.
-                            console.log("Le changement du switch CSF est désactivé.");
-                        }}
-                    />
-                </div>
-
-                {/* Tableau */}
-                <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
-                    <div className="flex items-start gap-2 md:gap-8 mb-4">
-                        <SearchFilterAddBar
-                            isLeftButtonVisible={false}
-                            isFiltersVisible={false}
-                            isRightButtonVisible={false}
-                            leftTextButton="Filtrer les colonnes"
-                            rightTextButton="Nouvelle"
-                            onRightButtonClick={() => null}
-                            filters={[]}
-                            placeholderText={"Recherche de besoins"}
+        <ProtectedRoute requiredRole={UserRole.Admin}>
+            <div className="bg-white rounded-xl">
+                {/* Barre de navigation */}
+                <BreadcrumbNav/>
+                <div className="mx-auto bg-white font-title rounded-lg px-6 pb-14 pt-16">
+                    <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
+                        <InputField
+                            label={"Domaine"}
+                            name={"domain"}
+                            value={formData.domain}
+                            disabled={true}
+                            onChange={handleChange}
                         />
-                        {/* Bouton pour afficher/masquer la fenêtre modale */}
-                        <ModalButton
-                            headers={TABLE_HEADERS}
-                            visibleColumns={visibleColumns}
-                            toggleColumnVisibility={toggleColumnVisibility}
+                        <InputField
+                            label={"Thème"}
+                            value={formData.theme}
+                            name={"theme"}
+                            disabled={true}
+                            onChange={handleChange}
                         />
-                    </div>
+                        <TextAreaField
+                            label={"Objectif"}
+                            value={formData.objective}
+                            name={"objective"}
+                            onChange={(e) => setFormData({...formData, objective: e.target.value})}
 
-                    {/* Conteneur du tableau avec overflow visible pour les dropdowns */}
-                    <div className="overflow-visible relative">
-                        <Table
-                            data={paginatedData}
-                            keys={TABLE_KEYS}
-                            headers={TABLE_HEADERS}
-                            sortableCols={sortableColumns}
-                            onSort={(column, order) => handleSortData(column, order, handleSort)}
-                            isPagination={false}
-                            pagination={{
-                                currentPage,
-                                totalPages,
-                                onPageChange: setCurrentPage,
+                        />
+                        <TextAreaField
+                            label={"Commentaire"}
+                            value={formData.comment}
+                            name={"comment"}
+                            onChange={handleCommentChange}
+                        />
+                        <TextAreaField
+                            label={"Contenu"}
+                            value={formData.content}
+                            name={"content"}
+                            onChange={(e) => setFormData({...formData, content: e.target.value})}
+                        />
+                        <Switch
+                            label="CSF"
+                            name="csf"
+                            checked={formData.csf}
+                            planifieField={planifieSelect}
+                            onChange={() => {
+                                // Empêche le changement d'état, donc le switch ne se togglera pas.
+                                console.log("Le changement du switch CSF est désactivé.");
                             }}
-                            totalRecords={totalRecords}
-                            loading={false}
-                            onAdd={() => console.log("Nouveau")}
-                            visibleColumns={visibleColumns}
-                            renderers={renderers}
                         />
                     </div>
 
-                    {/* Bouton avec un meilleur espacement */}
-                    <div className="mt-6 pl-8 text-xs md:text-sm lg:text-base">
-                        <button
-                            className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3 hover:shadow-lg transition-shadow duration-200"
-                            onClick={handleAddGroup}
-                        >
-                            <PlusIcon/>
-                            <span className="hidden sm:block ml-2">Nouveau Groupe</span>
-                        </button>
+                    {/* Tableau */}
+                    <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
+                        <div className="flex items-start gap-2 md:gap-8 mb-4">
+                            <SearchFilterAddBar
+                                isLeftButtonVisible={false}
+                                isFiltersVisible={false}
+                                isRightButtonVisible={false}
+                                leftTextButton="Filtrer les colonnes"
+                                rightTextButton="Nouvelle"
+                                onRightButtonClick={() => null}
+                                filters={[]}
+                                placeholderText={"Recherche de besoins"}
+                            />
+                            {/* Bouton pour afficher/masquer la fenêtre modale */}
+                            <ModalButton
+                                headers={TABLE_HEADERS}
+                                visibleColumns={visibleColumns}
+                                toggleColumnVisibility={toggleColumnVisibility}
+                            />
+                        </div>
+
+                        {/* Conteneur du tableau avec overflow visible pour les dropdowns */}
+                        <div className="overflow-visible relative">
+                            <Table
+                                data={paginatedData}
+                                keys={TABLE_KEYS}
+                                headers={TABLE_HEADERS}
+                                sortableCols={sortableColumns}
+                                onSort={(column, order) => handleSortData(column, order, handleSort)}
+                                isPagination={false}
+                                pagination={{
+                                    currentPage,
+                                    totalPages,
+                                    onPageChange: setCurrentPage,
+                                }}
+                                totalRecords={totalRecords}
+                                loading={false}
+                                onAdd={() => console.log("Nouveau")}
+                                visibleColumns={visibleColumns}
+                                renderers={renderers}
+                            />
+                        </div>
+
+                        {/* Bouton avec un meilleur espacement */}
+                        <div className="mt-6 pl-8 text-xs md:text-sm lg:text-base">
+                            <button
+                                className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3 hover:shadow-lg transition-shadow duration-200"
+                                onClick={handleAddGroup}
+                            >
+                                <PlusIcon/>
+                                <span className="hidden sm:block ml-2">Nouveau Groupe</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </ProtectedRoute>
     );
 };
 

@@ -14,6 +14,8 @@ import {statusConfig} from "@/config/tableConfig";
 import StatusRenderer from "@/components/Tables/StatusRenderer";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 interface FormData {
     domain: number | null; // Pourrait être string | number | undefined selon InputField
@@ -235,109 +237,105 @@ const NeedDetails = () => {
     };
 
     return (
-        <div className="bg-white rounded-xl">
-            <div className="mx-auto bg-white font-title rounded-lg px-6 pb-14 pt-16">
-                <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
-                    <InputField
-                        label={"Domaine"}
-                        name={"domain"}
-                        value={formData.domain}
-                        disabled={true}
-                    />
-                    <InputField
-                        label={"Thème"}
-                        value={formData.theme}
-                        name={"theme"}
-                        disabled={true}
-                    />
-                    <TextAreaField
-                        label={"Objectif"}
-                        value={formData.objective}
-                        name={"objective"}
-                        onChange={(e) => setFormData({...formData, objective: e.target.value})}
-                    />
-                    <TextAreaField
-                        value={formData.comment}
-                        label={"Commentaire"}
-                        name={"comment"}
-                        onChange={handleCommentChange} // Liaison de la fonction de gestion du changement
-                    />
-                    <TextAreaField
-                        value={formData.content}
-                        label={"Contenu"}
-                        name={"content"}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                    />
-                    <Switch
-                        label="CSF"
-                        name="csf"
-                        checked={formData.csf}
-                        planifieField={planifieSelect}
-                        onChange={() => {
-                            // Empêche le changement d'état, donc le switch ne se togglera pas.
-                            console.log("Le changement du switch CSF est désactivé.");
-                        }}
-                    />
-                </div>
-            </div>
-            {/* Tableau des groupes */}
-            <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
-                <div className="flex items-start gap-2 md:gap-8">
-                    <SearchFilterAddBar
-                        isLeftButtonVisible={false}
-                        isFiltersVisible={false}
-                        isRightButtonVisible={false} // Afficher le bouton "Nouveau" pour les groupes
-                        leftTextButton="Filtrer les colonnes"
-                        rightTextButton="Nouveau Groupe"
-                        onRightButtonClick={() => alert("Ouvrir modal nouveau groupe")} // Remplacer par la logique d'ajout de groupe
-                        filters={[]}
-                        placeholderText={"Rechercher des groupes"}
-                    />
-                    <ModalButton
-                        headers={TABLE_HEADERS}
-                        visibleColumns={visibleColumns}
-                        toggleColumnVisibility={toggleColumnVisibility}
-                    />
-                </div>
-
-                {/* Tableau */}
-                <Table
-                    data={paginatedData}
-                    keys={TABLE_KEYS}
-                    headers={TABLE_HEADERS}
-                    sortableCols={sortableColumns}
-                    onSort={(column, order) => handleSortData(column, order, handleSort)}
-                    isPagination={memoizedGroupData.length > RECORDS_PER_PAGE} // Activer la pagination si nécessaire
-                    pagination={{
-                        currentPage,
-                        totalPages,
-                        onPageChange: setCurrentPage,
-                    }}
-                    totalRecords={totalRecords}
-                    loading={false}
-                    onAdd={() => console.log("Nouveau groupe")}
-                    visibleColumns={visibleColumns}
-                    renderers={renderers}
-                />
-                {memoizedGroupData.length <= RECORDS_PER_PAGE && (
-                    <div className="pl-8 text-xs md:text-sm lg:text-base">
-                        <button
-                            className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3"
-                            onClick={handleAddGroup} // Remplacer par la logique d'ajout de groupe
-                        >
-                            <PlusIcon/>
-                            <span className="hidden sm:block">Nouveau Groupe</span>
-                        </button>
+        <ProtectedRoute requiredRole={UserRole.Admin}>
+            <div className="bg-white rounded-xl">
+                <div className="mx-auto bg-white font-title rounded-lg px-6 pb-14 pt-16">
+                    <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24 mb-4">
+                        <InputField
+                            label={"Domaine"}
+                            name={"domain"}
+                            value={formData.domain}
+                            disabled={true}
+                        />
+                        <InputField
+                            label={"Thème"}
+                            value={formData.theme}
+                            name={"theme"}
+                            disabled={true}
+                        />
+                        <TextAreaField
+                            label={"Objectif"}
+                            value={formData.objective}
+                            name={"objective"}
+                            onChange={(e) => setFormData({...formData, objective: e.target.value})}
+                        />
+                        <TextAreaField
+                            value={formData.comment}
+                            label={"Commentaire"}
+                            name={"comment"}
+                            onChange={handleCommentChange} // Liaison de la fonction de gestion du changement
+                        />
+                        <TextAreaField
+                            value={formData.content}
+                            label={"Contenu"}
+                            name={"content"}
+                            onChange={(e) => setFormData({...formData, content: e.target.value})}
+                        />
+                        <Switch
+                            label="CSF"
+                            name="csf"
+                            checked={formData.csf}
+                            planifieField={planifieSelect}
+                            onChange={() => {
+                                // Empêche le changement d'état, donc le switch ne se togglera pas.
+                                console.log("Le changement du switch CSF est désactivé.");
+                            }}
+                        />
                     </div>
-                )}
+                </div>
+                {/* Tableau des groupes */}
+                <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
+                    <div className="flex items-start gap-2 md:gap-8">
+                        <SearchFilterAddBar
+                            isLeftButtonVisible={false}
+                            isFiltersVisible={false}
+                            isRightButtonVisible={false} // Afficher le bouton "Nouveau" pour les groupes
+                            leftTextButton="Filtrer les colonnes"
+                            rightTextButton="Nouveau Groupe"
+                            onRightButtonClick={() => alert("Ouvrir modal nouveau groupe")} // Remplacer par la logique d'ajout de groupe
+                            filters={[]}
+                            placeholderText={"Rechercher des groupes"}
+                        />
+                        <ModalButton
+                            headers={TABLE_HEADERS}
+                            visibleColumns={visibleColumns}
+                            toggleColumnVisibility={toggleColumnVisibility}
+                        />
+                    </div>
+
+                    {/* Tableau */}
+                    <Table
+                        data={paginatedData}
+                        keys={TABLE_KEYS}
+                        headers={TABLE_HEADERS}
+                        sortableCols={sortableColumns}
+                        onSort={(column, order) => handleSortData(column, order, handleSort)}
+                        isPagination={memoizedGroupData.length > RECORDS_PER_PAGE} // Activer la pagination si nécessaire
+                        pagination={{
+                            currentPage,
+                            totalPages,
+                            onPageChange: setCurrentPage,
+                        }}
+                        totalRecords={totalRecords}
+                        loading={false}
+                        onAdd={() => console.log("Nouveau groupe")}
+                        visibleColumns={visibleColumns}
+                        renderers={renderers}
+                    />
+                    {memoizedGroupData.length <= RECORDS_PER_PAGE && (
+                        <div className="mt-6 pl-8 text-xs md:text-sm lg:text-base">
+                            <button
+                                className="flex items-center font-title justify-center text-white bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd rounded-lg p-2 text-sm md:text-base md:px-4 md:py-3 hover:shadow-lg transition-shadow duration-200"
+                                onClick={handleAddGroup}
+                            >
+                                <PlusIcon/>
+                                <span className="hidden sm:block ml-2">Nouveau Groupe</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </ProtectedRoute>
     );
-    /*******************************/
-    // return (
-    //     <ProtectedRoute>
-    //         <div>Need details</div>
-    //     </ProtectedRoute>
-    // )
 }
 export default NeedDetails;
