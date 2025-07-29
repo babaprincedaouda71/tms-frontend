@@ -63,7 +63,7 @@ const TrainingPage = () => {
 
     const handleCancel = async () => {
         if (selectedTraining?.csf && isOFPPTValidation) {
-            // Si CSF est true et le plan validé, rediriger vers la page d'annulation
+            // Si CSF est true et le plan Planifé, rediriger vers la page d'annulation
             closeCancelModal();
             navigateTo(`/Plan/annual/${exercice}/cancelTraining`, {
                 query: {

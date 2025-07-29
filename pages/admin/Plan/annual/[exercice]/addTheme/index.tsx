@@ -19,7 +19,7 @@ const AddThemePage = () => {
     const {navigateTo} = useRoleBasedNavigation();
     const {exercice, planId} = useRouter().query
 
-    // Récupération des besoins validés
+    // Récupération des besoins Planifés
     const {
         data: validNeeds,
         error: fetchingError,
@@ -235,7 +235,7 @@ const AddThemePage = () => {
                                                         <div className="text-gray-400 text-4xl mb-4">📋</div>
                                                         <p className="text-gray-500 text-lg font-medium">Aucun résultat
                                                             trouvé</p>
-                                                        <p className="text-gray-400 text-sm mt-2">Aucun besoin validé
+                                                        <p className="text-gray-400 text-sm mt-2">Aucun besoin Planifé
                                                             disponible pour le moment</p>
                                                     </div>
                                                 </div>
