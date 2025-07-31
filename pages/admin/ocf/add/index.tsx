@@ -53,16 +53,20 @@ const INITIAL_FILES = {
 interface AddOCFPageProps {
     onCancel?: () => void;
     onSuccess?: () => void;
-    ocfId?: number; // ID pour le mode édition
+    id?: number; // ID pour le mode édition
 }
 
 const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
     const {navigateTo} = useRoleBasedNavigation();
     const router = useRouter();
-    const {ocfId} = router.query;
+    const {id} = router.query;
+
+    console.log('ocfId', id);
 
     // Déterminer si on est en mode édition
-    const isEditMode = !!ocfId;
+    const isEditMode = !!id;
+
+    console.log('isEditMode', isEditMode);
 
     // États du formulaire
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -92,7 +96,7 @@ const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
 
     // Récupération des données en mode édition
     const {data: ocfData, error: ocfError, isLoading} = useSWR(
-        isEditMode ? `${OCF_URLS.getDetails}/${ocfId}` : null,
+        isEditMode ? `${OCF_URLS.getDetails}/${id}` : null,
         fetcher
     );
 
@@ -116,7 +120,7 @@ const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
                 ifValue: ocfData.ifValue || "",
                 cnss: ocfData.cnss || "",
                 permanentStaff: ocfData.permanentStaff || "",
-                password: "", // Ne pas pré-remplir le mot de passe
+                password: "", // Ne pas préremplir le mot de passe
                 nameLegalRepresentant: ocfData.nameLegalRepresentant || "",
                 positionLegalRepresentant: ocfData.positionLegalRepresentant || "",
                 phoneLegalRepresentant: ocfData.phoneLegalRepresentant || "",
@@ -324,7 +328,7 @@ const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
 
             // Déterminer l'URL et la méthode
             const url = isEditMode
-                ? `${OCF_URLS.edit}/${ocfId}`
+                ? `${OCF_URLS.edit}/${id}`
                 : OCF_URLS.add;
             const method = isEditMode ? 'PUT' : 'POST';
 
@@ -370,7 +374,7 @@ const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
 
     // Fonction pour voir un PDF existant
     const handleViewPDF = async (fileType: string) => {
-        if (!isEditMode || !ocfId) return;
+        if (!isEditMode || !id) return;
 
         const fileName = existingFiles[fileType];
         if (!fileName) return;
@@ -394,7 +398,7 @@ const AddOCFPage: React.FC<AddOCFPageProps> = ({onCancel, onSuccess}) => {
         });
 
         try {
-            const response = await fetch(`${OCF_URLS.getPdf}/${ocfId}/${fileType}`, {
+            const response = await fetch(`${OCF_URLS.getPdf}/${id}/${fileType}`, {
                 method: 'GET',
                 credentials: 'include',
             });
