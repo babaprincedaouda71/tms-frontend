@@ -1,4 +1,4 @@
-// src/components/FormComponents/Switch/index.tsx - Version améliorée
+// src/components/FormComponents/Switch/AddOCFPage.tsx - Version améliorée
 import React from 'react';
 
 interface SwitchProps {

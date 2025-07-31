@@ -1,4 +1,4 @@
-// components/QuestionnairePreviewModal/index.tsx
+// components/QuestionnairePreviewModal/AddOCFPage.tsx
 import React, {useEffect, useRef, useState} from 'react';
 import {Download, Eye, FileText, X} from 'lucide-react';
 

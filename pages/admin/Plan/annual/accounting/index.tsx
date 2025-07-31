@@ -1,4 +1,4 @@
-// Modification du composant Accounting (pages/admin/Plan/annual/accounting/index.tsx)
+// Modification du composant Accounting (pages/admin/Plan/annual/accounting/AddOCFPage.tsx)
 
 import Table from '@/components/Tables/Table/index'
 import React, {useMemo, useState} from 'react'

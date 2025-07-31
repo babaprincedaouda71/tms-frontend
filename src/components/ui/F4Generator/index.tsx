@@ -134,7 +134,7 @@ const F4Generator: React.FC<F4GeneratorProps> = ({
 
         // This helper function draws the circles in the cells.
         const drawCirclesInCells = (data: any) => {
-            // We only draw in the body and for columns with index > 0
+            // We only draw in the body and for columns with AddOCFPage > 0
             if (data.section === 'body' && data.column.index > 0) {
                 const x = data.cell.x + data.cell.width / 2;
                 const y = data.cell.y + data.cell.height / 2;

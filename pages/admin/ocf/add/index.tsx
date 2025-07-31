@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import InputField from "@/components/FormComponents/InputField";
 import FileInputField from "@/components/FormComponents/FileInputField";
 
-const index = () => {
+const AddOCFPage = () => {
     // État pour stocker les données du formulaire
     const [formData, setFormData] = useState({
         corporateName: "",
@@ -224,4 +224,4 @@ const index = () => {
     );
 };
 
-export default index;
+export default AddOCFPage;

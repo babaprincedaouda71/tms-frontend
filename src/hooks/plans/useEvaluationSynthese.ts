@@ -289,7 +289,7 @@ async function generateSynthesePDFContent(
                 return exactMatch || includesMatch || keywordMatch;
             });
 
-            // Si pas de correspondance trouvée, essayer par index
+            // Si pas de correspondance trouvée, essayer par AddOCFPage
             if (!questionStat && questionStats[j]) {
                 questionStat = questionStats[j];
             }
