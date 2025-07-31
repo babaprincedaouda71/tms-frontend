@@ -4,18 +4,18 @@ import ModalButton from "@/components/ModalButton";
 import SearchFilterAddBar from "@/components/SearchFilterAddBar";
 import StatusRenderer from "@/components/Tables/StatusRenderer";
 import {SupplierProps} from "@/types/dataTypes";
-import {useRouter} from "next/router";
 import {handleSort} from "@/utils/sortUtils";
 import DynamicActionsRenderer from "@/components/Tables/DynamicActionsRenderer";
 import {statusConfig} from "@/config/tableConfig";
 import useTable from "@/hooks/useTable";
 import useSWR from "swr";
 import {fetcher} from "@/services/api";
-import {SUPPLIERS_URLS} from "@/config/urls";
+import {OCF_URLS, SUPPLIERS_URLS} from "@/config/urls";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 const TABLE_HEADERS = [
-    "Code",
     "Raison sociale",
     "ICE",
     "Téléphone",
@@ -28,7 +28,6 @@ const TABLE_HEADERS = [
     "Actions",
 ];
 const TABLE_KEYS = [
-    "code",
     "corporateName",
     "ice",
     "phone",
@@ -61,56 +60,68 @@ const OCFPage = () => {
     } = useTable<SupplierProps>(memoizedUserData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE)
 
     const renderers = {
-        status: (value: string) => (
-            <StatusRenderer value={value} groupeConfig={statusConfig}/>
+        status: (value: string, row : SupplierProps) => (
+            <StatusRenderer
+                value={value}
+                groupeConfig={statusConfig}
+                statusOptions={["Actif", "Inactif"]}
+                apiUrl={OCF_URLS.updateStatus}
+                mutateUrl={OCF_URLS.mutate}
+                row={row}
+            />
         ),
         actions: (_: any, row: any) =>
-            <DynamicActionsRenderer actions={ACTIONS_TO_SHOW} row={row}/>
+            <DynamicActionsRenderer
+                actions={ACTIONS_TO_SHOW}
+                row={row}
+            />
     };
 
     const handleAdd = () => (
         navigateTo("/ocf/add"))
     return (
-        <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
-            <div className="flex items-start gap-2 md:gap-8">
-                <SearchFilterAddBar
-                    isLeftButtonVisible={false}
-                    isFiltersVisible={false}
-                    isRightButtonVisible={true}
-                    leftTextButton="Filtrer les colonnes"
-                    rightTextButton="Nouveau"
-                    onRightButtonClick={handleAdd}
-                    filters={[]}
-                    placeholderText={"Recherche de fournisseurs"}
-                />
-                {/* Bouton pour afficher/masquer la fenêtre modale */}
-                <ModalButton
+        <ProtectedRoute requiredRole={UserRole.Admin}>
+            <div className="font-title text-xs md:text-sm lg:text-base bg-white rounded-xl pt-6">
+                <div className="flex items-start gap-2 md:gap-8">
+                    <SearchFilterAddBar
+                        isLeftButtonVisible={false}
+                        isFiltersVisible={false}
+                        isRightButtonVisible={true}
+                        leftTextButton="Filtrer les colonnes"
+                        rightTextButton="Nouveau"
+                        onRightButtonClick={handleAdd}
+                        filters={[]}
+                        placeholderText={"Recherche de fournisseurs"}
+                    />
+                    {/* Bouton pour afficher/masquer la fenêtre modale */}
+                    <ModalButton
+                        headers={TABLE_HEADERS}
+                        visibleColumns={visibleColumns}
+                        toggleColumnVisibility={toggleColumnVisibility}
+                    />
+                </div>
+
+                {/* Tableau */}
+                <Table
+                    data={paginatedData}
+                    keys={TABLE_KEYS}
                     headers={TABLE_HEADERS}
+                    sortableCols={sortableColumns}
+                    onSort={(column, order) => handleSortData(column, order, handleSort)}
+                    isPagination
+                    pagination={{
+                        currentPage,
+                        totalPages,
+                        onPageChange: setCurrentPage,
+                    }}
+                    totalRecords={totalRecords}
+                    loading={false}
+                    onAdd={() => console.log("Nouveau")}
                     visibleColumns={visibleColumns}
-                    toggleColumnVisibility={toggleColumnVisibility}
+                    renderers={renderers}
                 />
             </div>
-
-            {/* Tableau */}
-            <Table
-                data={paginatedData}
-                keys={TABLE_KEYS}
-                headers={TABLE_HEADERS}
-                sortableCols={sortableColumns}
-                onSort={(column, order) => handleSortData(column, order, handleSort)}
-                isPagination
-                pagination={{
-                    currentPage,
-                    totalPages,
-                    onPageChange: setCurrentPage,
-                }}
-                totalRecords={totalRecords}
-                loading={false}
-                onAdd={() => console.log("Nouveau")}
-                visibleColumns={visibleColumns}
-                renderers={renderers}
-            />
-        </div>
+        </ProtectedRoute>
     );
 };
 

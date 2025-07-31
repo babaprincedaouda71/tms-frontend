@@ -4,13 +4,15 @@ import TextAreaField from '@/components/FormComponents/TextAreaField';
 import InputField from '@/components/FormComponents/InputField';
 import PDFField from '@/components/ui/PDFField';
 import PDFModal from '@/components/ui/PDFModalProps';
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {FiCornerUpLeft} from "react-icons/fi";
 import {useRoleBasedNavigation} from "@/hooks/useRoleBasedNavigation";
 import {useRouter} from "next/router";
 import {GROUPE_INVOICE_URLS} from "@/config/urls";
 import useSWR from "swr";
 import {fetcher} from "@/services/api";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import {UserRole} from "@/contexts/AuthContext";
 
 // État initial du formulaire
 const INITIAL_FORM_DATA = {
@@ -449,194 +451,196 @@ const AddGroupeInvoice: React.FC<AddGroupeInvoiceProps> = ({ onCancel, onSuccess
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <section>
-                <div className="relative pl-2 flex items-center mb-4">
-                    {/* Bouton Retour à la liste aligné à gauche */}
+        <ProtectedRoute requiredRole={UserRole.Admin}>
+            <form onSubmit={handleSubmit}>
+                <section>
+                    <div className="relative pl-2 flex items-center mb-4">
+                        {/* Bouton Retour à la liste alignée à gauche */}
+                        <button
+                            type="button"
+                            onClick={handleBackToList}
+                            className="text-blue-500 border-2 flex gap-2 rounded-xl p-2 hover:underline focus:outline-none"
+                        >
+                            <FiCornerUpLeft size={24}/>
+                            Retour à la liste
+                        </button>
+
+                        {/* Titre centré */}
+                        <div className="absolute inset-x-0 flex justify-center items-center pointer-events-none">
+                            <h1 className="text-2xl font-semibold text-gray-800 pointer-events-auto">
+                                {isEditMode ? 'Modifier une facture' : 'Ajouter une facture'}
+                            </h1>
+                        </div>
+                    </div>
+
+                    <h2 className="text-base text-textColor md:text-lg lg:text-xl font-bold mb-4 text-center md:text-start">
+                        Informations générales
+                    </h2>
+                    <hr className="my-6 border-gray-300"/>
+
+                    <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24">
+                        <CustomSelect
+                            label='Type de facture'
+                            value={formData.type}
+                            name='type'
+                            options={typeOptions}
+                            onChange={handleSelectChange}
+                            error={errors.type}
+                        />
+
+                        <InputField
+                            type="number"
+                            label="Montant"
+                            name="amount"
+                            value={formData.amount}
+                            onChange={handleChange}
+                            minValue="1"
+                            error={errors.amount}
+                        />
+
+                        {/* Champ fichier avec gestion de l'existant */}
+                        <div className="space-y-2">
+                            {isEditMode && existingFiles.invoiceFile ? (
+                                <PDFField
+                                    label="Fichier de facture actuel (PDF)"
+                                    fileName={existingFiles.invoiceFile}
+                                    onView={() => handleViewPDF('invoice')}
+                                />
+                            ) : null}
+
+                            <FileInputField
+                                label={isEditMode ? "Nouveau fichier de facture (PDF)" : "Fichier de facture (PDF)"}
+                                name="invoiceFile"
+                                onChange={handleFileChange('invoiceFile')}
+                                accept="application/pdf,.pdf"
+                            />
+                            {errors.invoiceFile && (
+                                <p className="text-sm text-red mt-1">{errors.invoiceFile}</p>
+                            )}
+                        </div>
+
+                        <TextAreaField
+                            label="Description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            error={errors.description}
+                        />
+                    </div>
+                </section>
+
+                <hr className="my-6 border-gray-300"/>
+
+                <section>
+                    <h2 className="text-base text-textColor md:text-lg lg:text-xl font-bold mb-4 text-center md:text-start">
+                        Informations de paiement
+                    </h2>
+                    <hr className="my-6 border-gray-300"/>
+
+                    <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24">
+                        <CustomSelect
+                            label='Méthode de paiement'
+                            value={formData.paymentMethod}
+                            name='paymentMethod'
+                            options={paymentMethodOptions}
+                            onChange={handleSelectChange}
+                            error={errors.paymentMethod}
+                        />
+
+                        <InputField
+                            type='date'
+                            label="Date de paiement"
+                            name="paymentDate"
+                            value={formData.paymentDate}
+                            onChange={handleChange}
+                        />
+
+                        {/* Reçu de paiement */}
+                        <div className="space-y-2">
+                            {isEditMode && existingFiles.receiptFile ? (
+                                <PDFField
+                                    label="Reçu de paiement actuel (PDF)"
+                                    fileName={existingFiles.receiptFile}
+                                    onView={() => handleViewPDF('receipt')}
+                                />
+                            ) : null}
+
+                            <FileInputField
+                                label={isEditMode ? "Nouveau reçu de paiement (PDF)" : "Reçu de paiement (PDF)"}
+                                name="receiptFile"
+                                onChange={handleFileChange('receiptFile')}
+                                accept="application/pdf,.pdf"
+                            />
+                            {errors.receiptFile && (
+                                <p className="text-sm text-red mt-1">{errors.receiptFile}</p>
+                            )}
+                        </div>
+
+                        {/* Remise de la banque */}
+                        <div className="space-y-2">
+                            {isEditMode && existingFiles.bankRemiseFile ? (
+                                <PDFField
+                                    label="Remise de la banque actuelle (PDF)"
+                                    fileName={existingFiles.bankRemiseFile}
+                                    onView={() => handleViewPDF('bankRemise')}
+                                />
+                            ) : null}
+
+                            <FileInputField
+                                label={isEditMode ? "Nouvelle remise de la banque (PDF)" : "Remise de la banque (PDF)"}
+                                name="bankRemiseFile"
+                                onChange={handleFileChange('bankRemiseFile')}
+                                accept="application/pdf,.pdf"
+                            />
+                            {errors.bankRemiseFile && (
+                                <p className="text-sm text-red mt-1">{errors.bankRemiseFile}</p>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Messages d'erreur globaux */}
+                {errors.submit && (
+                    <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                        {errors.submit}
+                    </div>
+                )}
+
+                {/* Boutons d'action */}
+                <div className="mt-5 flex justify-end gap-4 text-xs md:text-sm lg:text-base">
                     <button
                         type="button"
                         onClick={handleBackToList}
-                        className="text-blue-500 border-2 flex gap-2 rounded-xl p-2 hover:underline focus:outline-none"
+                        className="bg-redShade-500 hover:bg-redShade-600 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors"
                     >
-                        <FiCornerUpLeft size={24}/>
-                        Retour à la liste
+                        Annuler
                     </button>
-
-                    {/* Titre centré */}
-                    <div className="absolute inset-x-0 flex justify-center items-center pointer-events-none">
-                        <h1 className="text-2xl font-semibold text-gray-800 pointer-events-auto">
-                            {isEditMode ? 'Modifier une facture' : 'Ajouter une facture'}
-                        </h1>
-                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={`${
+                            isSubmitting
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700'
+                        } text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors`}
+                    >
+                        {isSubmitting
+                            ? `${isEditMode ? 'Modification' : 'Enregistrement'}...`
+                            : `${isEditMode ? 'Modifier' : 'Enregistrer'}`
+                        }
+                    </button>
                 </div>
 
-                <h2 className="text-base text-textColor md:text-lg lg:text-xl font-bold mb-4 text-center md:text-start">
-                    Informations générales
-                </h2>
-                <hr className="my-6 border-gray-300"/>
-
-                <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24">
-                    <CustomSelect
-                        label='Type de facture'
-                        value={formData.type}
-                        name='type'
-                        options={typeOptions}
-                        onChange={handleSelectChange}
-                        error={errors.type}
-                    />
-
-                    <InputField
-                        type="number"
-                        label="Montant"
-                        name="amount"
-                        value={formData.amount}
-                        onChange={handleChange}
-                        minValue="1"
-                        error={errors.amount}
-                    />
-
-                    {/* Champ fichier avec gestion de l'existant */}
-                    <div className="space-y-2">
-                        {isEditMode && existingFiles.invoiceFile ? (
-                            <PDFField
-                                label="Fichier de facture actuel (PDF)"
-                                fileName={existingFiles.invoiceFile}
-                                onView={() => handleViewPDF('invoice')}
-                            />
-                        ) : null}
-
-                        <FileInputField
-                            label={isEditMode ? "Nouveau fichier de facture (PDF)" : "Fichier de facture (PDF)"}
-                            name="invoiceFile"
-                            onChange={handleFileChange('invoiceFile')}
-                            accept="application/pdf,.pdf"
-                        />
-                        {errors.invoiceFile && (
-                            <p className="text-sm text-red mt-1">{errors.invoiceFile}</p>
-                        )}
-                    </div>
-
-                    <TextAreaField
-                        label="Description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        error={errors.description}
-                    />
-                </div>
-            </section>
-
-            <hr className="my-6 border-gray-300"/>
-
-            <section>
-                <h2 className="text-base text-textColor md:text-lg lg:text-xl font-bold mb-4 text-center md:text-start">
-                    Informations de paiement
-                </h2>
-                <hr className="my-6 border-gray-300"/>
-
-                <div className="grid md:grid-cols-2 gap-y-4 gap-x-8 md:gap-x-16 lg:gap-x-24">
-                    <CustomSelect
-                        label='Méthode de paiement'
-                        value={formData.paymentMethod}
-                        name='paymentMethod'
-                        options={paymentMethodOptions}
-                        onChange={handleSelectChange}
-                        error={errors.paymentMethod}
-                    />
-
-                    <InputField
-                        type='date'
-                        label="Date de paiement"
-                        name="paymentDate"
-                        value={formData.paymentDate}
-                        onChange={handleChange}
-                    />
-
-                    {/* Reçu de paiement */}
-                    <div className="space-y-2">
-                        {isEditMode && existingFiles.receiptFile ? (
-                            <PDFField
-                                label="Reçu de paiement actuel (PDF)"
-                                fileName={existingFiles.receiptFile}
-                                onView={() => handleViewPDF('receipt')}
-                            />
-                        ) : null}
-
-                        <FileInputField
-                            label={isEditMode ? "Nouveau reçu de paiement (PDF)" : "Reçu de paiement (PDF)"}
-                            name="receiptFile"
-                            onChange={handleFileChange('receiptFile')}
-                            accept="application/pdf,.pdf"
-                        />
-                        {errors.receiptFile && (
-                            <p className="text-sm text-red mt-1">{errors.receiptFile}</p>
-                        )}
-                    </div>
-
-                    {/* Remise de la banque */}
-                    <div className="space-y-2">
-                        {isEditMode && existingFiles.bankRemiseFile ? (
-                            <PDFField
-                                label="Remise de la banque actuelle (PDF)"
-                                fileName={existingFiles.bankRemiseFile}
-                                onView={() => handleViewPDF('bankRemise')}
-                            />
-                        ) : null}
-
-                        <FileInputField
-                            label={isEditMode ? "Nouvelle remise de la banque (PDF)" : "Remise de la banque (PDF)"}
-                            name="bankRemiseFile"
-                            onChange={handleFileChange('bankRemiseFile')}
-                            accept="application/pdf,.pdf"
-                        />
-                        {errors.bankRemiseFile && (
-                            <p className="text-sm text-red mt-1">{errors.bankRemiseFile}</p>
-                        )}
-                    </div>
-                </div>
-            </section>
-
-            {/* Messages d'erreur globaux */}
-            {errors.submit && (
-                <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                    {errors.submit}
-                </div>
-            )}
-
-            {/* Boutons d'action */}
-            <div className="mt-5 flex justify-end gap-4 text-xs md:text-sm lg:text-base">
-                <button
-                    type="button"
-                    onClick={handleBackToList}
-                    className="bg-redShade-500 hover:bg-redShade-600 text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors"
-                >
-                    Annuler
-                </button>
-                <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`${
-                        isSubmitting
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-b from-gradientBlueStart to-gradientBlueEnd hover:bg-indigo-700'
-                    } text-white font-bold p-2 md:p-3 lg:p-4 rounded-xl transition-colors`}
-                >
-                    {isSubmitting
-                        ? `${isEditMode ? 'Modification' : 'Enregistrement'}...`
-                        : `${isEditMode ? 'Modifier' : 'Enregistrer'}`
-                    }
-                </button>
-            </div>
-
-            {/* Modal PDF */}
-            <PDFModal
-                isOpen={pdfModal.isOpen}
-                onClose={closePDFModal}
-                pdfUrl={pdfModal.pdfUrl}
-                title={pdfModal.title}
-                isLoading={pdfModal.isLoading}
-            />
-        </form>
+                {/* Modal PDF */}
+                <PDFModal
+                    isOpen={pdfModal.isOpen}
+                    onClose={closePDFModal}
+                    pdfUrl={pdfModal.pdfUrl}
+                    title={pdfModal.title}
+                    isLoading={pdfModal.isLoading}
+                />
+            </form>
+        </ProtectedRoute>
     );
 };
 

@@ -166,6 +166,8 @@ export const TRAINERS_URLS = {
 
 export const OCF_URLS = {
     mutate: `${API_URL}/ocf/get/ocfAddOrEditGroup`,
+    add: `${API_URL}/ocf/add/ocf`,
+    updateStatus: `${API_URL}/ocf/update-status`,
 }
 
 export const MY_REQUESTS_URLS = {
