@@ -60,7 +60,7 @@ const OCFPage = () => {
     } = useTable<SupplierProps>(memoizedUserData, TABLE_HEADERS, TABLE_KEYS, RECORDS_PER_PAGE)
 
     const renderers = {
-        status: (value: string, row : SupplierProps) => (
+        status: (value: string, row: SupplierProps) => (
             <StatusRenderer
                 value={value}
                 groupeConfig={statusConfig}
@@ -74,6 +74,9 @@ const OCFPage = () => {
             <DynamicActionsRenderer
                 actions={ACTIONS_TO_SHOW}
                 row={row}
+                mutateUrl={OCF_URLS.mutate}
+                deleteUrl={OCF_URLS.deleteOCF}
+                editUrl={OCF_URLS.editPage}
             />
     };
 

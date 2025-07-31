@@ -168,6 +168,11 @@ export const OCF_URLS = {
     mutate: `${API_URL}/ocf/get/ocfAddOrEditGroup`,
     add: `${API_URL}/ocf/add/ocf`,
     updateStatus: `${API_URL}/ocf/update-status`,
+    edit: `${API_URL}/ocf/edit/ocf`,
+    getDetails: `${API_URL}/ocf/get/details/ocf`,
+    getPdf: `${API_URL}/ocf/get/pdf`,
+    deleteOCF: `${API_URL}/ocf/delete/ocf`,
+    editPage: `/ocf/add`,
 }
 
 export const MY_REQUESTS_URLS = {
