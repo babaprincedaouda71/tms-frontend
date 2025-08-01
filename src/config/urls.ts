@@ -165,13 +165,13 @@ export const TRAINERS_URLS = {
 }
 
 export const OCF_URLS = {
-    mutate: `${API_URL}/ocf/get/ocfAddOrEditGroup`,
+    mutate: `${API_URL}/ocf/get/all`,
     add: `${API_URL}/ocf/add/ocf`,
     updateStatus: `${API_URL}/ocf/update-status`,
-    edit: `${API_URL}/ocf/edit/ocf`,
+    edit: `${API_URL}/ocf/edit`,
     getDetails: `${API_URL}/ocf/get/details/ocf`,
     getPdf: `${API_URL}/ocf/get/pdf`,
-    deleteOCF: `${API_URL}/ocf/delete/ocf`,
+    deleteOCF: `${API_URL}/ocf/delete`,
     editPage: `/ocf/add`,
 }
 
